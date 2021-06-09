@@ -1,5 +1,5 @@
 ﻿using Joonaxii.IO;
-using Joonaxii.IO.Text.Compression;
+using Joonaxii.Text.Compression;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -8,13 +8,11 @@ namespace Testing_Grounds
 {
     public class TTCCompressTest : MenuItem
     {
-        public TTCCompressTest(string name, bool enabled = true) : base(name, enabled)
-        {
-        }
+        public TTCCompressTest(string name, bool enabled = true) : base(name, enabled) { }
 
         public override bool OnClick()
         {
-            Console.WriteLine("Do you want to load the text from file? (Y/N)");
+            Console.WriteLine("Do you want to load the text from a file? (Y/N)");
             bool fromFile = false;
 
             while (true)
@@ -25,7 +23,6 @@ namespace Testing_Grounds
                     fromFile = true;
                     break;
                 }
-
                 if (key == ConsoleKey.N) { break; }
             }
 

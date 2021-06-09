@@ -12,7 +12,7 @@ namespace Testing_Grounds
 
         public override bool OnClick()
         {
-            Console.WriteLine("Do you want to load the text from file? (Y/N)");
+            Console.WriteLine("Do you want to load the text from a file? (Y/N)");
             bool fromFile = false;
 
             while (true)

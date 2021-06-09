@@ -1,10 +1,9 @@
-﻿using Joonaxii.Text.Compression;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace Joonaxii.IO.Text.Compression
+namespace Joonaxii.Text.Compression
 {
     /// <summary>
     /// A Token Based Text compression algorithm, also utilizes the LZW compression where it makes sense
