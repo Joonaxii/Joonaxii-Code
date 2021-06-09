@@ -1,2 +1,2 @@
-# Joonaxii.IO
-A collection(WILL BE ONE :D) of different IO methods and systems made by me.
+# Joonaxii
+A collection(WILL BE ONE :D) of different systems, extensions, etc made by me.
