@@ -10,12 +10,16 @@ namespace Joonaxii.Text.Compression
     /// </summary>
     public static class LZW
     {
+        public static readonly byte[] HEADER_STR = Encoding.ASCII.GetBytes("LZW");
+
+        public const int MINI_HEADER_SIZE = 10;
+
         /// <summary>
         /// Compresses a string using LZW
         /// </summary>
         /// <param name="input">The string to be compressed</param>
         /// <returns>A list of compressed chars/groups</returns>
-        public static List<int> Compress(string input) => Compress(input, out byte size, out ushort charLimit, true);
+        public static List<int> Compress(string input) => Compress(input.ToCharArray(), out byte size, out ushort charLimit, true);
 
         /// <summary>
         /// Decompresses a list of LZW compressed chars/groups.
@@ -32,11 +36,32 @@ namespace Joonaxii.Text.Compression
         /// <param name="bw">The BinaryWriter the bytes are going to be written to</param>
         public static void Compress(string input, BinaryWriter bw)
         {
-            var compressed = Compress(input, out byte size, out ushort charLimit, false);
-            bw.Write(compressed.Count);
-            bw.Write(charLimit);
-            bw.Write(size);
-            WriteValues(bw, size, compressed);
+            var compressed = Compress(input.ToCharArray(), out byte size, out ushort charLimit, false);
+            WriteAll(bw, compressed, size, charLimit);
+            compressed.Clear();
+            compressed = null;
+        }
+
+        /// <summary>
+        /// Converts given byte array into a char array where 2 bytes equals one char, then compresses that char array with LZW
+        /// </summary>
+        /// <param name="bytes">The bytes that are going to be converted into chars</param>
+        /// <param name="bw">The BinaryWriter the compressed data gets written to</param>
+        public static void Compress(byte[] bytes, BinaryWriter bw)
+        {
+            int l = bytes.Length;
+            l = l % 2 != 0 ? l + 1 : l;
+
+            char[] chars = new char[l / 2];
+
+            int bit = 0;
+            for (int i = 0; i < chars.Length; i++)
+            {
+                int a = bytes[bit++];
+                int b = (bit <= bytes.Length - 1 ? bytes[bit++] : 0);
+                chars[i] = (char)(a + (b << 8));
+            }
+            WriteAll(bw, Compress(chars, out byte size, out ushort charLimit, false), size, charLimit);
         }
 
         /// <summary>
@@ -47,16 +72,22 @@ namespace Joonaxii.Text.Compression
         /// <returns></returns>
         public static string Decompress(BinaryReader br)
         {
+            byte l = br.ReadByte();
+            byte z = br.ReadByte();
+            byte w = br.ReadByte();
+
+            if(l != HEADER_STR[0] | z != HEADER_STR[1] | w != HEADER_STR[2]) { return string.Empty; }
+
             int len = br.ReadInt32();
-            ushort charLimit = br.ReadUInt16();
             byte size = br.ReadByte();
+            ushort charLimit = br.ReadUInt16();
 
             int[] compressed = new int[len];
             ReadValue(br, size, compressed);
             return Decompress(new List<int>(compressed), charLimit);
         }
 
-        private static List<int> Compress(string input, out byte size, out ushort charLimit, bool fixedSize)
+        private static List<int> Compress(char[] input, out byte size, out ushort charLimit, bool fixedSize)
         {
             charLimit = fixedSize ? char.MaxValue : GetHighestChar(input);
 
@@ -88,6 +119,9 @@ namespace Joonaxii.Text.Compression
             }
 
             size = GetSize((Math.Max(charLimit, dictionary.Count - 1)));
+
+            dictionary.Clear();
+            dictionary = null;
             return compressed;
         }
         private static string Decompress(List<int> compressed, int initialChars)
@@ -112,10 +146,22 @@ namespace Joonaxii.Text.Compression
                 dictionary.Add(dictionary.Count, w + entry[0]);
                 w = entry;
             }
+
+            dictionary.Clear();
+            dictionary = null;
             return sb.ToString();
         }
 
         #region Binary R/W Helpers
+        private static void WriteAll(BinaryWriter bw, List<int> compressed, byte size, ushort charLimit)
+        {
+            bw.Write(HEADER_STR);
+            bw.Write(compressed.Count);
+            bw.Write(size);
+            bw.Write(charLimit);
+            WriteValues(bw, size, compressed);
+        }
+
         private static void ReadValue(BinaryReader br, byte size, int[] values)
         {
             switch (size)
@@ -150,13 +196,13 @@ namespace Joonaxii.Text.Compression
                         bw.Write((byte)item);
                     }
                     break;
-                case 1:
+                case 2:
                     foreach (int item in values)
                     {
                         bw.Write((ushort)item);
                     }
                     break;
-                case 2:
+                case 4:
                     foreach (int item in values)
                     {
                         bw.Write(item);
@@ -189,7 +235,7 @@ namespace Joonaxii.Text.Compression
             }
         }
 
-        private static ushort GetHighestChar(string input)
+        private static ushort GetHighestChar(char[] input)
         {
             ushort len = 0;
             for (int i = 0; i < input.Length; i++)
