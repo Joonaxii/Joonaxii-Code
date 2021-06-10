@@ -1,4 +1,4 @@
-# Joonaxii
+# Joonaxii's Collection of C# Stuff
 A collection(WILL BE ONE :D) of different systems, extensions, etc made by me.
 
 Uses .Net Framework 4.7
