@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Joonaxii.Debugging;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -12,21 +13,21 @@ namespace Joonaxii.Text.Compression
     {
         public static readonly byte[] HEADER_STR = Encoding.ASCII.GetBytes("LZW");
 
-        public const int MINI_HEADER_SIZE = 10;
+        public const int HEADER_SIZE = 10;
 
         /// <summary>
         /// Compresses a string using LZW
         /// </summary>
         /// <param name="input">The string to be compressed</param>
         /// <returns>A list of compressed chars/groups</returns>
-        public static List<int> Compress(string input) => Compress(input.ToCharArray(), out byte size, out ushort charLimit, true);
+        public static List<int> Compress(string input, TimeStamper timeStamper = null) => Compress(input.ToCharArray(), out byte size, out ushort charLimit, true, timeStamper);
 
         /// <summary>
         /// Decompresses a list of LZW compressed chars/groups.
         /// </summary>
         /// <param name="compressed">The list of comrpessed chars/groups</param>
         /// <returns>Decompressed string</returns>
-        public static string Decompress(List<int> compressed) => Decompress(compressed, char.MaxValue);
+        public static string Decompress(List<int> compressed, TimeStamper timeStamper = null) => Decompress(compressed, char.MaxValue, timeStamper);
 
         /// <summary>
         /// <para>Compresses and writes a string to BinaryWriter. Also writes a small "mini-header" before the list of chars/groups which contains the amount of compressed chars/groups, byte size of each char/group and the highest valued char</para>
@@ -34,9 +35,9 @@ namespace Joonaxii.Text.Compression
         /// </summary>
         /// <param name="input">The string to be compressed</param>
         /// <param name="bw">The BinaryWriter the bytes are going to be written to</param>
-        public static void Compress(string input, BinaryWriter bw)
+        public static void Compress(string input, BinaryWriter bw, TimeStamper timeStamper = null)
         {
-            var compressed = Compress(input.ToCharArray(), out byte size, out ushort charLimit, false);
+            var compressed = Compress(input.ToCharArray(), out byte size, out ushort charLimit, false, timeStamper);
             WriteAll(bw, compressed, size, charLimit);
             compressed.Clear();
             compressed = null;
@@ -47,7 +48,7 @@ namespace Joonaxii.Text.Compression
         /// </summary>
         /// <param name="bytes">The bytes that are going to be converted into chars</param>
         /// <param name="bw">The BinaryWriter the compressed data gets written to</param>
-        public static void Compress(byte[] bytes, BinaryWriter bw)
+        public static void Compress(byte[] bytes, BinaryWriter bw, TimeStamper timeStamper = null)
         {
             int l = bytes.Length;
             l = l % 2 != 0 ? l + 1 : l;
@@ -55,13 +56,15 @@ namespace Joonaxii.Text.Compression
             char[] chars = new char[l / 2];
 
             int bit = 0;
+            timeStamper?.Start($"LZW (Compress): Converting '{bytes.Length}' bytes to '{chars.Length}' chars");
             for (int i = 0; i < chars.Length; i++)
             {
                 int a = bytes[bit++];
                 int b = (bit <= bytes.Length - 1 ? bytes[bit++] : 0);
                 chars[i] = (char)(a + (b << 8));
             }
-            WriteAll(bw, Compress(chars, out byte size, out ushort charLimit, false), size, charLimit);
+            timeStamper?.Stamp();
+            WriteAll(bw, Compress(chars, out byte size, out ushort charLimit, false, timeStamper), size, charLimit);
         }
 
         /// <summary>
@@ -70,7 +73,7 @@ namespace Joonaxii.Text.Compression
         /// </summary>
         /// <param name="br">The BinaryReader to read from</param>
         /// <returns></returns>
-        public static string Decompress(BinaryReader br)
+        public static string Decompress(BinaryReader br, TimeStamper timeStamper = null)
         {
             byte l = br.ReadByte();
             byte z = br.ReadByte();
@@ -84,10 +87,10 @@ namespace Joonaxii.Text.Compression
 
             int[] compressed = new int[len];
             ReadValue(br, size, compressed);
-            return Decompress(new List<int>(compressed), charLimit);
+            return Decompress(new List<int>(compressed), charLimit, timeStamper);
         }
 
-        private static List<int> Compress(char[] input, out byte size, out ushort charLimit, bool fixedSize)
+        private static List<int> Compress(char[] input, out byte size, out ushort charLimit, bool fixedSize, TimeStamper timeStamper)
         {
             charLimit = fixedSize ? char.MaxValue : GetHighestChar(input);
 
@@ -97,6 +100,7 @@ namespace Joonaxii.Text.Compression
             string temp = string.Empty;
             List<int> compressed = new List<int>();
 
+            timeStamper?.Start("LZW (Compress): Compressing!");
             for (int i = 0; i < input.Length; i++)
             {
                 char c = input[i];
@@ -112,6 +116,7 @@ namespace Joonaxii.Text.Compression
                 dictionary.Add(composite, dictionary.Count);
                 temp = c.ToString();
             }
+            timeStamper?.Stamp();
 
             if (!string.IsNullOrEmpty(temp))
             {
@@ -124,7 +129,7 @@ namespace Joonaxii.Text.Compression
             dictionary = null;
             return compressed;
         }
-        private static string Decompress(List<int> compressed, int initialChars)
+        private static string Decompress(List<int> compressed, int initialChars, TimeStamper timeStamper)
         {
             if (compressed.Count < 1) { return string.Empty; }
 
@@ -135,6 +140,7 @@ namespace Joonaxii.Text.Compression
             compressed.RemoveAt(0);
             StringBuilder sb = new StringBuilder(w);
 
+            timeStamper?.Start("LZW (Decompress): Decompressing!");
             for (int i = 0; i < compressed.Count; i++)
             {
                 string entry = string.Empty;
@@ -146,6 +152,7 @@ namespace Joonaxii.Text.Compression
                 dictionary.Add(dictionary.Count, w + entry[0]);
                 w = entry;
             }
+            timeStamper?.Stamp();
 
             dictionary.Clear();
             dictionary = null;

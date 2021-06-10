@@ -12,6 +12,8 @@ namespace Testing_Grounds
             new LZWTest("LZW Compression/Decompression"),
             new LZWTestBinaryRW("LZW Compression/Decompression Binary R/W"),
 
+            new Bit256Test("Bit256 Testing"),
+
             new QuitItem(),
         };
 

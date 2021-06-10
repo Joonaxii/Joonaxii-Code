@@ -43,6 +43,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Code\Bit256Test.cs" />
     <Compile Include="Code\LZWTest.cs" />
     <Compile Include="Code\LZWTestBinaryRW.cs" />
     <Compile Include="Code\MenuItem.cs" />

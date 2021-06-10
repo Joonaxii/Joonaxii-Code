@@ -1,8 +1,10 @@
-﻿using Joonaxii.IO;
+﻿using Joonaxii.Debugging;
+using Joonaxii.IO;
 using Joonaxii.Text.Compression;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 
 namespace Testing_Grounds
 {
@@ -46,19 +48,19 @@ namespace Testing_Grounds
                 compressable = Console.ReadLine();
             }
 
-            int origSize = compressable.Length * sizeof(char);
+            int origSize = compressable.Length * compressable.GetCharSize();
 
-            Stopwatch sw = new Stopwatch();
             byte[] data = null;
 
             int compressedSize = origSize;
-          
+
+            string elapsed = "";
+
             using (MemoryStream stream = new MemoryStream())
             using (BinaryWriter bw = new BinaryWriter(stream))
+            using (TimeStamper ts = new TimeStamper("TTC (Compression)"))
             {
-                sw.Start();
-                TTC.Compress(compressable, bw);
-                sw.Stop();
+                TTC.Compress(compressable, bw, ts);
 
                 data = stream.ToArray();
                 if (fromFile)
@@ -67,30 +69,59 @@ namespace Testing_Grounds
                     File.WriteAllBytes(pathSave, data);
                     Console.WriteLine($"\nSaved compressed string to '{pathSave}'");
                 }
-
+                else
+                {
+                    bool isTTC;
+                    if ((isTTC = CompressionHelpers.IsTTC(data)) || CompressionHelpers.IsLZW(data))
+                    {
+                        StringBuilder sb = new StringBuilder();
+                        if (isTTC)
+                        {
+                            sb.Append($"Header: [{(char)data[0]},{(char)data[1]},{(char)data[2]}, {data[3]}, {data.ReadInt(4)}, {data.ReadInt(8)}]\n");
+                            sb.Append($"Data: [");
+                            for (int i = TTC.HEADER_SIZE; i < data.Length; i++)
+                            {
+                                sb.Append($"{(i < data.Length - 1 ? $"{data[i]}," : $"{data[i]}")}");
+                            }
+                            sb.Append($"]");
+                        }
+                        else
+                        {
+                            sb.Append($"Header: [{(char)data[0]},{(char)data[1]},{(char)data[2]}, {data.ReadInt(3)}, {data[7]}, {data.ReadUshort(8)}]\n");
+                            sb.Append($"Data: [");
+                            for (int i = LZW.HEADER_SIZE; i < data.Length; i++)
+                            {
+                                sb.Append($"{(i < data.Length - 1 ? $"{data[i]}," : $"{data[i]}")}");
+                            }
+                            sb.Append($"]");
+                        }
+                        Console.WriteLine($"\n{sb.ToString()}");
+                    }
+                }
                 compressedSize = data.Length;
-            }  
-            Console.WriteLine($"Text Compression took: {sw.Elapsed} sec, {sw.ElapsedMilliseconds} ms, {sw.ElapsedTicks} ticks\n");
-          
+                elapsed = ts.ToString();
+            }
+            Console.WriteLine($"{elapsed}\n");
+
             string decompressed = "";
+
             using (MemoryStream stream = new MemoryStream(data))
             using (BinaryReader br = new BinaryReader(stream))
+            using (TimeStamper ts = new TimeStamper("TTC (Decompression)"))
             {
-                sw.Restart();
-                decompressed = TTC.Decompress(br);
-                sw.Stop();
-
+                decompressed = TTC.Decompress(br, ts);
                 if (fromFile)
                 {
                     string pathSave = $"{Path.GetDirectoryName(path)}/{Path.GetFileNameWithoutExtension(path)}_DECOMPRESSED{Path.GetExtension(path)}";
                     File.WriteAllText(pathSave, decompressed);
                     Console.WriteLine($"Saved decompressed string to '{pathSave}'");
                 }
+                elapsed = ts.ToString();
             }
-           
-            Console.WriteLine($"Text Decompression took: {sw.Elapsed} sec, {sw.ElapsedMilliseconds} ms, {sw.ElapsedTicks} ticks");
+
+            Console.WriteLine($"{elapsed}");
             float percent = compressedSize / (float)origSize;
-        
+
             Console.WriteLine($"\nFile Size Results: [{((1.0f - percent) * 100.0f).ToString("F2")}% saved!]");
             Console.WriteLine($"Original Size: [{IOExtensions.GetFileSizeString(origSize)}]");
             Console.WriteLine($"Compressed Size: [{IOExtensions.GetFileSizeString(compressedSize)}]");
@@ -112,6 +143,35 @@ namespace Testing_Grounds
             }
 
             return true;
+        }
+
+        public void TTCCompress()
+        {
+            byte[] data;
+
+            string testString = "This is a test";
+            using (MemoryStream stream = new MemoryStream())
+            using (BinaryWriter bw = new BinaryWriter(stream))
+            {
+                TTC.Compress(testString, bw);
+                data = stream.ToArray();
+            }
+            //Result:
+            //Header: [T,T,C, 1, 4, 4]
+            //Data: [84,79,75,1,0,0,0,0,4,0,0,0,5,0,0,0,84,104,105,115,32,3,0,0,0,105,115,32,2,0,0,0,97,32,4,0,0,0,116,101,115,116,0,1,2,3]
+        }
+
+        public void TTCDecompress()
+        {
+            byte[] data = new byte[] { 84, 84, 67, 1, 4, 4, 84, 79, 75, 1, 0, 0, 0, 0, 4, 0, 0, 0, 5, 0, 0, 0, 84, 104, 105, 115, 32, 3, 0, 0, 0, 105, 115, 32, 2, 0, 0, 0, 97, 32, 4, 0, 0, 0, 116, 101, 115, 116, 0, 1, 2, 3 };
+
+            string testString;
+            using (MemoryStream stream = new MemoryStream(data))
+            using (BinaryReader br = new BinaryReader(stream))
+            {
+                testString = TTC.Decompress(br);
+            }
+            //Result: This is a test
         }
     }
 }

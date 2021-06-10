@@ -1,4 +1,5 @@
-﻿using Joonaxii.Text.Compression;
+﻿using Joonaxii.IO;
+using Joonaxii.Text.Compression;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -68,7 +69,7 @@ namespace Testing_Grounds
                 Console.WriteLine($"\nOriginal String [{compressable.Length} chars]");
                 Console.WriteLine($"Compressed String [{compressed.Count} chars/groups]");
 
-                Console.WriteLine($"\nSize of original string: {compressable.Length * sizeof(char)} bytes");
+                Console.WriteLine($"\nSize of original string: {compressable.Length * compressable.GetCharSize()} bytes");
                 Console.WriteLine($"Size of compressed string: {compressed.Count * sizeof(int)} bytes");
             }
             else
@@ -79,7 +80,7 @@ namespace Testing_Grounds
 
                 Console.WriteLine($"\nDecompressed String [{decompressed}]");
 
-                Console.WriteLine($"\nSize of original string: {compressable.Length * sizeof(char)} bytes");
+                Console.WriteLine($"\nSize of original string: {compressable.Length * compressable.GetCharSize()} bytes");
                 Console.WriteLine($"Size of compressed string: {compressed.Count * sizeof(int)} bytes");
             }
 
@@ -90,6 +91,22 @@ namespace Testing_Grounds
                 if(key == ConsoleKey.Enter) { break; }
             }
             return true;
+        }
+
+        public void CompressLZW()
+        {
+            string testString = "This is a test";
+            List<int> compressed = LZW.Compress(testString);
+
+            //Result: [104, 105, 115, 32, 65538, 32, 97, 32, 116, 101, 115, 116]
+        }
+
+        public void DecompressLZW()
+        {
+            List<int> compressed = new List<int> { 104, 105, 115, 32, 65538, 32, 97, 32, 116, 101, 115, 116 };
+            string decompressed = LZW.Decompress(compressed);
+
+            //Result: This is a test
         }
     }
 }
