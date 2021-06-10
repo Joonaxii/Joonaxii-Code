@@ -143,33 +143,5 @@ namespace Testing_Grounds
             }
             return true;
         }
-
-        public void CompressLZWBinaryWriter()
-        {
-            string testString = "This is a test";
-            byte[] bytes = null;
-
-            using (MemoryStream stream = new MemoryStream())
-            using (BinaryWriter bw = new BinaryWriter(stream))
-            {
-                LZW.Compress(testString, bw);
-                bytes = stream.ToArray();
-            }
-            //Result: 
-            //Header: [L,Z,W, 13, 1, 116]
-            //Data:   [84,104,105,115,32,97,32,116,101,115,116]
-        }
-
-        public void DecompressLZWBinaryReader()
-        {
-            byte[] bytes = new byte[] { 76, 90, 87, 13, 1, 116, 84, 104, 105, 115, 32, 97, 32, 116, 101, 115, 116 };
-
-            using (MemoryStream stream = new MemoryStream(bytes))
-            using (BinaryReader bw = new BinaryReader(stream))
-            {
-                string decompressed = LZW.Decompress(bw);
-            }
-            //Result: This is a test
-        }
     }
 }

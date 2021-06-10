@@ -144,34 +144,5 @@ namespace Testing_Grounds
 
             return true;
         }
-
-        public void TTCCompress()
-        {
-            byte[] data;
-
-            string testString = "This is a test";
-            using (MemoryStream stream = new MemoryStream())
-            using (BinaryWriter bw = new BinaryWriter(stream))
-            {
-                TTC.Compress(testString, bw);
-                data = stream.ToArray();
-            }
-            //Result:
-            //Header: [T,T,C, 1, 4, 4]
-            //Data: [84,79,75,1,0,0,0,0,4,0,0,0,5,0,0,0,84,104,105,115,32,3,0,0,0,105,115,32,2,0,0,0,97,32,4,0,0,0,116,101,115,116,0,1,2,3]
-        }
-
-        public void TTCDecompress()
-        {
-            byte[] data = new byte[] { 84, 84, 67, 1, 4, 4, 84, 79, 75, 1, 0, 0, 0, 0, 4, 0, 0, 0, 5, 0, 0, 0, 84, 104, 105, 115, 32, 3, 0, 0, 0, 105, 115, 32, 2, 0, 0, 0, 97, 32, 4, 0, 0, 0, 116, 101, 115, 116, 0, 1, 2, 3 };
-
-            string testString;
-            using (MemoryStream stream = new MemoryStream(data))
-            using (BinaryReader br = new BinaryReader(stream))
-            {
-                testString = TTC.Decompress(br);
-            }
-            //Result: This is a test
-        }
     }
 }

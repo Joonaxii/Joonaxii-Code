@@ -92,21 +92,5 @@ namespace Testing_Grounds
             }
             return true;
         }
-
-        public void CompressLZW()
-        {
-            string testString = "This is a test";
-            List<int> compressed = LZW.Compress(testString);
-
-            //Result: [104, 105, 115, 32, 65538, 32, 97, 32, 116, 101, 115, 116]
-        }
-
-        public void DecompressLZW()
-        {
-            List<int> compressed = new List<int> { 104, 105, 115, 32, 65538, 32, 97, 32, 116, 101, 115, 116 };
-            string decompressed = LZW.Decompress(compressed);
-
-            //Result: This is a test
-        }
     }
 }
