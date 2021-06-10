@@ -38,6 +38,6 @@ These cases include:
    * **Or if the input string's size is less than 4KB and the LZW would be able to get a smaller file size than TTC, TTC falls back to LZW.**
 
 An example of TTC Compression/Decompression's usage:
-![TTC](https://user-images.githubusercontent.com/22519240/121473802-dab87d80-c9cb-11eb-9656-fe2f2981482e.png)
+![TTC](https://user-images.githubusercontent.com/22519240/121474549-e6587400-c9cc-11eb-9efd-909efa75ea41.png)
 
 
