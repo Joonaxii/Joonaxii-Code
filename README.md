@@ -23,7 +23,8 @@ An example of how to use the LZW Compression/Decompression:
  ![LZW](https://user-images.githubusercontent.com/22519240/121463097-19ddd300-c9ba-11eb-80f7-762a380abc00.png)
 
 An example of how to use the Binary Writer/Reader version of LZW:
- ![LZW BWR](https://user-images.githubusercontent.com/22519240/121467612-0afb1e80-c9c2-11eb-906d-36b544ea0c76.png)
+ ![LZW BWR](https://user-images.githubusercontent.com/22519240/121473571-8d3c1080-c9cb-11eb-989a-81a9fe32d175.png)
+
 
 
 ## TTC Usage
@@ -37,4 +38,6 @@ These cases include:
    * **Or if the input string's size is less than 4KB and the LZW would be able to get a smaller file size than TTC, TTC falls back to LZW.**
 
 An example of TTC Compression/Decompression's usage:
-![TTC](https://user-images.githubusercontent.com/22519240/121468581-b5c00c80-c9c3-11eb-8a5f-c7e919c6dde4.png)
+![TTC](https://user-images.githubusercontent.com/22519240/121473802-dab87d80-c9cb-11eb-9656-fe2f2981482e.png)
+
+
