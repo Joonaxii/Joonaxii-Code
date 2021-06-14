@@ -1,8 +1,9 @@
-﻿using Joonaxii.Debugging;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
 using System.Text;
+using Joonaxii.Debugging;
+using System.Collections.Generic;
+using Joonaxii.MathX;
 
 namespace Joonaxii.Text.Compression
 {
@@ -12,16 +13,36 @@ namespace Joonaxii.Text.Compression
     public static class TTC
     {
         public const int HEADER_SIZE = 12;
-
-        public const int MAX_AVERAGE_CHARS_PER_WORD = 10;
-
         public const int LZW_THRESHOLD = 4096;
+        public const int MAX_AVERAGE_CHARS_PER_WORD = 10;
 
         public const string HEADER_STR = "TTC";
         public static readonly byte[] HEADER_STR_BYTES = Encoding.ASCII.GetBytes(HEADER_STR);
 
         public const string TOKEN_STR = "TOK";
         public static readonly byte[] TOKEN_STR_BYTES = Encoding.ASCII.GetBytes(TOKEN_STR);
+
+        public static void Compress(byte[] data, BinaryWriter bw, TimeStamper stamper = null)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            int l = data.Length;
+            l = l % 2 != 0 ? l + 1 : l;
+
+            char[] chars = new char[l / 2];
+
+            int bit = 0;
+            stamper?.Start($"TTC (Compress): Converting '{data.Length}' bytes to '{chars.Length}' chars");
+            for (int i = 0; i < chars.Length; i++)
+            {
+                int a = data[bit++];
+                int b = (bit <= data.Length - 1 ? data[bit++] : 0);
+                sb.Append((char)(a + (b << 8)));
+            }
+            stamper?.Stamp();
+
+            Compress(sb.ToString(), bw, stamper);
+        }
 
         /// <summary>
         /// <para>Compresses given string with TTC, then writes that data to the given BinaryWriter </para> 
@@ -32,6 +53,8 @@ namespace Joonaxii.Text.Compression
         /// <param name="bw">The BinaryWriter where the compressed data will be written to</param>
         public static void Compress(string input, BinaryWriter bw, TimeStamper timeStamper = null)
         {
+            long startPos = bw.BaseStream.Position;
+            long startLen = bw.BaseStream.Length;
             Dictionary<WordToken, int> tokenLookup = new Dictionary<WordToken, int>(2048);
             List<WordToken> tokenIntLookup = new List<WordToken>(2048);
 
@@ -93,6 +116,14 @@ namespace Joonaxii.Text.Compression
             #endregion
             timeStamper?.Stamp();
 
+            int averageWordL = totalLength / (addedTokens < 1 ? 1 : addedTokens);
+            if (averageWordL > MAX_AVERAGE_CHARS_PER_WORD)
+            {
+                System.Diagnostics.Debug.Print($"Average Token Length is too HIGH! ({averageWordL} // {MAX_AVERAGE_CHARS_PER_WORD}) Falling back to LZW!");
+                LZW.Compress(input, bw, timeStamper);
+                return;
+            }
+
             timeStamper?.Start("TTC (Compress): Token byte size sorting");
             #region Token Byte Size Sorting
 
@@ -110,16 +141,10 @@ namespace Joonaxii.Text.Compression
                 tokenIndices[i] = tempLookup[tokenIndices[i]];
             }
 
+            tempLookup = null;
+
             #endregion
             timeStamper?.Stamp();
-
-            int averageWordL = totalLength / (addedTokens < 1 ? 1 : addedTokens);
-            if (averageWordL > MAX_AVERAGE_CHARS_PER_WORD)
-            {
-                System.Diagnostics.Debug.Print($"Average Token Length is too HIGH! ({averageWordL} // {MAX_AVERAGE_CHARS_PER_WORD}) Falling back to LZW!");
-                LZW.Compress(input, bw, timeStamper);
-                return;
-            }
 
             byte tokenSize = (byte)(tokenIntLookup.Count > byte.MaxValue ? 2 : 1);
 
@@ -223,12 +248,28 @@ namespace Joonaxii.Text.Compression
                 timeStamper?.Merge(tS);
             }
 
-            bw.Flush();
-            bw.BaseStream.SetLength(0);
-            bw.BaseStream.Position = 0;
+            bw.BaseStream.SetLength(startLen);
+            bw.BaseStream.Position = startPos;
 
             bw.Write(dataLZW);
             System.Diagnostics.Debug.Print($"Compressed String w/ LZW {dataLZW.Length} bytes");
+        }
+
+        public static byte[] DecompressAsData(BinaryReader br, TimeStamper timeStamper = null)
+        {
+            char[] dataStr = Decompress(br, timeStamper).ToCharArray();
+            byte[] data = new byte[dataStr.Length * 2];
+
+            timeStamper?.Start($"Converting '{dataStr.Length}' chars to '{data.Length}' bytes");
+            int ii = 0;
+            for (int i = 0; i < dataStr.Length; i++)
+            {
+                char c = dataStr[i];
+                data[ii++] = (byte)c;
+                data[ii++] = (byte)(c >> 8);
+            }
+            timeStamper?.Stamp();
+            return data;
         }
 
         /// <summary>
@@ -286,9 +327,9 @@ namespace Joonaxii.Text.Compression
                 bool isCorrect = true;
                 for (int i = 0; i < 3; i++)
                 {
-                    if (br.ReadByte() != HEADER_STR_BYTES[i]) { isCorrect = false; break; }
+                    if (br.ReadByte() != HEADER_STR_BYTES[i]) { isCorrect = false; br.BaseStream.Position -= (i + 1); break; }
                 }
-                if (!isCorrect) { return string.Empty; }
+                if (!isCorrect) { return br.ReadString(); }
             }
 
             byte tokenPaletteSize = br.ReadByte();

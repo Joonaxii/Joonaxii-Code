@@ -27,10 +27,29 @@ namespace Testing_Grounds
                 }
                 if (key == ConsoleKey.N) { break; }
             }
+            bool asBytes = false;
+
+            if (fromFile)
+            {
+                Console.WriteLine("Do you want to load the text as bytes or just plain ol' text? (Y/N)");
+                while (true)
+                {
+                    ConsoleKey key = Console.ReadKey(true).Key;
+                    if (key == ConsoleKey.Y)
+                    {
+                        asBytes = true;
+                        break;
+                    }
+                    if (key == ConsoleKey.N) { break; }
+                }
+            }
 
         file:
             Console.WriteLine(fromFile ? "Please enter the path to the text file that should be read" : "Please enter a string you'd like to compress");
             string compressable = "";
+            byte[] dataASBytes = null;
+
+            int origSize = 0;
 
             string path = "";
             if (fromFile)
@@ -41,17 +60,24 @@ namespace Testing_Grounds
                     Console.WriteLine($"Path '{path}' is invalid!");
                     goto file;
                 }
-                compressable = File.ReadAllText(path);
+                if (asBytes)
+                {
+                    dataASBytes = File.ReadAllBytes(path);
+                    origSize = dataASBytes.Length;
+                }
+                else
+                {
+                    compressable = File.ReadAllText(path);
+                    origSize = compressable.Length * compressable.GetCharSize();
+                }
             }
             else
             {
                 compressable = Console.ReadLine();
+                origSize = compressable.Length * compressable.GetCharSize();
             }
 
-            int origSize = compressable.Length * compressable.GetCharSize();
-
             byte[] data = null;
-
             int compressedSize = origSize;
 
             string elapsed = "";
@@ -60,7 +86,14 @@ namespace Testing_Grounds
             using (BinaryWriter bw = new BinaryWriter(stream))
             using (TimeStamper ts = new TimeStamper("TTC (Compression)"))
             {
-                TTC.Compress(compressable, bw, ts);
+                if (asBytes)
+                {
+                    TTC.Compress(dataASBytes, bw, ts);
+                }
+                else
+                {
+                    TTC.Compress(compressable, bw, ts);
+                }
 
                 data = stream.ToArray();
                 if (fromFile)
@@ -109,11 +142,27 @@ namespace Testing_Grounds
             using (BinaryReader br = new BinaryReader(stream))
             using (TimeStamper ts = new TimeStamper("TTC (Decompression)"))
             {
-                decompressed = TTC.Decompress(br, ts);
+                if (asBytes)
+                {
+                    dataASBytes = TTC.DecompressAsData(br, ts);
+                }
+                else
+                {
+                    decompressed = TTC.Decompress(br, ts);
+                }
+
                 if (fromFile)
                 {
                     string pathSave = $"{Path.GetDirectoryName(path)}/{Path.GetFileNameWithoutExtension(path)}_DECOMPRESSED{Path.GetExtension(path)}";
-                    File.WriteAllText(pathSave, decompressed);
+
+                    if (asBytes)
+                    {
+                        File.WriteAllBytes(pathSave, dataASBytes);
+                    }
+                    else
+                    {
+                        File.WriteAllText(pathSave, decompressed);
+                    }
                     Console.WriteLine($"Saved decompressed string to '{pathSave}'");
                 }
                 elapsed = ts.ToString();
@@ -133,7 +182,12 @@ namespace Testing_Grounds
             }
 
             data = null;
+            dataASBytes = null;
+            compressable = null;
+            elapsed = null;
+
             GC.Collect();
+            GC.WaitForPendingFinalizers();
 
             Console.WriteLine($"\nPress enter to go back to the menu.");
             while (true)
@@ -141,7 +195,6 @@ namespace Testing_Grounds
                 ConsoleKey key = Console.ReadKey(true).Key;
                 if (key == ConsoleKey.Enter) { break; }
             }
-
             return true;
         }
     }

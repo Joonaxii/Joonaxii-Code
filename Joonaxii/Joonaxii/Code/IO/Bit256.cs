@@ -33,7 +33,7 @@ namespace Joonaxii.IO
             }
         }
 
-        public Bit256(params Range[] bitRanges)
+        public Bit256(params RangeInt[] bitRanges)
         {
             _a = _b = _c = _d = 0;
             for (int i = 0; i < bitRanges.Length; i++)

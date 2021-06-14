@@ -10,13 +10,11 @@ namespace Joonaxii.IO
 
         public static int GetCharSize(this string str)
         {
-            char highest = '\0';
             for (int i = 0; i < str.Length; i++)
             {
-                char c = str[i];
-                highest = highest < c ? c : highest;
+                if(str[i] > byte.MaxValue) { return 2; }
             }
-            return highest > byte.MaxValue ? 2 : 1;
+            return 1;
         }
 
         public static int ReadInt(this byte[] data, int start, bool backwards = false)
