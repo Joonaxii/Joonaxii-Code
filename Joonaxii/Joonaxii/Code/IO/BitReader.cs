@@ -7,17 +7,14 @@ namespace Joonaxii.IO
     public class BitReader : BinaryReader
     {
         public byte BitPosition { get; private set; } = 0;
-        private bool[] _curBits = new bool[8];
+        private byte _bufferBits = 0;
 
-        public BitReader(Stream stream) : base(stream) { }
+        public BitReader(Stream stream) : base(stream) { BitPosition = 8; }
 
         public override bool ReadBoolean()
         {
             FlushIfNeeded();
-
-            bool b = _curBits[BitPosition];
-            BitPosition++;
-            return b;
+            return _bufferBits.IsBitSet(BitPosition++);
         }
 
         public override byte ReadByte()
@@ -27,9 +24,19 @@ namespace Joonaxii.IO
             byte byt = 0;
             for (int i = 0; i < 8; i++)
             {
-                byt += (byte)((ReadBoolean() ? 1 : 0) << i);
+                byt = byt.SetBit(i, ReadBoolean());
             }
             return byt;
+        }
+
+        public byte ReadValue(int bits)
+        {
+            byte val = 0;
+            for (byte i = 0; i < bits; i++)
+            {
+                val = val.SetBit(i, ReadBoolean());
+            }
+            return val;
         }
 
         public override byte[] ReadBytes(int count)
@@ -103,7 +110,7 @@ namespace Joonaxii.IO
         {
             if (BitPosition >= 8)
             {
-                _curBits = new bool[8];
+                _bufferBits = base.ReadByte();
                 BitPosition = 0;
             }
         }

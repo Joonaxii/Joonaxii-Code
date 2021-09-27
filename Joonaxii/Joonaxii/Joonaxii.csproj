@@ -48,7 +48,14 @@
     <Compile Include="Code\IO\IOExtensions.cs" />
     <Compile Include="Code\IO\Range.cs" />
     <Compile Include="Code\Text\Compression\CompressionHelpers.cs" />
+    <Compile Include="Code\Debugging\FileDebugger.cs" />
+    <Compile Include="Code\Text\Compression\Huffman.cs" />
+    <Compile Include="Code\Text\Compression\HuffmanNode.cs" />
+    <Compile Include="Code\Text\Compression\IndexCompressionMode.cs" />
     <Compile Include="Code\Text\Compression\LZW.cs" />
+    <Compile Include="Code\Text\Compression\ObjectPool.cs" />
+    <Compile Include="Code\Text\Compression\PriorityQueue.cs" />
+    <Compile Include="Code\Text\Compression\TTCChunkComparer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Code\Text\Compression\TTC.cs" />
   </ItemGroup>

@@ -16,10 +16,12 @@ namespace Testing_Grounds
         {
             Console.WriteLine("Do you want to load the text from a file? (Y/N)");
             bool fromFile = false;
+            bool compress = false;
+            IndexCompressionMode compMode = IndexCompressionMode.None;
 
             while (true)
             {
-                ConsoleKey key = Console.ReadKey(true).Key;
+                ConsoleKey key = Console.ReadKey(false).Key;
                 if (key == ConsoleKey.Y)
                 {
                     fromFile = true;
@@ -27,14 +29,27 @@ namespace Testing_Grounds
                 }
                 if (key == ConsoleKey.N) { break; }
             }
+
+            Console.WriteLine("\nDo you want to compress and decompress or just decompress? (Y/N)");
+            while (true)
+            {
+                ConsoleKey key = Console.ReadKey(false).Key;
+                if (key == ConsoleKey.Y)
+                {
+                    compress = true;
+                    break;
+                }
+                if (key == ConsoleKey.N) { break; }
+            }
+
             bool asBytes = false;
 
             if (fromFile)
             {
-                Console.WriteLine("Do you want to load the text as bytes or just plain ol' text? (Y/N)");
+                Console.WriteLine("\nDo you want to load the text as bytes or just plain ol' text? (Y/N)");
                 while (true)
                 {
-                    ConsoleKey key = Console.ReadKey(true).Key;
+                    ConsoleKey key = Console.ReadKey(false).Key;
                     if (key == ConsoleKey.Y)
                     {
                         asBytes = true;
@@ -44,12 +59,38 @@ namespace Testing_Grounds
                 }
             }
 
+            if (compress)
+            {
+                Console.WriteLine("\nWhat type of Index compression would you like to use?\n  -None: 0\n  -LZW: 1\n  -Huffman: 2");
+                while (true)
+                {
+                    bool selected = false;
+                    ConsoleKey key = Console.ReadKey(false).Key;
+                    switch (key)
+                    {
+                        case ConsoleKey.D0:
+                            selected = true;
+                            break;
+                        case ConsoleKey.D1:
+                            selected = true;
+                            compMode = IndexCompressionMode.LZW;
+                            break;
+                        case ConsoleKey.D2:
+                            selected = true;
+                            compMode = IndexCompressionMode.Huffman;
+                            break;
+                    }
+                    if (selected) { break; }
+                }
+            }
+
         file:
-            Console.WriteLine(fromFile ? "Please enter the path to the text file that should be read" : "Please enter a string you'd like to compress");
+            Console.WriteLine(fromFile ? "\nPlease enter the path to the text file that should be read" : "Please enter a string you'd like to compress");
             string compressable = "";
             byte[] dataASBytes = null;
 
             int origSize = 0;
+            byte[] data = null;
 
             string path = "";
             if (fromFile)
@@ -60,6 +101,12 @@ namespace Testing_Grounds
                     Console.WriteLine($"Path '{path}' is invalid!");
                     goto file;
                 }
+
+                if (!compress)
+                {
+                    data = File.ReadAllBytes(path);
+                }
+
                 if (asBytes)
                 {
                     dataASBytes = File.ReadAllBytes(path);
@@ -75,73 +122,87 @@ namespace Testing_Grounds
             {
                 compressable = Console.ReadLine();
                 origSize = compressable.Length * compressable.GetCharSize();
+
+                if (!compress)
+                {
+                    data = Encoding.UTF8.GetBytes(compressable);
+                }
             }
 
-            byte[] data = null;
+
             int compressedSize = origSize;
 
             string elapsed = "";
 
-            using (MemoryStream stream = new MemoryStream())
-            using (BinaryWriter bw = new BinaryWriter(stream))
-            using (TimeStamper ts = new TimeStamper("TTC (Compression)"))
+            if (compress)
             {
-                if (asBytes)
+                FileDebugger debug;
+                using (MemoryStream stream = new MemoryStream())
+                using (BinaryWriter bw = new BinaryWriter(stream))
+                using (TimeStamper ts = new TimeStamper("TTC (Compression)"))
                 {
-                    TTC.Compress(dataASBytes, bw, ts);
-                }
-                else
-                {
-                    TTC.Compress(compressable, bw, ts);
-                }
+                    long pos = bw.BaseStream.Position;
+                    debug = new FileDebugger("TTC Compression", stream);
 
-                data = stream.ToArray();
-                if (fromFile)
-                {
-                    string pathSave = $"{Path.GetDirectoryName(path)}/{Path.GetFileNameWithoutExtension(path)}_COMPRESSED.dat";
-                    File.WriteAllBytes(pathSave, data);
-                    Console.WriteLine($"\nSaved compressed string to '{pathSave}'");
-                }
-                else
-                {
-                    bool isTTC;
-                    if ((isTTC = CompressionHelpers.IsTTC(data)) || CompressionHelpers.IsLZW(data))
+                    if (asBytes)
                     {
-                        StringBuilder sb = new StringBuilder();
-                        if (isTTC)
-                        {
-                            sb.Append($"Header: [{(char)data[0]},{(char)data[1]},{(char)data[2]}, {data[3]}, {data.ReadInt(4)}, {data.ReadInt(8)}]\n");
-                            sb.Append($"Data: [");
-                            for (int i = TTC.HEADER_SIZE; i < data.Length; i++)
-                            {
-                                sb.Append($"{(i < data.Length - 1 ? $"{data[i]}," : $"{data[i]}")}");
-                            }
-                            sb.Append($"]");
-                        }
-                        else
-                        {
-                            sb.Append($"Header: [{(char)data[0]},{(char)data[1]},{(char)data[2]}, {data.ReadInt(3)}, {data[7]}, {data.ReadUshort(8)}]\n");
-                            sb.Append($"Data: [");
-                            for (int i = LZW.HEADER_SIZE; i < data.Length; i++)
-                            {
-                                sb.Append($"{(i < data.Length - 1 ? $"{data[i]}," : $"{data[i]}")}");
-                            }
-                            sb.Append($"]");
-                        }
-                        Console.WriteLine($"\n{sb.ToString()}");
+                        TTC.Compress(dataASBytes, bw, compMode, ts);
                     }
-                }
-                compressedSize = data.Length;
-                elapsed = ts.ToString();
-            }
-            Console.WriteLine($"{elapsed}\n");
+                    else
+                    {
+                        TTC.Compress(compressable, bw, compMode, ts, debug);
+                    }
 
+                    data = stream.ToArray();
+                    if (fromFile)
+                    {
+                        string pathSave = $"{Path.GetDirectoryName(path)}/{Path.GetFileNameWithoutExtension(path)}_COMPRESSED.dat";
+                        File.WriteAllBytes(pathSave, data);
+                        Console.WriteLine($"\nSaved compressed string to '{pathSave}'");
+                    }
+                    else
+                    {
+                        bool isTTC;
+                        if ((isTTC = CompressionHelpers.IsTTC(data, pos)) || CompressionHelpers.IsLZW(data, pos))
+                        {
+                            StringBuilder sb = new StringBuilder();
+                            if (isTTC)
+                            {
+                                sb.Append($"Header: [{(char)data[0 + pos]},{(char)data[1 + pos]},{(char)data[2 + pos]}, {data[3 + pos]}, {data.ReadInt(4 + (int)pos)}, {data.ReadInt(8 + (int)pos)}]\n");
+                                sb.Append($"Data: [");
+                                for (long i = TTC.HEADER_SIZE + pos; i < data.Length; i++)
+                                {
+                                    sb.Append($"{(i < data.Length - 1 ? $"{data[i]}," : $"{data[i]}")}");
+                                }
+                                sb.Append($"]");
+                            }
+                            else
+                            {
+                                sb.Append($"Header: [{(char)data[0 + pos]},{(char)data[1 + pos]},{(char)data[2 + pos]}, {data.ReadInt(3 + (int)pos)}, {data[7 + pos]}, {data.ReadUshort(8 + (int)pos)}]\n");
+                                sb.Append($"Data: [");
+                                for (long i = LZW.HEADER_SIZE + pos; i < data.Length; i++)
+                                {
+                                    sb.Append($"{(i < data.Length - 1 ? $"{data[i]}," : $"{data[i]}")}");
+                                }
+                                sb.Append($"]");
+                            }
+                            Console.WriteLine($"\n{sb.ToString()}");
+                        }
+                    }
+                    compressedSize = data.Length;
+                    elapsed = ts.ToString();
+
+                    Console.WriteLine(debug.ToString());
+                }
+                Console.WriteLine($"{elapsed}\n");
+            }
             string decompressed = "";
 
             using (MemoryStream stream = new MemoryStream(data))
             using (BinaryReader br = new BinaryReader(stream))
             using (TimeStamper ts = new TimeStamper("TTC (Decompression)"))
             {
+                //br.ReadString();
                 if (asBytes)
                 {
                     dataASBytes = TTC.DecompressAsData(br, ts);
@@ -173,7 +234,7 @@ namespace Testing_Grounds
 
             Console.WriteLine($"\nFile Size Results: [{((1.0f - percent) * 100.0f).ToString("F2")}% saved!]");
             Console.WriteLine($"Original Size: [{IOExtensions.GetFileSizeString(origSize)}]");
-            Console.WriteLine($"Compressed Size: [{IOExtensions.GetFileSizeString(compressedSize)}]");
+            Console.WriteLine($"Compressed Size: [{IOExtensions.GetFileSizeString(compressedSize)}] with index compression mode '{compMode}'");
 
             if (!fromFile)
             {

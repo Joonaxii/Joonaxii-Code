@@ -15,6 +15,50 @@ namespace Joonaxii.Text.Compression
 
         public const int HEADER_SIZE = 10;
 
+        public static void CompressToStream(List<int> data, byte size, BinaryWriter bw, TimeStamper timeStamper = null, FileDebugger debugger = null)
+        {
+            List<char> dataC = new List<char>();
+            timeStamper?.Start($"LZW (Compress): Data conversion from byte size {size} to chars");
+            switch (size)
+            {
+                case 1:
+                    int ll = data.Count % 2 == 0 ? data.Count : data.Count + 1;
+                    ll /= 2;
+
+                    int dI = 0;
+                    for (int i = 0; i < ll; i++)
+                    {
+                        char c = '\0';
+                        for (int j = 0; j < 2; j++)
+                        {
+                            byte b = (byte)data[dI];
+                            c += (char)(b << 8);
+                            dI++;
+                            if (dI >= data.Count) { break; }
+                        }
+                        dataC.Add(c);
+                    }
+                    break;
+                case 2:
+                    for (int i = 0; i < data.Count; i++)
+                    {
+                        dataC.Add((char)data[i]);
+                    }
+                    break;
+                case 4:
+                    int charC = data.Count * 2;
+                    for (int i = 0; i < data.Count; i++)
+                    {
+                        int val = data[i];
+                        dataC.Add((char)(data[i]));
+                        dataC.Add((char)(data[i] >> 16));
+                    }
+                    break;
+            }
+            timeStamper?.Stamp();
+            WriteAll(bw, Compress(dataC.ToArray(), out size, out ushort charLimit, false, timeStamper), size, charLimit);
+        }
+
         /// <summary>
         /// Compresses a string using LZW
         /// </summary>
@@ -69,17 +113,22 @@ namespace Joonaxii.Text.Compression
 
         /// <summary>
         /// <para>Reads a LZW compressed string from a BinaryReader</para>
-        /// THE COMPRESSED STRING MUST BE ONE THAT HAS THE "MINI-HEADER"!
+        /// THE COMPRESSED STRING MUST BE ONE THAT HAS THE HEADER!
         /// </summary>
         /// <param name="br">The BinaryReader to read from</param>
         /// <returns></returns>
         public static string Decompress(BinaryReader br, TimeStamper timeStamper = null)
         {
+            long start = br.BaseStream.Position;
             byte l = br.ReadByte();
             byte z = br.ReadByte();
             byte w = br.ReadByte();
 
-            if(l != HEADER_STR[0] | z != HEADER_STR[1] | w != HEADER_STR[2]) { return string.Empty; }
+            if(l != HEADER_STR[0] | z != HEADER_STR[1] | w != HEADER_STR[2])
+            {
+                br.BaseStream.Position = start;
+                return br.ReadString();
+            }
 
             int len = br.ReadInt32();
             byte size = br.ReadByte();
@@ -160,13 +209,18 @@ namespace Joonaxii.Text.Compression
         }
 
         #region Binary R/W Helpers
-        private static void WriteAll(BinaryWriter bw, List<int> compressed, byte size, ushort charLimit)
+        private static void WriteAll(BinaryWriter bw, List<int> compressed, byte size, ushort charLimit, FileDebugger debugger = null)
         {
+            debugger?.Start("LZW Header");
             bw.Write(HEADER_STR);
             bw.Write(compressed.Count);
             bw.Write(size);
             bw.Write(charLimit);
+            debugger?.Stamp();
+
+            debugger?.Start("LZW Data");
             WriteValues(bw, size, compressed);
+            debugger?.Stamp();
         }
 
         private static void ReadValue(BinaryReader br, byte size, int[] values)

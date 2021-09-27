@@ -6,7 +6,7 @@ namespace Joonaxii.IO
     public class BitWriter : BinaryWriter
     {
         public byte BitPosition { get; private set; } = 0;
-        private bool[] _curBits = new bool[8]; 
+        private byte _bufferBits = 0; 
 
         public BitWriter() : base() { }
         public BitWriter(Stream stream) : base(stream) { }
@@ -25,9 +25,9 @@ namespace Joonaxii.IO
             }
         }
 
-        public override void Write(byte value)
+        public void Write(int value, int bits)
         {
-            for (byte i = 0; i < 8; i++)
+            for (int i = 0; i < bits; i++)
             {
                 Write(value.IsBitSet(i));
             }
@@ -35,10 +35,8 @@ namespace Joonaxii.IO
 
         public override void Write(bool value)
         {
-            _curBits[BitPosition] = value;
-            BitPosition++;
-
-            if(BitPosition >= 8)
+            _bufferBits = _bufferBits.SetBit(BitPosition++, value);
+            if (BitPosition >= 8)
             {
                 FlushBits();
             }
@@ -53,16 +51,19 @@ namespace Joonaxii.IO
         }
 
         public override void Write(float value) => Write(BitConverter.GetBytes(value));
+        public override void Write(double value) => Write(BitConverter.GetBytes(value));
+
         public override void Write(ulong value) => Write(BitConverter.GetBytes(value));
         public override void Write(long value) => Write(BitConverter.GetBytes(value));
-        public override void Write(uint value) => Write(BitConverter.GetBytes(value));
-        public override void Write(int value) => Write(BitConverter.GetBytes(value));
-        public override void Write(ushort value) => Write(BitConverter.GetBytes(value));
-        public override void Write(short value) => Write(BitConverter.GetBytes(value));
-        public override void Write(double value) => Write(BitConverter.GetBytes(value));
+
+        public override void Write(uint value) => Write((int)value, 32);
+        public override void Write(int value) => Write(value, 32);
+        public override void Write(ushort value) => Write(value, 16);
+        public override void Write(short value) => Write(value, 16);
         public override void Write(char[] value) => Write(value, 0, value.Length);
-        public override void Write(char value) => Write(BitConverter.GetBytes(value));
+        public override void Write(char value) => Write(value, 16);
         public override void Write(byte[] buffer) => Write(buffer, 0, buffer.Length);
+        public override void Write(byte value) => Write(value, 8);
 
         public override void Write(string value)
         {
@@ -82,22 +83,12 @@ namespace Joonaxii.IO
             } 
         }
 
-        public byte ToByte()
-        {
-            byte byt = 0;
-            for (int i = 0; i < 8; i++)
-            {
-                byt += (byte)((_curBits[i] ? 1 : 0) << i);
-            }
-            return byt;
-        }
-
         private void FlushBits()
         {
             if(BitPosition == 0) { return; }
-            base.Write(ToByte());
+            base.Write(_bufferBits);
             BitPosition = 0;
-            _curBits = new bool[8];
+            _bufferBits = 0;
         }
     }
 }

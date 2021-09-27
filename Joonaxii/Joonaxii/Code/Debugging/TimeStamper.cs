@@ -80,7 +80,7 @@ namespace Joonaxii.Debugging
                 totTicks += _timeStamps[i].ticks;
             }
             sb.AppendLine(new string('=', 64));
-            sb.AppendLine($"Total Time Elapsed: {totS} secods, {totMS} ms, {totTicks} ticks");
+            sb.AppendLine($"Total Time Elapsed: {totS} seconds, {totMS} ms, {totTicks} ticks");
             return sb.ToString();
         }
 

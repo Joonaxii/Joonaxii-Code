@@ -1,4 +1,9 @@
-﻿using System;
+﻿using Joonaxii.Debugging;
+using Joonaxii.IO;
+using Joonaxii.Text.Compression;
+using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace Testing_Grounds
@@ -21,6 +26,55 @@ namespace Testing_Grounds
 
         public static void Main(string[] args)
         {
+
+            FileDebugger debug;
+            string testThing = "This is a test string! ";
+
+            int originalSize = testThing.Length;
+            int compressedSize = 0;
+
+            int max = 0;
+            List<int> codes = new List<int>();
+            for (int i = 0; i < testThing.Length; i++)
+            {
+                var a = testThing[i];
+                codes.Add(a);
+                max = max < a ? a : max;
+            }
+
+            byte[] test = new byte[0];
+            using(MemoryStream streamIn = new MemoryStream())
+            using(BinaryWriter bw = new BinaryWriter(streamIn))
+            {
+                debug = new FileDebugger("Huffman Test", streamIn);
+                Huffman.CompressToStream(codes, (byte)IOExtensions.BitsNeeded(max), bw, null, debug);
+                test = streamIn.ToArray();
+                compressedSize = test.Length;
+
+                File.WriteAllBytes("Test Stuff.dat", test);
+            }
+            Console.WriteLine($"Compressed Huffman [{testThing}]");
+
+            Console.WriteLine($" -Original size: {originalSize} bytes");
+            Console.WriteLine($" -Compressed size: {compressedSize} bytes");
+            Console.WriteLine($"\n{debug.ToString()}");
+
+            codes.Clear();
+            using (MemoryStream streamOut = new MemoryStream(test))
+            using (BinaryReader br = new BinaryReader(streamOut))
+            {
+                Huffman.DecompressFromStream(codes, br);
+            }
+            testThing = "";
+            for (int i = 0; i < codes.Count; i++)
+            {
+                testThing += (char)codes[i];
+            }
+
+            Console.WriteLine($"Decompressed Huffman [{testThing}]");
+
+            Console.ReadKey();
+
             Console.InputEncoding = Encoding.UTF8;
             Console.OutputEncoding = Encoding.UTF8;
 

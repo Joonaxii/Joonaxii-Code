@@ -1,6 +1,7 @@
 ﻿using Joonaxii.MathX;
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace Joonaxii.IO
 {
@@ -16,6 +17,17 @@ namespace Joonaxii.IO
             }
             return 1;
         }
+
+        public static int NextPowerOf(int value, int power)
+        {
+            while(value % power != 0)
+            {
+                value++;
+            }
+            return value;
+        }
+
+        public static int BitsNeeded(int value) => (int)(Math.Log(value) / Math.Log(2)) + 1;
 
         public static int ReadInt(this byte[] data, int start, bool backwards = false)
         {
@@ -57,6 +69,17 @@ namespace Joonaxii.IO
             return val;
         }
 
+        public static string GetAsHex(this string str, string separator = "")
+        {
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < str.Length; i++)
+            {
+                char chr = str[i];
+                sb.Append($"{Convert.ToString(chr, 16)}{separator}");
+            }
+            return sb.ToString();
+        }
+
         public static bool IsBitSet(this ulong val, int bit) => (val & (1ul << bit)) != 0;
         public static ulong SetBit(this ulong input, int bitIndex, bool value)
         {
@@ -78,6 +101,13 @@ namespace Joonaxii.IO
             return input &= ~(1ul << bitIndex);
         }
 
+        public static bool IsBitSet(this ushort val, byte bit) => (val & (1 << bit)) != 0;
+        public static ushort SetBit(this ushort input, byte bitIndex, bool value)
+        {
+            if (value) { return input |= (ushort)(1 << bitIndex); }
+            return input &= (ushort)~(1 << bitIndex);
+        }
+
         public static bool IsBitSet(this int val, int bit) => (val & (1 << bit)) != 0;
         public static int SetBit(this int input, int bitIndex, bool value)
         {
@@ -94,6 +124,7 @@ namespace Joonaxii.IO
 
         public static string GetFileSizeString(long bytes, int decimalPlaces = 1)
         {
+            if(bytes == 0) { return $"{bytes} bytes"; }
             decimalPlaces = decimalPlaces < 0 ? 0 : decimalPlaces;
             bool isNegative = bytes < 0;
 
