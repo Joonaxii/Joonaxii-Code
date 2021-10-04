@@ -59,7 +59,7 @@ namespace Testing_Grounds
             if (!File.Exists(fileA)) { goto start; }
 
             Console.Clear();
-            Console.WriteLine($"Enter the number of least signifigant bits to use");
+            Console.WriteLine($"Enter the number of least significant bits to use");
 
         bits:
             byte leastSigBits = 0;
