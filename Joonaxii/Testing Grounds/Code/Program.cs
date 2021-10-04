@@ -13,6 +13,7 @@ namespace Testing_Grounds
         private static MenuItem[] _menu = new MenuItem[]
         {
             new TTCCompressTest("TTC Compression/Decompression"),
+            new SteganographyTest("Steganography Testing"),
 
             new LZWTest("LZW Compression/Decompression"),
             new LZWTestBinaryRW("LZW Compression/Decompression Binary R/W"),

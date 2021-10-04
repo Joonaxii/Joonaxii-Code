@@ -29,12 +29,54 @@ namespace Joonaxii.IO
             return byt;
         }
 
+        public byte ReadByte(int bitsPerByte, int bitJump = 1, bool debug = false)
+        {
+            FlushIfNeeded();
+
+            byte byt = 0;
+            byte bytI = 0;
+            while (bytI < 8)
+            {
+                for (int i = 0; i < bitsPerByte; i++)
+                {
+                    byt = byt.SetBit(bytI++, ReadBoolean());
+                    if(bytI >= 8) { break; }
+                }
+
+                for (int i = 0; i < bitJump; i++)
+                {
+                    BitPosition = 8;
+                    FlushIfNeeded();
+                    BitPosition = 8;
+                }
+            }
+
+            if (debug)
+            {
+                System.Diagnostics.Debug.Print($"{_bufferBits} [{Convert.ToString(_bufferBits, 2).PadLeft(8, '0')}]");
+            }
+            return byt;
+        }
+
         public int ReadValue(int bits)
         {
             int val = 0;
             for (int i = 0; i < bits; i++)
             {
                 val = val.SetBit(i, ReadBoolean());
+            }
+            return val;
+        }
+
+        public ulong ReadValue(byte leastBits, int bytes, int bitJump = 1, bool debug = false)
+        {
+            FlushIfNeeded();
+
+            ulong val = 0;
+
+            for (int i = 0; i < bytes; i++)
+            {
+                val += ((ulong)ReadByte(leastBits, bitJump) << i * 8);
             }
             return val;
         }
@@ -53,9 +95,9 @@ namespace Joonaxii.IO
         {
             for (int i = index; i < index + count; i++)
             {
-                if(i >= buffer.Length) { return buffer.Length; }
+                if (i >= buffer.Length) { return buffer.Length; }
                 buffer[i] = ReadByte();
-            }       
+            }
             return count;
         }
 
@@ -89,7 +131,9 @@ namespace Joonaxii.IO
         public override double ReadDouble() => BitConverter.ToDouble(ReadBytes(8), 0);
         public override short ReadInt16() => (short)ReadValue(16);
         public override int ReadInt32() => ReadValue(32);
+        public int ReadInt32(byte bits, int bitJump = 1) => (int)ReadValue(bits, 4, bitJump);
         public override long ReadInt64() => BitConverter.ToInt64(ReadBytes(8), 0);
+        public ulong ReadUInt64(byte bits, int bitJump = 1) => ReadValue(bits, 8, bitJump);
         public override sbyte ReadSByte() => (sbyte)ReadByte();
         public override float ReadSingle() => BitConverter.ToSingle(ReadBytes(4), 0);
         public override string ReadString()
@@ -103,6 +147,7 @@ namespace Joonaxii.IO
             return sb.ToString();
         }
         public override ushort ReadUInt16() => (ushort)ReadValue(16);
+        public ushort ReadUInt16(byte bits, int bitJump = 1) => (ushort)ReadValue(bits, 2, bitJump);
         public override uint ReadUInt32() => (uint)ReadValue(32);
         public override ulong ReadUInt64() => BitConverter.ToUInt64(ReadBytes(8), 0);
 

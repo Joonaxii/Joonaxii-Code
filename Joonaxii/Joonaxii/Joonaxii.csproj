@@ -33,6 +33,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -47,6 +48,7 @@
     <Compile Include="Code\IO\BitWriter.cs" />
     <Compile Include="Code\IO\IOExtensions.cs" />
     <Compile Include="Code\IO\Range.cs" />
+    <Compile Include="Code\Stegaography\Steganography.cs" />
     <Compile Include="Code\Text\Compression\CompressionHelpers.cs" />
     <Compile Include="Code\Debugging\FileDebugger.cs" />
     <Compile Include="Code\Text\Compression\Huffman.cs" />
