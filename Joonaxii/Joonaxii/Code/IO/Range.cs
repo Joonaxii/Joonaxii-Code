@@ -23,6 +23,7 @@
         }
 
         public static implicit operator RangeInt(int i) => new RangeInt(i);
+        public override string ToString() => $"Start: {start}, End: {end}";
     }
 
     public struct RangeUShort

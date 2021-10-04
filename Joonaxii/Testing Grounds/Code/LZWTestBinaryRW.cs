@@ -75,7 +75,7 @@ namespace Testing_Grounds
             using (MemoryStream stream = new MemoryStream(bytes))
             using (BinaryReader br = new BinaryReader(stream))
             {
-                decompressed = LZW.Decompress(br);
+                decompressed = new string(LZW.Decompress(br));
 
                 br.BaseStream.Position = 0;
 

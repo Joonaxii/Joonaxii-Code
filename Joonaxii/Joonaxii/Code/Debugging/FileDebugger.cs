@@ -89,13 +89,15 @@ namespace Joonaxii.Debugging
                 if(segments.Count < 1) { return isChild ? $"{name}: {IOExtensions.GetFileSizeString((endPos - startPos))}" : $"├{name}: {IOExtensions.GetFileSizeString((endPos - startPos))}"; }
 
                 StringBuilder sb = new StringBuilder();
-                sb.AppendLine($"├{name}: {IOExtensions.GetFileSizeString((endPos - startPos))}");
+                sb.AppendLine($"├┬{name}: {IOExtensions.GetFileSizeString((endPos - startPos))}");
                 for (int i = 0; i < segments.Count; i++)
                 {
                     bool isLast = i >= segments.Count - 1;
 
                     sb.AppendLine($"│{(isLast ? "└" : "├")}─{segments[i].ToString(true)}");
                 }
+
+                sb.Append($"├─────────────────────────────");
                 return sb.ToString();
             }
         }

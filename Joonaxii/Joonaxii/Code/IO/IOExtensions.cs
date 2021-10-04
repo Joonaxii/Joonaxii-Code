@@ -27,6 +27,16 @@ namespace Joonaxii.IO
             return value;
         }
 
+
+        public static long NextPowerOf(long value, int power)
+        {
+            while(value % power != 0)
+            {
+                value++;
+            }
+            return value;
+        }
+
         public static int BitsNeeded(int value) => (int)(Math.Log(value) / Math.Log(2)) + 1;
 
         public static int ReadInt(this byte[] data, int start, bool backwards = false)

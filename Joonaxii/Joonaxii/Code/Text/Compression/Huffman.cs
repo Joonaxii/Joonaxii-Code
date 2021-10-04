@@ -31,102 +31,6 @@ namespace Joonaxii.Text.Compression
             root.GetLeaves(leafList);
             root.GetBranches(branchList);
 
-            //INEFFICIENT VERSION
-            {
-
-                /*
-                //HEADER WRITING
-                //============================================================================Huffman Binary Tree Header===========================================================================================
-                //=================================================================================================================================================================================================
-                //               HEADER STRING              |                 BIT COUNT               |  VAL SIZE |              BRANCH COUNT               |                LEAF COUNT               | CONN SIZE
-                //[ 0100-1000 0101-0101 0100-0110 0100-0110 | 0000-0000 0000-0000 0000-0000 1111-1111 | 0000-0010 | 0000-0000 0000-0000 0000-0000 0000-1010 | 0000-0000 0000-0000 0000-0000 0000-1100 | 0000-0010 ]
-                //------H---------U---------F---------F-----|-------------------255-------------------|-----2-----|-------------------010-------------------|-------------------012-------------------|-----2------
-                //=================================================================================================================================================================================================
-
-                bw.Write(Encoding.ASCII.GetBytes(HEADER_STR)); //Header String 'HUFF'
-                bw.Write(size);                                //Leaf node value byte size
-                bw.Write(bits.Count);                          //Bit count
-
-                bw.Write(branches);                            //Branch count
-                bw.Write(leaves);                              //Leaf count
-
-                bw.Write(connSize);                            //Connection byte size
-
-                //DATA WRITING
-
-                Action<int> writeValueIndex;
-                Action<int> writeValue;
-                switch (connSize)
-                {
-                    default:
-                        writeValueIndex = (int val) => { bw.Write((byte)val); };
-                        break;
-                    case 2:
-                        writeValueIndex = (int val) => { bw.Write((ushort)val); };
-                        break;
-                    case 4:
-                        writeValueIndex = (int val) => { bw.Write(val); };
-                        break;
-                }
-                switch (size)
-                {
-                    default:
-                        writeValue = (int val) => { bw.Write((byte)val); };
-                        break;
-                    case 2:
-                        writeValue = (int val) => { bw.Write((ushort)val); };
-                        break;
-                    case 4:
-                        writeValue = (int val) => { bw.Write(val); };
-                        break;
-                }
-
-                stamper?.Start($"Huffman Encoding: Writing '{branches - 1}' branches");
-
-                // int it = 0;
-
-                branchList.Sort(HUFFMAN_INDEX_COMPARER);
-
-                //List<HuffmanIndexPair> ordered = new List<HuffmanIndexPair>();
-                //foreach (var item in branchToIndex)
-                //{
-                //    if (it == 0) { it++; continue; }
-                //    int ind = item.Value.Item2;
-
-                //    ordered.Add(new HuffmanIndexPair(ind, item.Value.Item1, item.Key));        
-                //}
-                //ordered.Sort();
-
-                long posA = bw.BaseStream.Position;
-                //Branches
-                for (int i = 1; i < branchList.Count; i++)
-                {
-                    var nod = branchList[i];
-                    int ind = nod.parent.index;
-                    bw.Write(nod.IsNode1);
-                    writeValueIndex.Invoke(ind);
-                }
-                stamper?.Stamp();
-
-                stamper?.Start($"Huffman Encoding: Writing '{leaves}' leaves");
-                //Leaves
-                for (int i = 0; i < leaves; i++)
-                {
-                    int id = leafList[i].parent.index;
-                    int val = leafList[i].value;
-
-                    bw.Write(leafList[i].IsNode1);
-                    writeValueIndex.Invoke(id);
-                    writeValue.Invoke(val);
-                }
-
-                long posB = bw.BaseStream.Position;
-                diff = posB - posA;
-                stamper?.Stamp();
-               */
-            }
-
-            //Tracing Method
             {
                 HuffmanNodeTrace[] leafData = new HuffmanNodeTrace[leaves];
                 int maxSteps = 0;
@@ -147,7 +51,6 @@ namespace Joonaxii.Text.Compression
                 //=======================================================================================================================================================
 
                 debugger?.Start("Huffman Header");
-
                 bw.Write(Encoding.ASCII.GetBytes(HEADER_STR)); //Header String 'HUFF'
                 bw.Write(bits.Count);                          //Bit count
 
@@ -155,7 +58,7 @@ namespace Joonaxii.Text.Compression
                 bw.Write(traceSize);                           //Trace bit size
 
                 bw.Write(leafData.Length);                     //Leaf traces
-
+                System.Diagnostics.Debug.Print($"Huffman Header (COMPRESS): {bits.Count}, {size}, {traceSize}, {leafData.Length}");
                 debugger?.Stamp();
           
                 using (MemoryStream streamIn = new MemoryStream())
@@ -177,9 +80,11 @@ namespace Joonaxii.Text.Compression
             stamper?.Start($"Huffman Encoding: Writing '{bits.Count}' bits or '{IOExtensions.NextPowerOf(bits.Count, 8) / 8}' bytes tree is '{diff}' bytes");
             debugger?.Start("Huffman Binary");
             int byteIndex = 0;
+
             for (int i = 0; i < bits.Count; i++)
             {
-                buffer = buffer.SetBit(byteIndex, bits[i]);
+                bool bit = bits[i];
+                buffer = buffer.SetBit(byteIndex, bit);
 
                 byteIndex++;
                 if (byteIndex >= 8)
@@ -190,6 +95,7 @@ namespace Joonaxii.Text.Compression
                 }
             }
             if (byteIndex > 0) { bw.Write(buffer); }
+
             stamper?.Stamp();
             debugger?.Stamp();
         }
@@ -208,63 +114,6 @@ namespace Joonaxii.Text.Compression
             int bitCount = 0;
             int leaves = 0;
 
-            //INEFFICIENT
-            {
-                // valSize = br.ReadByte();
-                // bitCount = br.ReadInt32();
-                //int branches = br.ReadInt32();
-                //leaves = br.ReadInt32();
-                //byte connSize = br.ReadByte();
-
-                //Func<int> readBranch;
-                //Func<int> readLeaf;
-                //switch (connSize)
-                //{
-                //    default:
-                //        readBranch = () => { return br.ReadByte(); };
-                //        break;
-                //    case 2:
-                //        readBranch = () => { return br.ReadUInt16(); };
-                //        break;
-                //    case 4:
-                //        readBranch = () => { return br.ReadInt32(); };
-                //        break;
-                //}
-
-                //switch (valSize)
-                //{
-                //    default:
-                //        readLeaf = () => { return br.ReadByte(); };
-                //        break;
-                //    case 2:
-                //        readLeaf = () => { return br.ReadUInt16(); };
-                //        break;
-                //    case 4:
-                //        readLeaf = () => { return br.ReadInt32(); };
-                //        break;
-                //}
-
-                //(int, bool)[] branchDir = new (int, bool)[branches - 1];
-                //for (int i = 0; i < branchDir.Length; i++)
-                //{
-                //    bool l1 = br.ReadBoolean();
-                //    int val = readBranch.Invoke();
-                //    branchDir[i] = (val, l1);
-                //}
-
-                //(int, int, bool)[] leafDef = new (int, int, bool)[leaves];
-                //for (int i = 0; i < leaves; i++)
-                //{
-                //    bool l1 = br.ReadBoolean();
-                //    int ind = readBranch.Invoke();
-                //    int val = readLeaf.Invoke();
-
-                //    leafDef[i] = (val, ind, l1);
-                //}
-                //root = new HuffmanNode(branchDir, leafDef);
-            }
-
-            //Tracing Method
             {
 
                 //HEADER
@@ -281,7 +130,7 @@ namespace Joonaxii.Text.Compression
                 leaves = br.ReadInt32();
 
                 HuffmanNodeTrace[] leafData = new HuffmanNodeTrace[leaves];
-
+                System.Diagnostics.Debug.Print($"Huffman Header: {bitCount}, {valSize}, {traceSize}, {leaves}");
                 long posStart = br.BaseStream.Position;
         
                 using (MemoryStream streamIn = new MemoryStream((br.BaseStream as MemoryStream).ToArray()))
@@ -294,7 +143,7 @@ namespace Joonaxii.Text.Compression
                     }
                     posStart = streamIn.Position;
                 }
-
+                
                 br.BaseStream.Seek(posStart, SeekOrigin.Begin);
                 root = new HuffmanNode(leafData);
             }
@@ -314,7 +163,6 @@ namespace Joonaxii.Text.Compression
                 }
                 if (bitsTotal >= bitCount) { break; }
             }
-
             Huffman.Decompress(codes, bits, root);
         }
 
@@ -404,7 +252,6 @@ namespace Joonaxii.Text.Compression
             private bool _compareIndices;
 
             public HuffmanComparer(bool indexComparer) => _compareIndices = indexComparer;
-
             public int Compare(HuffmanNode x, HuffmanNode y) => _compareIndices ? x.index.CompareTo(y.index) : y.CompareTo(x);
         }
 

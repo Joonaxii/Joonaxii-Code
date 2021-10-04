@@ -264,7 +264,7 @@ namespace Joonaxii.Text.Compression
             else
             {
                 bitsT.Add(false);
-                System.Diagnostics.Debug.Print($"L: ({(node0.value).ToString().PadRight(3, ' ')}, {((char)node0.value).ToString().PadRight(3, ' ')}) ==> {BitsToString(bitsT)}");
+                System.Diagnostics.Debug.Print($"L: ({(node0.value).ToString().PadRight(3, ' ')}) ==> {BitsToString(bitsT)}");
             }
 
             bitsT = root ? new List<bool>() : new List<bool>(bits);
@@ -276,7 +276,7 @@ namespace Joonaxii.Text.Compression
             else
             {
                 bitsT.Add(true);
-                System.Diagnostics.Debug.Print($"R: ({(node1.value).ToString().PadRight(3, ' ')}, {((char)node1.value).ToString().PadRight(3, ' ')}) ==> {BitsToString(bitsT)}");
+                System.Diagnostics.Debug.Print($"R: ({(node1.value).ToString().PadRight(3, ' ')}) ==> {BitsToString(bitsT)}");
             }
         }
 

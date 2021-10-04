@@ -1,4 +1,5 @@
 ﻿using Joonaxii.Debugging;
+using Joonaxii.IO;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -22,23 +23,6 @@ namespace Joonaxii.Text.Compression
             switch (size)
             {
                 case 1:
-                    int ll = data.Count % 2 == 0 ? data.Count : data.Count + 1;
-                    ll /= 2;
-
-                    int dI = 0;
-                    for (int i = 0; i < ll; i++)
-                    {
-                        char c = '\0';
-                        for (int j = 0; j < 2; j++)
-                        {
-                            byte b = (byte)data[dI];
-                            c += (char)(b << 8);
-                            dI++;
-                            if (dI >= data.Count) { break; }
-                        }
-                        dataC.Add(c);
-                    }
-                    break;
                 case 2:
                     for (int i = 0; i < data.Count; i++)
                     {
@@ -56,7 +40,7 @@ namespace Joonaxii.Text.Compression
                     break;
             }
             timeStamper?.Stamp();
-            WriteAll(bw, Compress(dataC.ToArray(), out size, out ushort charLimit, false, timeStamper), size, charLimit);
+            WriteAll(bw, Compress(dataC.ToArray(), out size, out ushort charLimit, false, timeStamper), size, charLimit, debugger);
         }
 
         /// <summary>
@@ -71,7 +55,7 @@ namespace Joonaxii.Text.Compression
         /// </summary>
         /// <param name="compressed">The list of comrpessed chars/groups</param>
         /// <returns>Decompressed string</returns>
-        public static string Decompress(List<int> compressed, TimeStamper timeStamper = null) => Decompress(compressed, char.MaxValue, timeStamper);
+        public static string Decompress(List<int> compressed, TimeStamper timeStamper = null) => new string(Decompress(compressed, char.MaxValue, timeStamper));
 
         /// <summary>
         /// <para>Compresses and writes a string to BinaryWriter. Also writes a small "mini-header" before the list of chars/groups which contains the amount of compressed chars/groups, byte size of each char/group and the highest valued char</para>
@@ -117,26 +101,28 @@ namespace Joonaxii.Text.Compression
         /// </summary>
         /// <param name="br">The BinaryReader to read from</param>
         /// <returns></returns>
-        public static string Decompress(BinaryReader br, TimeStamper timeStamper = null)
+        public static char[] Decompress(BinaryReader br, TimeStamper timeStamper = null)
         {
             long start = br.BaseStream.Position;
             byte l = br.ReadByte();
             byte z = br.ReadByte();
             byte w = br.ReadByte();
 
-            if(l != HEADER_STR[0] | z != HEADER_STR[1] | w != HEADER_STR[2])
+            if (l != HEADER_STR[0] | z != HEADER_STR[1] | w != HEADER_STR[2])
             {
                 br.BaseStream.Position = start;
-                return br.ReadString();
+                return br.ReadString().ToCharArray();
             }
 
             int len = br.ReadInt32();
             byte size = br.ReadByte();
             ushort charLimit = br.ReadUInt16();
 
-            int[] compressed = new int[len];
+            timeStamper?.Start($"LZW Decompression: Read Data");
+            List<int> compressed = new List<int>(len);
             ReadValue(br, size, compressed);
-            return Decompress(new List<int>(compressed), charLimit, timeStamper);
+            timeStamper?.Stamp();
+            return Decompress(compressed, charLimit, timeStamper);
         }
 
         private static List<int> Compress(char[] input, out byte size, out ushort charLimit, bool fixedSize, TimeStamper timeStamper)
@@ -172,15 +158,15 @@ namespace Joonaxii.Text.Compression
                 compressed.Add(dictionary[temp]);
             }
 
-            size = GetSize((Math.Max(charLimit, dictionary.Count - 1)));
+            size = (byte)IOExtensions.BitsNeeded(dictionary.Count);
 
             dictionary.Clear();
             dictionary = null;
             return compressed;
         }
-        private static string Decompress(List<int> compressed, int initialChars, TimeStamper timeStamper)
+        private static char[] Decompress(List<int> compressed, int initialChars, TimeStamper timeStamper)
         {
-            if (compressed.Count < 1) { return string.Empty; }
+            if (compressed.Count < 1) { return new char[0]; }
 
             Dictionary<int, string> dictionary = new Dictionary<int, string>();
             InitializeLookup(dictionary, initialChars + 1);
@@ -205,7 +191,9 @@ namespace Joonaxii.Text.Compression
 
             dictionary.Clear();
             dictionary = null;
-            return sb.ToString();
+            char[] chars = new char[sb.Length];
+            sb.CopyTo(0, chars, 0, sb.Length);
+            return chars;
         }
 
         #region Binary R/W Helpers
@@ -221,54 +209,161 @@ namespace Joonaxii.Text.Compression
             debugger?.Start("LZW Data");
             WriteValues(bw, size, compressed);
             debugger?.Stamp();
+
+            int CHUNK_SIZE = 8;
+
+            List<LZWChunk> chunks = new List<LZWChunk>();
+            LZWChunk cur = new LZWChunk();
+
+            long total = 0;
+            int start = 0;
+            for (int i = 0; i < compressed.Count; i++)
+            {
+                cur.indices.Add(compressed[i]);
+                total += cur.indices.Count * size;
+
+                if (cur.indices.Count >= CHUNK_SIZE)
+                {
+                    cur.CalcualteRange(start, i + 1);
+                    System.Diagnostics.Debug.Print($"Chunk #{chunks.Count + 1} is {cur.ToString()}");
+                    chunks.Add(cur);
+                    cur = new LZWChunk();
+                    start = i + 1;
+                }
+            }
+
+            if (cur.indices.Count > 0)
+            {
+                cur.CalcualteRange(start, compressed.Count);
+                System.Diagnostics.Debug.Print($"Chunk #{chunks.Count + 1} is {cur.ToString()}");
+                chunks.Add(cur);
+            }
+            System.Diagnostics.Debug.Print($"Raw chunk indices with a global size of {size} would takeup {IOExtensions.NextPowerOf(total, 8) / 8L} bytes");
+
+            List<LZWChunk> merged = new List<LZWChunk>();
+
+            int curBitSize = chunks[0].bitSize;
+            start = 0;
+            for (int i = 1; i < chunks.Count; i++)
+            {
+                var cu = chunks[i];
+                if (cur.bitSize != curBitSize || i >= chunks.Count - 1)
+                {
+                    int min = int.MaxValue;
+                    int max = 0;
+                    int jumpTo = i;
+                    LZWChunk dummyChnk = new LZWChunk();
+                    for (int j = start; j < i; j++)
+                    {
+                        var ca = chunks[j];
+                        min = ca.min < min ? ca.min : min;
+                        max = ca.max > max ? ca.max : max;
+
+                        int actMax = IOExtensions.BitsNeeded(max - min);
+                        if (actMax > curBitSize)
+                        {
+                            jumpTo = j;
+                            break;
+                        }
+                        dummyChnk.indices.AddRange(ca.indices);
+                    }
+
+                    dummyChnk.min = min;
+                    dummyChnk.max = max;
+                    dummyChnk.bitSize = curBitSize;
+
+                    merged.Add(dummyChnk);
+
+                    curBitSize = chunks[jumpTo].bitSize;
+                    start = i = jumpTo;
+                }
+            }
+
+            System.Diagnostics.Debug.Print($"Merged Chunks {merged.Count}");
+
+            total = 0;
+            for (int i = 0; i < merged.Count; i++)
+            {
+                var m = merged[i];
+                total += m.indices.Count * m.bitSize;
+             
+                System.Diagnostics.Debug.Print($"Merged Chunk #{i} is of size '{m.bitSize}' and contains '{m.indices.Count}' indices");
+            }
+
+            System.Diagnostics.Debug.Print($"Merged chunk indices would takeup {IOExtensions.NextPowerOf(total, 8) / 8L} bytes");
         }
 
-        private static void ReadValue(BinaryReader br, byte size, int[] values)
+        private class LZWChunk
         {
-            switch (size)
+            public int ActualMax { get => min == max ? max : max - min; }
+
+            public int bitSize;
+
+            public int min;
+            public int max;
+
+            public int start;
+            public int end;
+
+            public List<int> indices;
+
+            public LZWChunk()
             {
-                default:
-                    for (int i = 0; i < values.Length; i++)
-                    {
-                        values[i] = br.ReadByte();
-                    }
-                    break;
-                case 2:
-                    for (int i = 0; i < values.Length; i++)
-                    {
-                        values[i] = br.ReadUInt16();
-                    }
-                    break;
-                case 4:
-                    for (int i = 0; i < values.Length; i++)
-                    {
-                        values[i] = br.ReadInt32();
-                    }
-                    break;
+                indices = new List<int>();
+            }
+
+            public LZWChunk(int start, int end, int bits)
+            {
+                this.start = start;
+                this.end = end;
+                bitSize = bits;
+            }
+
+            public void CalcualteRange(int start, int end)
+            {
+                this.start = start;
+                this.end = end;
+                min = int.MaxValue;
+                max = 0;
+
+                for (int i = 0; i < indices.Count; i++)
+                {
+                    var ii = indices[i];
+                    min = ii < min ? ii : min;
+                    max = ii > max ? ii : max;
+                }
+
+                bitSize = IOExtensions.BitsNeeded(ActualMax);
+            }
+
+            public override string ToString() => $"From '{start}' to '{end}' (Bits: {bitSize}, Min: {min}, Max: {max}, Actual Max: {ActualMax})";
+        }
+
+        private static void ReadValue(BinaryReader br, byte size, List<int> values)
+        {
+            using (MemoryStream stream = new MemoryStream((br.BaseStream as MemoryStream).ToArray()))
+            using (BitReader brW = new BitReader(stream))
+            {
+                stream.Position = br.BaseStream.Position;
+                for (int i = 0; i < values.Count; i++)
+                {
+                    values[i] = brW.ReadValue(size);
+                }
+                br.BaseStream.Position = stream.Position;
             }
         }
         private static void WriteValues(BinaryWriter bw, byte size, IEnumerable<int> values)
         {
-            switch (size)
+            using (MemoryStream stream = new MemoryStream())
+            using (BitWriter btW = new BitWriter(stream))
             {
-                default:
-                    foreach (int item in values)
-                    {
-                        bw.Write((byte)item);
-                    }
-                    break;
-                case 2:
-                    foreach (int item in values)
-                    {
-                        bw.Write((ushort)item);
-                    }
-                    break;
-                case 4:
-                    foreach (int item in values)
-                    {
-                        bw.Write(item);
-                    }
-                    break;
+                foreach (var item in values)
+                {
+                    btW.Write(item, size);
+                }
+
+                btW.Flush();
+                bw.Write(stream.ToArray());
             }
         }
         #endregion

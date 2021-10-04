@@ -29,10 +29,10 @@ namespace Joonaxii.IO
             return byt;
         }
 
-        public byte ReadValue(int bits)
+        public int ReadValue(int bits)
         {
-            byte val = 0;
-            for (byte i = 0; i < bits; i++)
+            int val = 0;
+            for (int i = 0; i < bits; i++)
             {
                 val = val.SetBit(i, ReadBoolean());
             }
@@ -87,8 +87,8 @@ namespace Joonaxii.IO
             return new decimal(ints);
         }
         public override double ReadDouble() => BitConverter.ToDouble(ReadBytes(8), 0);
-        public override short ReadInt16() => BitConverter.ToInt16(ReadBytes(2), 0);
-        public override int ReadInt32() => BitConverter.ToInt32(ReadBytes(4), 0);
+        public override short ReadInt16() => (short)ReadValue(16);
+        public override int ReadInt32() => ReadValue(32);
         public override long ReadInt64() => BitConverter.ToInt64(ReadBytes(8), 0);
         public override sbyte ReadSByte() => (sbyte)ReadByte();
         public override float ReadSingle() => BitConverter.ToSingle(ReadBytes(4), 0);
@@ -102,8 +102,8 @@ namespace Joonaxii.IO
             }
             return sb.ToString();
         }
-        public override ushort ReadUInt16() => BitConverter.ToUInt16(ReadBytes(2), 0);
-        public override uint ReadUInt32() => BitConverter.ToUInt32(ReadBytes(4), 0);
+        public override ushort ReadUInt16() => (ushort)ReadValue(16);
+        public override uint ReadUInt32() => (uint)ReadValue(32);
         public override ulong ReadUInt64() => BitConverter.ToUInt64(ReadBytes(8), 0);
 
         private void FlushIfNeeded()
