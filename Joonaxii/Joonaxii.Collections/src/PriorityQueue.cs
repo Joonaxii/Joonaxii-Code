@@ -2,7 +2,7 @@
 
 using System.Collections.Generic;
 
-namespace Joonaxii.Text.Compression
+namespace Joonaxii.Collections
 {
     public class PriorityQueue<T> where T : IComparable<T>
     {

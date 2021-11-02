@@ -4,17 +4,16 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{95EC4D25-A019-4EC4-9C9F-2DAD82F830D1}</ProjectGuid>
-    <OutputType>Exe</OutputType>
-    <RootNamespace>Testing_Grounds</RootNamespace>
-    <AssemblyName>Testing Grounds</AssemblyName>
+    <ProjectGuid>{A4C3E950-D79B-4740-8F1B-558D66856C9E}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Joonaxii.Steganography</RootNamespace>
+    <AssemblyName>Joonaxii.Steganography</AssemblyName>
     <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -24,7 +23,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -44,47 +42,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Code\Bit256Test.cs" />
-    <Compile Include="Code\LZWTest.cs" />
-    <Compile Include="Code\LZWTestBinaryRW.cs" />
-    <Compile Include="Code\MenuItem.cs" />
-    <Compile Include="Code\Program.cs" />
-    <Compile Include="Code\SteganographyTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Code\QuitItem.cs" />
-    <Compile Include="Code\TTCCompressTest.cs" />
+    <Compile Include="src\Steganography.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Joonaxii.Collections\Joonaxii.Collections.csproj">
-      <Project>{68986e7f-1281-485b-941e-fb1d69cc8427}</Project>
-      <Name>Joonaxii.Collections</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Joonaxii.Debugging\Joonaxii.Debugging.csproj">
-      <Project>{17ad5d61-4e53-4f6b-81ca-6c206631afd0}</Project>
-      <Name>Joonaxii.Debugging</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Joonaxii.IO\Joonaxii.IO.csproj">
       <Project>{5bcc1979-54d1-4c35-b402-9520c1734766}</Project>
       <Name>Joonaxii.IO</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Joonaxii.Pooling\Joonaxii.Pooling.csproj">
-      <Project>{5d936d6e-23ec-4234-beb3-ebba8d7e04e8}</Project>
-      <Name>Joonaxii.Pooling</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Joonaxii.Steganography\Joonaxii.Steganography.csproj">
-      <Project>{a4c3e950-d79b-4740-8f1b-558d66856c9e}</Project>
-      <Name>Joonaxii.Steganography</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Joonaxii.Text.Compression\Joonaxii.Text.Compression.csproj">
-      <Project>{afe98590-27f0-4467-80cb-f00c87dc239a}</Project>
-      <Name>Joonaxii.Text.Compression</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Joonaxii.Text\Joonaxii.Text.csproj">
-      <Project>{1ed14790-24f4-4ba0-bf59-faa78669a687}</Project>
-      <Name>Joonaxii.Text</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

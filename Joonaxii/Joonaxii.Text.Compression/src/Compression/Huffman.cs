@@ -1,5 +1,7 @@
-﻿using Joonaxii.Debugging;
+﻿using Joonaxii.Collections;
+using Joonaxii.Debugging;
 using Joonaxii.IO;
+using Joonaxii.Pooling;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,7 +14,7 @@ namespace Joonaxii.Text.Compression
     {
         public static HuffmanComparer HUFFMAN_COMPARER { get; private set; } = new HuffmanComparer(false);
         public static HuffmanComparer HUFFMAN_INDEX_COMPARER { get; private set; } = new HuffmanComparer(true);
-        public static ObjectPool<Stack<bool>> BIT_POOL = new ObjectPool<Stack<bool>>(32, () => { return new Stack<bool>(32); });
+        public static GenericObjectPool<Stack<bool>> BIT_POOL = new GenericObjectPool<Stack<bool>>(32, () => { return new Stack<bool>(32); });
 
         public const string HEADER_STR = "HUFF";
 

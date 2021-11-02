@@ -1,5 +1,4 @@
-﻿using Joonaxii.IO;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -86,10 +85,10 @@ namespace Joonaxii.Debugging
 
             public string ToString(bool isChild = false)
             {
-                if(segments.Count < 1) { return isChild ? $"{name}: {IOExtensions.GetFileSizeString((endPos - startPos))}" : $"├{name}: {IOExtensions.GetFileSizeString((endPos - startPos))}"; }
+                if(segments.Count < 1) { return isChild ? $"{name}: {DebugExtensions.GetFileSizeString((endPos - startPos))}" : $"├{name}: {DebugExtensions.GetFileSizeString((endPos - startPos))}"; }
 
                 StringBuilder sb = new StringBuilder();
-                sb.AppendLine($"├┬{name}: {IOExtensions.GetFileSizeString((endPos - startPos))}");
+                sb.AppendLine($"├┬{name}: {DebugExtensions.GetFileSizeString((endPos - startPos))}");
                 for (int i = 0; i < segments.Count; i++)
                 {
                     bool isLast = i >= segments.Count - 1;

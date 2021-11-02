@@ -233,8 +233,8 @@ namespace Testing_Grounds
             float percent = compressedSize / (float)origSize;
 
             Console.WriteLine($"\nFile Size Results: [{((1.0f - percent) * 100.0f).ToString("F2")}% saved!]");
-            Console.WriteLine($"Original Size: [{IOExtensions.GetFileSizeString(origSize)}]");
-            Console.WriteLine($"Compressed Size: [{IOExtensions.GetFileSizeString(compressedSize)}] with index compression mode '{compMode}'");
+            Console.WriteLine($"Original Size: [{DebugExtensions.GetFileSizeString(origSize)}]");
+            Console.WriteLine($"Compressed Size: [{DebugExtensions.GetFileSizeString(compressedSize)}] with index compression mode '{compMode}'");
 
             if (!fromFile)
             {

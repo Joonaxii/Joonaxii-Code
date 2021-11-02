@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Joonaxii.IO")]
+[assembly: AssemblyTitle("Joonaxii.Steganography")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("Joonaxii.IO")]
+[assembly: AssemblyProduct("Joonaxii.Steganography")]
 [assembly: AssemblyCopyright("Copyright ©  2021")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("40d91ba3-9a8e-49ce-81db-2360c8e24819")]
+[assembly: Guid("a4c3e950-d79b-4740-8f1b-558d66856c9e")]
 
 // Version information for an assembly consists of the following four values:
 //
