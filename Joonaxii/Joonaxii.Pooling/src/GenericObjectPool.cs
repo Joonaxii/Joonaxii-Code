@@ -18,6 +18,8 @@ namespace Joonaxii.Pooling
             }
         }
 
+        public GenericObjectPool(Func<T> createNew) : this(32, createNew) { }
+
         public virtual T GetNew() => _createNew.Invoke();
         public T Get() => _pool.Count > 0 ? _pool.Dequeue() : GetNew();
 
