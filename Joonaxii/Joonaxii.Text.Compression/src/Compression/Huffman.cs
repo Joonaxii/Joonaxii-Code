@@ -1,6 +1,7 @@
 ﻿using Joonaxii.Collections;
 using Joonaxii.Debugging;
 using Joonaxii.IO;
+using Joonaxii.MathJX;
 using Joonaxii.Pooling;
 using System;
 using System.Collections.Generic;

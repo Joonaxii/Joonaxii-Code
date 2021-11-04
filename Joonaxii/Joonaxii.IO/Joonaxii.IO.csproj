@@ -21,14 +21,16 @@
     <DefineConstants>TRACE;DEBUG;J_IO_PRESENT</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>TRACE;J_IO_PRESENT</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -45,13 +47,16 @@
     <Compile Include="src\BitReader.cs" />
     <Compile Include="src\BitWriter.cs" />
     <Compile Include="src\IOExtensions.cs" />
-    <Compile Include="src\Range.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Joonaxii.Debugging\Joonaxii.Debugging.csproj">
       <Project>{17ad5d61-4e53-4f6b-81ca-6c206631afd0}</Project>
       <Name>Joonaxii.Debugging</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.Math\Joonaxii.MathJX.csproj">
+      <Project>{0a47274a-b72f-4601-b3f1-beab27216bed}</Project>
+      <Name>Joonaxii.MathJX</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

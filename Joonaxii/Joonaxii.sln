@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Joonaxii.Text.Compression",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Joonaxii.Steganography", "Joonaxii.Steganography\Joonaxii.Steganography.csproj", "{A4C3E950-D79B-4740-8F1B-558D66856C9E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Joonaxii.MathJX", "Joonaxii.Math\Joonaxii.MathJX.csproj", "{0A47274A-B72F-4601-B3F1-BEAB27216BED}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -57,6 +59,10 @@ Global
 		{A4C3E950-D79B-4740-8F1B-558D66856C9E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A4C3E950-D79B-4740-8F1B-558D66856C9E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A4C3E950-D79B-4740-8F1B-558D66856C9E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0A47274A-B72F-4601-B3F1-BEAB27216BED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0A47274A-B72F-4601-B3F1-BEAB27216BED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0A47274A-B72F-4601-B3F1-BEAB27216BED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0A47274A-B72F-4601-B3F1-BEAB27216BED}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

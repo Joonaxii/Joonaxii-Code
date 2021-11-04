@@ -1,10 +1,8 @@
 ﻿using Joonaxii.MathJX;
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-namespace Joonaxii.IO
+namespace Joonaxii.Hashing
 {
     [StructLayout(LayoutKind.Explicit, Size = 32)]
     public unsafe struct Bit256

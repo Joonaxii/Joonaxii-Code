@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{68986E7F-1281-485B-941E-FB1D69CC8427}</ProjectGuid>
+    <ProjectGuid>{0A47274A-B72F-4601-B3F1-BEAB27216BED}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Joonaxii.Collections</RootNamespace>
-    <AssemblyName>Joonaxii.Collections</AssemblyName>
+    <RootNamespace>Joonaxii.MathJX</RootNamespace>
+    <AssemblyName>Joonaxii.MathJX</AssemblyName>
     <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -18,7 +18,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;J_COLLECTIONS_PRESENT</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;J_MATH_PRESENT</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -26,7 +26,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;J_COLLECTIONS_PRESENT</DefineConstants>
+    <DefineConstants>TRACE;J_MATH_PRESENT</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -41,8 +41,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="src\PriorityQueue.cs" />
+    <Compile Include="src\MathJX.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="src\Range.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

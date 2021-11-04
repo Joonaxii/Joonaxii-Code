@@ -3,8 +3,8 @@ using System.IO;
 using System.Text;
 using Joonaxii.Debugging;
 using System.Collections.Generic;
-using Joonaxii.MathX;
 using Joonaxii.IO;
+using Joonaxii.MathJX;
 
 namespace Joonaxii.Text.Compression
 {

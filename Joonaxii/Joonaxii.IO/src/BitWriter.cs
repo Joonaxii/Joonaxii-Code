@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Joonaxii.MathJX;
+using System;
 using System.IO;
 
 namespace Joonaxii.IO

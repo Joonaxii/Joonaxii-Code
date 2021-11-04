@@ -1,4 +1,4 @@
-﻿namespace Joonaxii.MathX
+﻿namespace Joonaxii.MathJX
 {
     public struct RangeInt
     {
