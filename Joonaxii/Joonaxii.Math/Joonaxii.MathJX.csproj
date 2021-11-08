@@ -21,6 +21,7 @@
     <DefineConstants>TRACE;DEBUG;J_MATH_PRESENT</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -29,6 +30,7 @@
     <DefineConstants>TRACE;J_MATH_PRESENT</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -41,9 +43,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="src\ComparisonType.cs" />
     <Compile Include="src\MathJX.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="src\Matrix2x2.cs" />
     <Compile Include="src\Range.cs" />
+    <Compile Include="src\Rect.cs" />
+    <Compile Include="src\RectInt.cs" />
+    <Compile Include="src\Vector2.cs" />
+    <Compile Include="src\Vector2Int.cs" />
+    <Compile Include="src\Vector3Int.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

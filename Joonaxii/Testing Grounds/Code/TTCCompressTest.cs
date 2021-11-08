@@ -168,7 +168,7 @@ namespace Testing_Grounds
                             StringBuilder sb = new StringBuilder();
                             if (isTTC)
                             {
-                                sb.Append($"Header: [{(char)data[0 + pos]},{(char)data[1 + pos]},{(char)data[2 + pos]}, {data[3 + pos]}, {data.ReadInt(4 + (int)pos)}, {data.ReadInt(8 + (int)pos)}]\n");
+                                sb.Append($"Header: [{(char)data[0 + pos]},{(char)data[1 + pos]},{(char)data[2 + pos]}, {data[3 + pos]}, {data.ToInt(4 + (int)pos)}, {data.ToInt(8 + (int)pos)}]\n");
                                 sb.Append($"Data: [");
                                 for (long i = TTC.HEADER_SIZE + pos; i < data.Length; i++)
                                 {
@@ -178,7 +178,7 @@ namespace Testing_Grounds
                             }
                             else
                             {
-                                sb.Append($"Header: [{(char)data[0 + pos]},{(char)data[1 + pos]},{(char)data[2 + pos]}, {data.ReadInt(3 + (int)pos)}, {data[7 + pos]}, {data.ReadUshort(8 + (int)pos)}]\n");
+                                sb.Append($"Header: [{(char)data[0 + pos]},{(char)data[1 + pos]},{(char)data[2 + pos]}, {data.ToInt(3 + (int)pos)}, {data[7 + pos]}, {data.ToUShort(8 + (int)pos)}]\n");
                                 sb.Append($"Data: [");
                                 for (long i = LZW.HEADER_SIZE + pos; i < data.Length; i++)
                                 {
