@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Joonaxii.MathJX.src
+namespace Joonaxii.MathJX
 {
-    [StructLayout(LayoutKind.Sequential, Size = 16)]
+    [StructLayout(LayoutKind.Sequential, Size = 32)]
     public struct Matrix2x4
     {
         public static Matrix2x4 zero => new Matrix2x4(0, 0, 0, 0, 0, 0, 0, 0);
@@ -15,6 +11,11 @@ namespace Joonaxii.MathJX.src
         // m00 m01 m02 m03 //
         //                 //
         // m10 m11 m12 m13//
+        /////////////////////
+        //Column 0 is scale//
+        //Columns 1-2 are- //
+        //-rotation.       //
+        //Column 3 is pos  //
         /////////////////////
 
         private float _m00;
@@ -58,26 +59,25 @@ namespace Joonaxii.MathJX.src
         public static Matrix2x4 TRS(Vector2 point, float zRotation, Vector2 scale) => new Matrix2x4().SetTRS(point, zRotation, scale);
         public Matrix2x4 SetTRS(Vector2 point, float zRotation, Vector2 scale)
         {
-            _m00 = point.x;
-            _m10 = point.y;
-
-            _m01 = scale.x;
-            _m11 = scale.y;
-
+            _m00 = scale.x;
+            _m10 = scale.y;
 
             float rads = zRotation * MathJX.Deg2Rad;
-            _m02 = (float)Math.Cos(rads);
-            _m12 = (float)Math.Sin(rads);
+            _m01 = (float)Math.Cos(rads);
+            _m11 = (float)Math.Sin(rads);
 
-            _m03 = -_m12;
-            _m13 = _m02;
+            _m02 = -_m11;
+            _m12 = _m01;
+
+            _m03 = point.x;
+            _m13 = point.y;
             return this;
         }
 
-        public float Determinant() => _m00 * _m11 - _m01 * _m10;
-        public Vector2 MultiplyPoint(Vector2 point) => new Vector2(point.x * _m01 + _m00, point.y * _m11 + _m10);
-        public Vector2 MultiplyVector(Vector2 vec) => new Vector2(vec.x * _m01, vec.y * _m11);
+        public Vector2 MultiplyPoint(Vector2 point) => new Vector2((point.x * _m01 + point.y * _m02) * _m00 + _m03, (point.y * _m12 + point.x * _m11) * _m10 + _m13);
+        public Vector2 MultiplyVector(Vector2 vec) => new Vector2((vec.x * _m01 + vec.y * _m02) * _m00, (vec.y * _m12 + vec.x * _m11) * _m10);
+        public Vector2 ScaleVector(Vector2 vec) => new Vector2(vec.x * _m00, vec.y * _m10);
 
-        public override string ToString() => $"M00: {_m00}, M01: {_m01}, M10: {_m10}, M11: {_m11}";
+        public override string ToString() => $"M00: {_m00}, M01: {_m01}, M02: {_m02}, M03: {_m03}, M10: {_m10}, M11: {_m11}, M12: {_m12}, M13: {_m13}";
     }
 }
