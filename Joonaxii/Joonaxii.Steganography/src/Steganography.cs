@@ -1,5 +1,5 @@
 ﻿using Joonaxii.IO;
-using Joonaxii.MathJX;
+using Joonaxii.Math;
 using System;
 using System.Drawing;
 using System.Drawing.Imaging;

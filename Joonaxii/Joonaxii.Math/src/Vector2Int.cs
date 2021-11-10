@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace Joonaxii.MathJX
+namespace Joonaxii.Math
 {
     [StructLayout(LayoutKind.Sequential, Size = 8, Pack = 4)]
     public struct Vector2Int : IEquatable<Vector2Int>

@@ -1,4 +1,4 @@
-﻿using Joonaxii.MathJX;
+﻿using Joonaxii.Math;
 using System;
 using System.IO;
 using System.Text;

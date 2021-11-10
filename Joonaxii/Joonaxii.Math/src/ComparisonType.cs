@@ -1,4 +1,4 @@
-﻿namespace Joonaxii.MathJX
+﻿namespace Joonaxii.Math
 {
     public enum ComparisonType
     {

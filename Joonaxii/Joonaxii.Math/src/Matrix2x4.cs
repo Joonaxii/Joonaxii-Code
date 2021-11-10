@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace Joonaxii.MathJX
+namespace Joonaxii.Math
 {
     [StructLayout(LayoutKind.Sequential, Size = 32)]
     public struct Matrix2x4
@@ -63,8 +63,8 @@ namespace Joonaxii.MathJX
             _m10 = scale.y;
 
             float rads = zRotation * MathJX.Deg2Rad;
-            _m01 = (float)Math.Cos(rads);
-            _m11 = (float)Math.Sin(rads);
+            _m01 = (float)System.Math.Cos(rads);
+            _m11 = (float)System.Math.Sin(rads);
 
             _m02 = -_m11;
             _m12 = _m01;

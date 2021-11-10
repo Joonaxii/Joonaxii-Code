@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Joonaxii.MathJX
+namespace Joonaxii.Math
 {
     [StructLayout(LayoutKind.Sequential, Size = 16)]
     public struct Matrix2x2

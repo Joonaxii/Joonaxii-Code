@@ -4,7 +4,7 @@ using System.Text;
 using Joonaxii.Debugging;
 using System.Collections.Generic;
 using Joonaxii.IO;
-using Joonaxii.MathJX;
+using Joonaxii.Math;
 
 namespace Joonaxii.Text.Compression
 {

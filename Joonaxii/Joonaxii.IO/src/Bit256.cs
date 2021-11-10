@@ -1,4 +1,4 @@
-﻿using Joonaxii.MathJX;
+﻿using Joonaxii.Math;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -22,7 +22,7 @@ namespace Joonaxii.IO
         public Bit256(int bits)
         {
             _a = _b = _c = _d = 0;
-            for (int i = 0; i < Math.Min(bits, 256); i++)
+            for (int i = 0; i < System.Math.Min(bits, 256); i++)
             {
                 SetBit((byte)i, true);
             }
@@ -31,7 +31,7 @@ namespace Joonaxii.IO
         public Bit256(bool[] bits)
         {
             _a = _b = _c = _d = 0;
-            for (int i = 0; i < Math.Min(bits.Length, 256); i++)
+            for (int i = 0; i < System.Math.Min(bits.Length, 256); i++)
             {
                 SetBit((byte)i, bits[i]);
             }

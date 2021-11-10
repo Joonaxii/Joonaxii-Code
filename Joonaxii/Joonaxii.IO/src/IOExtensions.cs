@@ -33,7 +33,7 @@ namespace Joonaxii.IO
             return value;
         }
 
-        public static int BitsNeeded(int value) => (int)(Math.Log(value) / Math.Log(2)) + 1;
+        public static int BitsNeeded(int value) => (int)(System.Math.Log(value) / System.Math.Log(2)) + 1;
 
 
         public static string ToHexString(this string str, string separator = "")

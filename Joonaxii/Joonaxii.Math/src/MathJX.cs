@@ -1,10 +1,10 @@
 ﻿using System;
 
-namespace Joonaxii.MathJX
+namespace Joonaxii.Math
 {
     public static class MathJX
     {
-        public const float PI = (float)Math.PI;
+        public const float PI = (float)System.Math.PI;
         public const float TWO_PI = PI * 2.0f;
         public const float Epsilon = 1E-15f;
 
@@ -62,11 +62,11 @@ namespace Joonaxii.MathJX
 
         public static float Sign(float input) => input < 0 ? -1 : 1;
 
-        public static int CeilToInt(float f) => (int)Math.Ceiling(f);
-        public static int RoundToInt(float f) => (int)Math.Round(f);
-        public static int FloorToInt(float f) => (int)Math.Floor(f);
+        public static int CeilToInt(float f) => (int)System.Math.Ceiling(f);
+        public static int RoundToInt(float f) => (int)System.Math.Round(f);
+        public static int FloorToInt(float f) => (int)System.Math.Floor(f);
 
-        public static float Repeat(float t, float length) => Clamp(t - (float)Math.Floor(t / length) * length, 0f, length);
+        public static float Repeat(float t, float length) => Clamp(t - (float)System.Math.Floor(t / length) * length, 0f, length);
 
         #region Comparison
 
@@ -80,31 +80,31 @@ namespace Joonaxii.MathJX
                     return input != other;
 
                 case ComparisonType.EQUAL_ABS:
-                    return input == Math.Abs(other);
+                    return input == System.Math.Abs(other);
                 case ComparisonType.NOT_EQUAL_ABS:
-                    return input != Math.Abs(other);
+                    return input != System.Math.Abs(other);
 
 
                 case ComparisonType.GREATER_OR_EQUAL:
                     return input >= other;
                 case ComparisonType.GREATER_OR_EQUAL_ABS:
-                    return input >= Math.Abs(other);
+                    return input >= System.Math.Abs(other);
 
                 case ComparisonType.GREATER_THAN:
                     return input > other;
                 case ComparisonType.GREATER_THAN_ABS:
-                    return input > Math.Abs(other);
+                    return input > System.Math.Abs(other);
 
 
                 case ComparisonType.LESS_OR_EQUAL:
                     return input <= other;
                 case ComparisonType.LESS_OR_EQUAL_ABS:
-                    return input <= Math.Abs(other);
+                    return input <= System.Math.Abs(other);
 
                 case ComparisonType.LESS_THAN:
                     return input < other;
                 case ComparisonType.LESS_THAN_ABS:
-                    return input < Math.Abs(other);
+                    return input < System.Math.Abs(other);
             }
         }
         public static bool CompareTo(this int input, int other, ComparisonType type)
@@ -117,31 +117,31 @@ namespace Joonaxii.MathJX
                     return input != other;
 
                 case ComparisonType.EQUAL_ABS:
-                    return input == Math.Abs(other);
+                    return input == System.Math.Abs(other);
                 case ComparisonType.NOT_EQUAL_ABS:
-                    return input != Math.Abs(other);
+                    return input != System.Math.Abs(other);
 
 
                 case ComparisonType.GREATER_OR_EQUAL:
                     return input >= other;
                 case ComparisonType.GREATER_OR_EQUAL_ABS:
-                    return input >= Math.Abs(other);
+                    return input >= System.Math.Abs(other);
 
                 case ComparisonType.GREATER_THAN:
                     return input > other;
                 case ComparisonType.GREATER_THAN_ABS:
-                    return input > Math.Abs(other);
+                    return input > System.Math.Abs(other);
 
 
                 case ComparisonType.LESS_OR_EQUAL:
                     return input <= other;
                 case ComparisonType.LESS_OR_EQUAL_ABS:
-                    return input <= Math.Abs(other);
+                    return input <= System.Math.Abs(other);
 
                 case ComparisonType.LESS_THAN:
                     return input < other;
                 case ComparisonType.LESS_THAN_ABS:
-                    return input < Math.Abs(other);
+                    return input < System.Math.Abs(other);
             }
         }
 
@@ -151,12 +151,12 @@ namespace Joonaxii.MathJX
         #endregion
 
         #region Wave Functions
-        public static float Sin(float f) => (float)Math.Sin(f);
-        public static float Cos(float f) => (float)Math.Cos(f);
+        public static float Sin(float f) => (float)System.Math.Sin(f);
+        public static float Cos(float f) => (float)System.Math.Cos(f);
 
-        public static float Square(float t, bool sine = true) => Math.Sign(sine ? Sin(TWO_PI * t) : Cos(TWO_PI * t));
-        public static float Triangle(float t) => 1f - 4f * (float)Math.Abs(Math.Round(t - 0.25f) - (t - 0.25f));
-        public static float Sawtooth(float t) => 2f * (t - (float)Math.Floor(t + 0.5f));
+        public static float Square(float t, bool sine = true) => System.Math.Sign(sine ? Sin(TWO_PI * t) : Cos(TWO_PI * t));
+        public static float Triangle(float t) => 1f - 4f * (float)System.Math.Abs(System.Math.Round(t - 0.25f) - (t - 0.25f));
+        public static float Sawtooth(float t) => 2f * (t - (float)System.Math.Floor(t + 0.5f));
         #endregion
 
         #region Vector Math
@@ -164,8 +164,8 @@ namespace Joonaxii.MathJX
         #region Vector Rotation
         public static float Angle(this Vector2 a, Vector2 b)
         {
-            float sqr = (float)Math.Sqrt((a.SqrMagnitude * b.SqrMagnitude));
-            return sqr < Epsilon ? 0.0f : (float)Math.Acos(Clamp(Vector2.Dot(a, b) / sqr, -1f, 1f)) * Rad2Deg;
+            float sqr = (float)System.Math.Sqrt((a.SqrMagnitude * b.SqrMagnitude));
+            return sqr < Epsilon ? 0.0f : (float)System.Math.Acos(Clamp(Vector2.Dot(a, b) / sqr, -1f, 1f)) * Rad2Deg;
         }
 
         public static float SignedAngle(this Vector2 a, Vector2 b) => Angle(a, b) * Sign(a.x * b.y - a.y * b.x);
@@ -215,7 +215,7 @@ namespace Joonaxii.MathJX
         }
 
         public static float SqrDistance(Vector2 a, Vector2 b) => SqrDistance(a.x, b.x, a.y, b.y);
-        public static float Distance(Vector2 a, Vector2 b) => (float)Math.Sqrt(SqrDistance(a, b));
+        public static float Distance(Vector2 a, Vector2 b) => (float)System.Math.Sqrt(SqrDistance(a, b));
 
 
         #endregion
@@ -231,7 +231,10 @@ namespace Joonaxii.MathJX
         }
 
         public static float InverseLerp(float a, float b, float value) => a != b ? (value - a) / (b - a) : 0f;
+
         public static float Lerp(float a, float b, float t) => a + (b - a) * t;
+        public static int Lerp(int a, int b, float t) => (int)(a + (b - a) * t);
+
         public static float EaseIn(float t) => t * t;
         public static float EaseOut(float t) => t * (2f - t);
 
