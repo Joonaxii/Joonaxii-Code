@@ -154,6 +154,9 @@ namespace Joonaxii.Math
         public static float Sin(float f) => (float)System.Math.Sin(f);
         public static float Cos(float f) => (float)System.Math.Cos(f);
 
+        public static float Asin(float f) => (float)System.Math.Asin(f);
+        public static float Acos(float f) => (float)System.Math.Acos(f);
+
         public static float Square(float t, bool sine = true) => System.Math.Sign(sine ? Sin(TWO_PI * t) : Cos(TWO_PI * t));
         public static float Triangle(float t) => 1f - 4f * (float)System.Math.Abs(System.Math.Round(t - 0.25f) - (t - 0.25f));
         public static float Sawtooth(float t) => 2f * (t - (float)System.Math.Floor(t + 0.5f));

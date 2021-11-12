@@ -24,6 +24,42 @@ namespace Joonaxii.Math
         private float _m10;
         private float _m11;
 
+
+        public float this[int r, int c]
+        {
+            get => this[r * 2 + c];
+            set => this[r * 2 + c] = value;
+        }
+
+        public float this[int i]
+        {
+            get
+            {
+                switch (i)
+                {
+                    default: throw new IndexOutOfRangeException($"Invalid matrix index '{i}'");
+
+                    case 0: return _m00;
+                    case 1: return _m01;
+                    case 2: return _m10;
+                    case 3: return _m11;
+                }
+            }
+
+            set
+            {
+                switch (i)
+                {
+                    default: throw new IndexOutOfRangeException($"Invalid matrix index '{i}'");
+                    case 0:  _m00 = value; break;
+                    case 1:  _m01 = value; break;
+                    case 2:  _m10 = value; break;
+                    case 3:  _m11 = value; break;
+                }
+            }
+        }
+
+
         public Matrix2x2(float m00, float m01, float m10, float m11)
         {
             _m00 = m00;

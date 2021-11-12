@@ -6,12 +6,12 @@ namespace Joonaxii.Math
     [StructLayout(LayoutKind.Sequential, Size = 8, Pack = 4)]
     public struct Vector2 : IEquatable<Vector2>
     {
-        public static Vector2 zero = new Vector2(0, 0);
-        public static Vector2 one = new Vector2(1.0f, 1.0f);
-        public static Vector2 up = new Vector2(0, 1.0f);
-        public static Vector2 down = new Vector2(0, -1.0f);
-        public static Vector2 right = new Vector2(1.0f, 0.0f);
-        public static Vector2 left = new Vector2(-1.0f, 0.0f);
+        public static Vector2 zero { get; } = new Vector2(0, 0);
+        public static Vector2 one { get; } = new Vector2(1.0f, 1.0f);
+        public static Vector2 up { get; } = new Vector2(0, 1.0f);
+        public static Vector2 down { get; } = new Vector2(0, -1.0f);
+        public static Vector2 right { get; } = new Vector2(1.0f, 0.0f);
+        public static Vector2 left { get; } = new Vector2(-1.0f, 0.0f);
 
         public float x;
         public float y;

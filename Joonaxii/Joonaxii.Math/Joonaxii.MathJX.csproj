@@ -48,12 +48,15 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="src\Matrix2x2.cs" />
     <Compile Include="src\Matrix2x4.cs" />
+    <Compile Include="src\Matrix3x3.cs" />
     <Compile Include="src\Range.cs" />
     <Compile Include="src\Rect.cs" />
     <Compile Include="src\RectInt.cs" />
     <Compile Include="src\Vector2.cs" />
     <Compile Include="src\Vector2Int.cs" />
+    <Compile Include="src\Vector3.cs" />
     <Compile Include="src\Vector3Int.cs" />
+    <Compile Include="src\Vector5.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

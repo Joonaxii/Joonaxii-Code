@@ -10,7 +10,7 @@ namespace Joonaxii.Math
         /////////////////////
         // m00 m01 m02 m03 //
         //                 //
-        // m10 m11 m12 m13//
+        // m10 m11 m12 m13 //
         /////////////////////
         //Column 0 is scale//
         //Columns 1-2 are- //
@@ -27,6 +27,48 @@ namespace Joonaxii.Math
         private float _m11;
         private float _m12;
         private float _m13;
+
+        public float this[int r, int c]
+        {
+            get => this[r * 4 + c];
+            set => this[r * 4 + c] = value;
+        }
+
+        public float this[int i]
+        {
+            get
+            {
+                switch (i)
+                {
+                    default: throw new IndexOutOfRangeException($"Invalid matrix index '{i}'");
+
+                    case 0: return _m00;
+                    case 1: return _m01;
+                    case 2: return _m02;
+                    case 3: return _m03;
+                    case 4: return _m10;
+                    case 5: return _m11;
+                    case 6: return _m12;
+                    case 7: return _m13;
+                }
+            }
+
+            set
+            {
+                switch (i)
+                {
+                    default: throw new IndexOutOfRangeException($"Invalid matrix index '{i}'");
+                    case 0: _m00 = value; break;
+                    case 1: _m01 = value; break;
+                    case 2: _m02 = value; break;
+                    case 3: _m03 = value; break;
+                    case 4: _m10 = value; break;
+                    case 5: _m11 = value; break;
+                    case 6: _m12 = value; break;
+                    case 7: _m13 = value; break;
+                }
+            }
+        }
 
         public Matrix2x4(float m00, float m01, float m02, float m03, float m10, float m11, float m12, float m13)
         {
@@ -77,6 +119,7 @@ namespace Joonaxii.Math
         public Vector2 MultiplyPoint(Vector2 point) => new Vector2((point.x * _m01 + point.y * _m02) * _m00 + _m03, (point.y * _m12 + point.x * _m11) * _m10 + _m13);
         public Vector2 MultiplyVector(Vector2 vec) => new Vector2((vec.x * _m01 + vec.y * _m02) * _m00, (vec.y * _m12 + vec.x * _m11) * _m10);
         public Vector2 ScaleVector(Vector2 vec) => new Vector2(vec.x * _m00, vec.y * _m10);
+        public float Rotate(float rotation) => rotation + MathJX.Acos(_m01) * MathJX.Rad2Deg;
 
         public override string ToString() => $"M00: {_m00}, M01: {_m01}, M02: {_m02}, M03: {_m03}, M10: {_m10}, M11: {_m11}, M12: {_m12}, M13: {_m13}";
     }
