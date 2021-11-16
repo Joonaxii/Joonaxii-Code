@@ -17,7 +17,7 @@ namespace Joonaxii.Collections
             _heap = new T[collection.Count];
             foreach (var item in collection)
             {
-                Enqueue(item, true);
+                Enqueue(item, false);
             }
             Array.Sort(_heap, 0, Count, _comparer);
         }
@@ -28,13 +28,13 @@ namespace Joonaxii.Collections
             _heap = new T[capacity];
         }
 
-        public void Enqueue(T val, bool doNotSort = false)
+        public void Enqueue(T val, bool doSort = true)
         {
             if(_heap.Length <= Count) { Array.Resize(ref _heap, Count * 2); }
             _heap[Count] = val;
             Count++;
 
-            if (doNotSort)
+            if (doSort)
             {
                 Array.Sort(_heap, 0, Count, _comparer);
             }

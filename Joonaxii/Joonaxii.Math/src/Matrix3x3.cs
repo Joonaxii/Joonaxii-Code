@@ -115,18 +115,9 @@ namespace Joonaxii.Math
             return this;
         }
 
-        public float Determinant() => (_m00 * Det2x2(0)) - (_m01 * Det2x2(1)) + (_m02 * Det2x2(2));
-
-        private float Det2x2(int i)
-        {
-            switch (i)
-            {
-                default: return 0;
-                case 0: return Det2x2(4, 8, 5, 7);
-                case 1: return Det2x2(3, 8, 5, 6);
-                case 2: return Det2x2(3, 5, 4, 6);
-            }
-        }
+        public float Determinant() => (_m00 * Det2x2(4, 8, 5, 7)) - 
+                                      (_m01 * Det2x2(3, 8, 5, 6)) + 
+                                      (_m02 * Det2x2(3, 5, 4, 6));
 
         private float Det2x2(int a, int b, int c, int d) => (this[a] * this[b]) - (this[c] * this[d]);
 
@@ -138,30 +129,33 @@ namespace Joonaxii.Math
             Matrix3x3 tr = Transpose();
             det = 1.0f / det;
 
-            //Inv is det's
-            //of all minor
-            //matrices' 
-            //det's in
-            //this config
-            //////////////
-            // +A -B +C //
-            // -D +E -F //
-            // +G -H +I //
-            //////////////
-            
-            float detA = tr.Det2x2(4, 5, 7, 8) * det;
-            float detB = -tr.Det2x2(3, 5, 6, 8) * det;
-            float detC = tr.Det2x2(3, 4, 6, 7) * det;
+            //Inverse matrix's values are 
+            //determinants of the transposed
+            //matrix's minor matrices times
+            //1.0 / original matrix's 
+            //determinant multiplied by
+            //this config ---
+            ////////////////|////////////////
+            //  A  B  C //  -->//  +  -  + //
+            //  D  E  F //  X  //  -  +  - //
+            //  G  H  I //     //  +  -  + //
+            /////////////////////////////////
 
-            float detD = -tr.Det2x2(1, 2, 7, 8) * det;
-            float detE = tr.Det2x2(0, 2, 6, 8) * det;
-            float detF = -tr.Det2x2(0, 1, 6, 7) * det;
+            float detA =  tr.Det2x2(4, 5, 7, 8) * det; //Scale:  X
+            float detB = -tr.Det2x2(3, 5, 6, 8) * det; //Rot A:  Cos(a)
+            float detC =  tr.Det2x2(3, 4, 6, 7) * det; //Rot B: -Sin(a)
 
-            float detG = tr.Det2x2(1, 2, 4, 5) * det;
-            float detH = -tr.Det2x2(0, 2, 3, 5) * det;
-            float detI = tr.Det2x2(0, 1, 3, 4) * det;
+            float detD = -tr.Det2x2(1, 2, 7, 8) * det; //Scale:  Y
+            float detE =  tr.Det2x2(0, 2, 6, 8) * det; //Rot C:  Sin(a)
+            float detF = -tr.Det2x2(0, 1, 6, 7) * det; //Rot D:  Cos(a)
 
-            return new Matrix3x3(detA, detB, detC, detD, detE, detF, detG, detH, detI);
+            float detG =  tr.Det2x2(1, 2, 4, 5) * det; //Pos:    X
+            float detH = -tr.Det2x2(0, 2, 3, 5) * det; //Pos:    Y
+            float detI =  tr.Det2x2(0, 1, 3, 4) * det; //Rot E:  Angles
+
+            return new Matrix3x3(detA, detB, detC, 
+                                 detD, detE, detF, 
+                                 detG, detH, detI);
         }
 
         public Vector2 InverseScale()
@@ -216,7 +210,6 @@ namespace Joonaxii.Math
             _m00 = scale.x;
             _m10 = scale.y;
         }
-
         public void SetRotation(float zRotation)
         {
             float rads = zRotation * MathJX.Deg2Rad;
@@ -228,7 +221,6 @@ namespace Joonaxii.Math
 
             _m22 = zRotation;
         }
-
         public void SetPosition(Vector2 point)
         {
             _m20 = point.x;

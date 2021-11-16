@@ -56,7 +56,6 @@
     <Compile Include="src\Vector2Int.cs" />
     <Compile Include="src\Vector3.cs" />
     <Compile Include="src\Vector3Int.cs" />
-    <Compile Include="src\Vector5.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

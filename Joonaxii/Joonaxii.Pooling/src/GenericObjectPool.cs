@@ -22,7 +22,6 @@ namespace Joonaxii.Pooling
 
         public virtual T GetNew() => _createNew.Invoke();
         public T Get() => _pool.Count > 0 ? _pool.Dequeue() : GetNew();
-
         public void Return(T input) => _pool.Enqueue(input);
     }
 }

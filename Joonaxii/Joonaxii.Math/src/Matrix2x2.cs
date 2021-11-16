@@ -24,7 +24,6 @@ namespace Joonaxii.Math
         private float _m10;
         private float _m11;
 
-
         public float this[int r, int c]
         {
             get => this[r * 2 + c];
@@ -58,7 +57,6 @@ namespace Joonaxii.Math
                 }
             }
         }
-
 
         public Matrix2x2(float m00, float m01, float m10, float m11)
         {
