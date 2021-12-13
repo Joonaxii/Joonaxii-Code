@@ -4,6 +4,7 @@
     {
         None,
         LZW,
+        LZWChunked,
         Huffman,
     }
 }

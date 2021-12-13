@@ -1,5 +1,6 @@
 ﻿using Joonaxii.Debugging;
 using Joonaxii.IO;
+using Joonaxii.MathJX;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -16,7 +17,7 @@ namespace Joonaxii.Text.Compression
 
         public const int HEADER_SIZE = 10;
 
-        public static void CompressToStream(List<int> data, byte size, BinaryWriter bw, TimeStamper timeStamper = null, FileDebugger debugger = null)
+        public static void CompressToStream(List<int> data, byte size, bool useChunking, BinaryWriter bw, TimeStamper timeStamper = null, FileDebugger debugger = null)
         {
             List<char> dataC = new List<char>();
             timeStamper?.Start($"LZW (Compress): Data conversion from byte size {size} to chars");
@@ -40,7 +41,7 @@ namespace Joonaxii.Text.Compression
                     break;
             }
             timeStamper?.Stamp();
-            WriteAll(bw, Compress(dataC.ToArray(), out size, out ushort charLimit, false, timeStamper), size, charLimit, debugger);
+            WriteAll(bw, Compress(dataC.ToArray(), out size, out ushort charLimit, false, timeStamper), useChunking, size, charLimit, debugger);
         }
 
         /// <summary>
@@ -63,10 +64,10 @@ namespace Joonaxii.Text.Compression
         /// </summary>
         /// <param name="input">The string to be compressed</param>
         /// <param name="bw">The BinaryWriter the bytes are going to be written to</param>
-        public static void Compress(string input, BinaryWriter bw, TimeStamper timeStamper = null)
+        public static void Compress(string input, bool useChunking, BinaryWriter bw, TimeStamper timeStamper = null)
         {
             var compressed = Compress(input.ToCharArray(), out byte size, out ushort charLimit, false, timeStamper);
-            WriteAll(bw, compressed, size, charLimit);
+            WriteAll(bw, compressed, useChunking, size, charLimit);
             compressed.Clear();
             compressed = null;
         }
@@ -76,7 +77,7 @@ namespace Joonaxii.Text.Compression
         /// </summary>
         /// <param name="bytes">The bytes that are going to be converted into chars</param>
         /// <param name="bw">The BinaryWriter the compressed data gets written to</param>
-        public static void Compress(byte[] bytes, BinaryWriter bw, TimeStamper timeStamper = null)
+        public static void Compress(byte[] bytes, bool useChunking, BinaryWriter bw, TimeStamper timeStamper = null)
         {
             int l = bytes.Length;
             l = l % 2 != 0 ? l + 1 : l;
@@ -92,7 +93,7 @@ namespace Joonaxii.Text.Compression
                 chars[i] = (char)(a + (b << 8));
             }
             timeStamper?.Stamp();
-            WriteAll(bw, Compress(chars, out byte size, out ushort charLimit, false, timeStamper), size, charLimit);
+            WriteAll(bw, Compress(chars, out byte size, out ushort charLimit, false, timeStamper), useChunking, size, charLimit);
         }
 
         /// <summary>
@@ -115,12 +116,40 @@ namespace Joonaxii.Text.Compression
             }
 
             int len = br.ReadInt32();
-            byte size = br.ReadByte();
+            byte finalSize = br.ReadByte();
+
+            byte size = finalSize.GetRange(0, 7);
+            bool useChunks = finalSize.GetRange(7, 1) > 0;
+
             ushort charLimit = br.ReadUInt16();
 
-            timeStamper?.Start($"LZW Decompression: Read Data");
+            timeStamper?.Start($"LZW Decompression: Read Data [L: {len}, S: {size}, C: {useChunks}, Char: {charLimit}]");
             List<int> compressed = new List<int>(len);
-            ReadValue(br, size, compressed);
+            if (useChunks)
+            {
+                int count = br.ReadInt32();
+                long posStart = br.BaseStream.Position;
+
+                using (MemoryStream stream = new MemoryStream(br.BaseStream.GetData()))
+                using(BitReader brB = new BitReader(stream))
+                {
+                    stream.Position = posStart;
+                    LZWChunk chnk = new LZWChunk();
+                    for (int i = 0; i < count; i++)
+                    { 
+                        chnk.Read(brB);
+                        compressed.AddRange(chnk.indices);
+                    }
+                    posStart = stream.Position;
+                }
+                br.BaseStream.Seek(posStart, SeekOrigin.Begin);
+                br.BaseStream.Flush();
+            }
+            else
+            {
+                ReadValues(br, size, compressed);
+            }
+
             timeStamper?.Stamp();
             return Decompress(compressed, charLimit, timeStamper);
         }
@@ -197,100 +226,103 @@ namespace Joonaxii.Text.Compression
         }
 
         #region Binary R/W Helpers
-        private static void WriteAll(BinaryWriter bw, List<int> compressed, byte size, ushort charLimit, FileDebugger debugger = null)
+        private static void WriteAll(BinaryWriter bw, List<int> compressed, bool useChunks, byte size, ushort charLimit, FileDebugger debugger = null)
         {
             debugger?.Start("LZW Header");
             bw.Write(HEADER_STR);
             bw.Write(compressed.Count);
-            bw.Write(size);
+
+            byte finalSize = 0;
+            finalSize = finalSize.SetRange(0, 7, size);
+            finalSize = finalSize.SetRange(7, 1, (byte)(useChunks ? 1 : 0));
+
+            bw.Write(finalSize);
             bw.Write(charLimit);
             debugger?.Stamp();
 
-            debugger?.Start("LZW Data");
-            WriteValues(bw, size, compressed);
-            debugger?.Stamp();
-
-            int CHUNK_SIZE = 8;
-
-            List<LZWChunk> chunks = new List<LZWChunk>();
-            LZWChunk cur = new LZWChunk();
-
-            long total = 0;
-            int start = 0;
-            for (int i = 0; i < compressed.Count; i++)
+            if (useChunks)
             {
-                cur.indices.Add(compressed[i]);
-                total += cur.indices.Count * size;
+                debugger?.Start("LZW Data (Chunked)");
 
-                if (cur.indices.Count >= CHUNK_SIZE)
+                const int CHUNK_SIZE = 8;
+
+                List<LZWChunk> chunks = new List<LZWChunk>();
+                LZWChunk cur = new LZWChunk();
+
+                long total = 0;
+                int start = 0;
+                for (int i = 0; i < compressed.Count; i++)
                 {
-                    cur.CalcualteRange(start, i + 1);
-                    System.Diagnostics.Debug.Print($"Chunk #{chunks.Count + 1} is {cur.ToString()}");
-                    chunks.Add(cur);
-                    cur = new LZWChunk();
-                    start = i + 1;
-                }
-            }
+                    cur.indices.Add(compressed[i]);
+                    total += cur.indices.Count * size;
 
-            if (cur.indices.Count > 0)
-            {
-                cur.CalcualteRange(start, compressed.Count);
-                System.Diagnostics.Debug.Print($"Chunk #{chunks.Count + 1} is {cur.ToString()}");
-                chunks.Add(cur);
-            }
-            System.Diagnostics.Debug.Print($"Raw chunk indices with a global size of {size} would takeup {IOExtensions.NextPowerOf(total, 8) / 8L} bytes");
-
-            List<LZWChunk> merged = new List<LZWChunk>();
-
-            int curBitSize = chunks[0].bitSize;
-            start = 0;
-            for (int i = 1; i < chunks.Count; i++)
-            {
-                var cu = chunks[i];
-                if (cur.bitSize != curBitSize || i >= chunks.Count - 1)
-                {
-                    int min = int.MaxValue;
-                    int max = 0;
-                    int jumpTo = i;
-                    LZWChunk dummyChnk = new LZWChunk();
-                    for (int j = start; j < i; j++)
+                    if (cur.indices.Count >= CHUNK_SIZE)
                     {
-                        var ca = chunks[j];
-                        min = ca.min < min ? ca.min : min;
-                        max = ca.max > max ? ca.max : max;
+                        cur.CalcualteRange(start, i + 1);
+
+                        chunks.Add(cur);
+                        cur = new LZWChunk();
+                        start = i + 1;
+                    }
+                }
+
+                if (cur.indices.Count > 0)
+                {
+                    cur.CalcualteRange(start, compressed.Count);
+                    chunks.Add(cur);
+                }
+
+                List<LZWChunk> merged = new List<LZWChunk>();
+                for (int i = 0; i < chunks.Count; i++)
+                {
+                    var cu = chunks[i];
+                    int curBitSize = cu.bitSize;
+
+                    int min = cu.min;
+                    int max = cu.max;
+
+                    for (int j = i + 1; j < chunks.Count; j++)
+                    {
+                        var cn = chunks[j];
+
+                        min = cn.min < min ? cn.min : min;
+                        max = cn.max > max ? cn.max : max;
 
                         int actMax = IOExtensions.BitsNeeded(max - min);
                         if (actMax > curBitSize)
                         {
-                            jumpTo = j;
                             break;
                         }
-                        dummyChnk.indices.AddRange(ca.indices);
+
+                        cu.indices.AddRange(cn.indices);
+                        cu.min = min;
+                        cu.max = max;
+
+                        i = j;
+                    }
+                    merged.Add(cu);
+                }
+
+                bw.Write(merged.Count);
+                using (MemoryStream strmBit = new MemoryStream())
+                using (BitWriter bwBit = new BitWriter(strmBit))
+                {
+                    foreach (var chnk in merged)
+                    {
+                        chnk.Write(bwBit);
                     }
 
-                    dummyChnk.min = min;
-                    dummyChnk.max = max;
-                    dummyChnk.bitSize = curBitSize;
-
-                    merged.Add(dummyChnk);
-
-                    curBitSize = chunks[jumpTo].bitSize;
-                    start = i = jumpTo;
+                    bwBit.Flush();
+                    bw.Write(strmBit.ToArray());
                 }
+                debugger?.Stamp();
             }
-
-            System.Diagnostics.Debug.Print($"Merged Chunks {merged.Count}");
-
-            total = 0;
-            for (int i = 0; i < merged.Count; i++)
+            else
             {
-                var m = merged[i];
-                total += m.indices.Count * m.bitSize;
-             
-                System.Diagnostics.Debug.Print($"Merged Chunk #{i} is of size '{m.bitSize}' and contains '{m.indices.Count}' indices");
+                debugger?.Start("LZW Data");
+                WriteValues(bw, size, compressed);
+                debugger?.Stamp();
             }
-
-            System.Diagnostics.Debug.Print($"Merged chunk indices would takeup {IOExtensions.NextPowerOf(total, 8) / 8L} bytes");
         }
 
         private class LZWChunk
@@ -336,20 +368,55 @@ namespace Joonaxii.Text.Compression
                 bitSize = IOExtensions.BitsNeeded(ActualMax);
             }
 
+            public void Write(BitWriter bw)
+            {
+                int minBits = IOExtensions.BitsNeeded(min);
+                int countBits = IOExtensions.BitsNeeded(indices.Count);
+
+                bw.Write(minBits - 1, 5);
+                bw.Write(bitSize - 1, 5);
+                bw.Write(countBits - 1, 4);
+
+                bw.Write(min, minBits);
+                bw.Write(indices.Count, countBits);
+
+                for (int i = 0; i < indices.Count; i++)
+                {
+                    bw.Write(indices[i] - min, bitSize);
+                }
+            }
+
+            public void Read(BitReader br)
+            {
+                int minBits = br.ReadValue(5) + 1;
+                bitSize = br.ReadValue(5) + 1;
+                int countBits = br.ReadValue(4) + 1;
+
+                min = br.ReadValue(minBits);
+                int count = br.ReadValue(countBits);
+
+                indices.Clear();
+                for (int i = 0; i < count; i++)
+                {
+                    indices.Add(br.ReadValue(bitSize) + min);
+                }
+            }
+
             public override string ToString() => $"From '{start}' to '{end}' (Bits: {bitSize}, Min: {min}, Max: {max}, Actual Max: {ActualMax})";
         }
 
-        private static void ReadValue(BinaryReader br, byte size, List<int> values)
+        private static void ReadValues(BinaryReader br, byte size, List<int> values)
         {
-            using (MemoryStream stream = new MemoryStream((br.BaseStream as MemoryStream).ToArray()))
+            using (MemoryStream stream = new MemoryStream(br.BaseStream.GetData()))
             using (BitReader brW = new BitReader(stream))
             {
                 stream.Position = br.BaseStream.Position;
-                for (int i = 0; i < values.Count; i++)
+                for (int i = 0; i < values.Capacity; i++)
                 {
-                    values[i] = brW.ReadValue(size);
+                    values.Add(brW.ReadValue(size));
                 }
                 br.BaseStream.Position = stream.Position;
+                br.BaseStream.Flush();
             }
         }
         private static void WriteValues(BinaryWriter bw, byte size, IEnumerable<int> values)

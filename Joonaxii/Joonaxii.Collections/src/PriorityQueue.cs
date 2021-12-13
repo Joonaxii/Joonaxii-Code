@@ -19,7 +19,7 @@ namespace Joonaxii.Collections
             {
                 Enqueue(item, false);
             }
-            Array.Sort(_heap, 0, Count, _comparer);
+            Sort();
         }
 
         public PriorityQueue() : this(32) { }
@@ -28,16 +28,15 @@ namespace Joonaxii.Collections
             _heap = new T[capacity];
         }
 
+        public void Sort() => Array.Sort(_heap, 0, Count, _comparer);
+
         public void Enqueue(T val, bool doSort = true)
         {
             if(_heap.Length <= Count) { Array.Resize(ref _heap, Count * 2); }
             _heap[Count] = val;
             Count++;
 
-            if (doSort)
-            {
-                Array.Sort(_heap, 0, Count, _comparer);
-            }
+            if (doSort) { Sort(); }
         }
 
         public T Dequeue()

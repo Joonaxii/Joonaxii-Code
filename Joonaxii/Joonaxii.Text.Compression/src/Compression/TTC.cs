@@ -4,7 +4,7 @@ using System.Text;
 using Joonaxii.Debugging;
 using System.Collections.Generic;
 using Joonaxii.IO;
-using Joonaxii.Math;
+using Joonaxii.MathJX;
 
 namespace Joonaxii.Text.Compression
 {
@@ -130,7 +130,7 @@ namespace Joonaxii.Text.Compression
             if (averageWordL > MAX_AVERAGE_CHARS_PER_WORD)
             {
                 System.Diagnostics.Debug.Print($"Average Token Length is too HIGH! ({averageWordL} // {MAX_AVERAGE_CHARS_PER_WORD}) Falling back to LZW!");
-                LZW.Compress(input, bw, timeStamper);
+                LZW.Compress(input, idxCompression == IndexCompressionMode.LZWChunked, bw, timeStamper);
                 return;
             }
 
@@ -180,17 +180,21 @@ namespace Joonaxii.Text.Compression
                     timeStamper?.Start($"TTC (Compress): Token Index writing '{tokenIndices.Count}' tokens");
                     #region Token Index Writing
 
+                    fileDebugger?.Start("Index Data");
                     for (int i = 0; i < tokenIndices.Count; i++)
                     {
                         var token = tokenIndices[i];
                         var wToken = tokenIntLookup[token];
                         WriteIndex(bw, tokenSize, token);
                     }
+                    fileDebugger?.Stamp(true);
+
                     #endregion
                     timeStamper?.Stamp();
                     break;
 
                 case IndexCompressionMode.LZW:
+                case IndexCompressionMode.LZWChunked:
                     fileDebugger?.StartSub("LZW Index Compression");
                     bw.Write(tokenSize);
                     bw.Write(tokenIndices.Count);
@@ -198,11 +202,10 @@ namespace Joonaxii.Text.Compression
 
                     WriteTokens(tokenIntLookup, tokenRanges, bw, timeStamper, fileDebugger);
 
-                    LZW.CompressToStream(tokenIndices, tokenSize, bw, timeStamper, fileDebugger);
+                    LZW.CompressToStream(tokenIndices, tokenSize, idxCompression == IndexCompressionMode.LZWChunked, bw, timeStamper, fileDebugger);
                     break;
 
                 case IndexCompressionMode.Huffman:
-                    fileDebugger?.Stamp(true);
 
                     WriteTokens(tokenIntLookup, tokenRanges, bw, timeStamper, fileDebugger);
 
@@ -264,6 +267,7 @@ namespace Joonaxii.Text.Compression
                     timeStamper?.Stamp();
                     break;
 
+                case IndexCompressionMode.LZWChunked:
                 case IndexCompressionMode.LZW:
                     tokenPaletteSize = br.ReadByte();
                     tokenCount = br.ReadInt32();
@@ -320,7 +324,7 @@ namespace Joonaxii.Text.Compression
                 int end = br.ReadInt32();
 
                 ranges.Add((bits, size, new RangeInt(start, end, true)));
-                System.Diagnostics.Debug.Print($"Read range: {size}, {start}, {end}");
+                System.Diagnostics.Debug.Print($"Read range: {bits}, {size}, {start} => {end}");
             }
             timeStamper?.Stamp();
 
@@ -329,7 +333,8 @@ namespace Joonaxii.Text.Compression
             int curRangeI = 0;
 
             long pos = br.BaseStream.Position;
-            using (MemoryStream bStream = new MemoryStream((br.BaseStream as MemoryStream).ToArray()))
+
+            using (MemoryStream bStream = new MemoryStream(br.BaseStream.GetData()))
             using (BitReader btR = new BitReader(bStream))
             {
                 bStream.Position = pos;
@@ -341,12 +346,12 @@ namespace Joonaxii.Text.Compression
                         curRange = ranges[curRangeI];
                     }
                     tokenLookup[i].ReadBytes(btR, curRange.bits, curRange.size);
-
                 }
                 pos = bStream.Position;
             }
 
             br.BaseStream.Position = pos;
+            br.BaseStream.Flush();
             timeStamper?.Stamp();
         }
 

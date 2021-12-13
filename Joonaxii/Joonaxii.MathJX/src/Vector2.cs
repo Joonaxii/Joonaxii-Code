@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace Joonaxii.Math
+namespace Joonaxii.MathJX
 {
     [StructLayout(LayoutKind.Sequential, Size = 8, Pack = 4)]
     public struct Vector2 : IEquatable<Vector2>
@@ -91,8 +91,8 @@ namespace Joonaxii.Math
             return vector - (2f * Dot(vector, normal) * normal);
         }
 
-        public static explicit operator Vector2Int(Vector2 vector) => new Vector2Int(MathJX.RoundToInt(vector.x), MathJX.RoundToInt(vector.y));
-        public static explicit operator Vector3Int(Vector2 vector) => new Vector3Int(MathJX.RoundToInt(vector.x), MathJX.RoundToInt(vector.y), 0);
+        public static explicit operator Vector2Int(Vector2 vector) => new Vector2Int(Maths.RoundToInt(vector.x), Maths.RoundToInt(vector.y));
+        public static explicit operator Vector3Int(Vector2 vector) => new Vector3Int(Maths.RoundToInt(vector.x), Maths.RoundToInt(vector.y), 0);
 
         public static implicit operator Vector2(Vector2Int vector) => new Vector2(vector.x, vector.y);
         public static implicit operator Vector2(Vector3Int vector) => new Vector2(vector.x, vector.y);

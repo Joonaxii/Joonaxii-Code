@@ -54,7 +54,7 @@
       <Project>{17ad5d61-4e53-4f6b-81ca-6c206631afd0}</Project>
       <Name>Joonaxii.Debugging</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Joonaxii.Math\Joonaxii.MathJX.csproj">
+    <ProjectReference Include="..\Joonaxii.MathJX\Joonaxii.MathJX.csproj">
       <Project>{0a47274a-b72f-4601-b3f1-beab27216bed}</Project>
       <Name>Joonaxii.MathJX</Name>
     </ProjectReference>

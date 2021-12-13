@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace Joonaxii.Math
+namespace Joonaxii.MathJX
 {
     [StructLayout(LayoutKind.Sequential, Size = 32)]
     public struct Matrix2x4
@@ -104,7 +104,7 @@ namespace Joonaxii.Math
             _m00 = scale.x;
             _m10 = scale.y;
 
-            float rads = zRotation * MathJX.Deg2Rad;
+            float rads = zRotation * Maths.Deg2Rad;
             _m01 = (float)System.Math.Cos(rads);
             _m11 = (float)System.Math.Sin(rads);
 
@@ -119,7 +119,7 @@ namespace Joonaxii.Math
         public Vector2 MultiplyPoint(Vector2 point) => new Vector2((point.x * _m01 + point.y * _m02) * _m00 + _m03, (point.y * _m12 + point.x * _m11) * _m10 + _m13);
         public Vector2 MultiplyVector(Vector2 vec) => new Vector2((vec.x * _m01 + vec.y * _m02) * _m00, (vec.y * _m12 + vec.x * _m11) * _m10);
         public Vector2 ScaleVector(Vector2 vec) => new Vector2(vec.x * _m00, vec.y * _m10);
-        public float Rotate(float rotation) => rotation + MathJX.Acos(_m01) * MathJX.Rad2Deg;
+        public float Rotate(float rotation) => rotation + Maths.Acos(_m01) * Maths.Rad2Deg;
 
         public override string ToString() => $"M00: {_m00}, M01: {_m01}, M02: {_m02}, M03: {_m03}, M10: {_m10}, M11: {_m11}, M12: {_m12}, M13: {_m13}";
     }

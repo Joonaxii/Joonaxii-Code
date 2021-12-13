@@ -1,4 +1,4 @@
-﻿namespace Joonaxii.Math
+﻿namespace Joonaxii.MathJX
 {
     public struct RectInt
     {

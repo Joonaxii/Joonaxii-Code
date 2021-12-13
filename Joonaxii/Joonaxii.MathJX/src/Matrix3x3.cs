@@ -5,7 +5,9 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Joonaxii.Math
+using MathS = System.Math;
+
+namespace Joonaxii.MathJX
 {
     [StructLayout(LayoutKind.Sequential, Size = 36)]
     public struct Matrix3x3
@@ -194,7 +196,11 @@ namespace Joonaxii.Math
         }
 
         public Vector2 MultiplyPoint(Vector2 point) => new Vector2((point.x * _m01 + point.y * _m02) * _m00 + _m20, (point.y * _m12 + point.x * _m11) * _m10 + _m21);
-        public Vector2 MultiplyVector(Vector2 vec) => new Vector2((vec.x * _m01 + vec.y * _m02) * _m00, (vec.y * _m12 + vec.x * _m11) * _m10);
+        public Vector2 MultiplyVector(Vector2 vec) => new Vector2((vec.x * _m01 + vec.y) * _m00, (vec.y * _m12 + vec.x * _m11));
+        public Vector2 RotatePoint(Vector2 vec) => new Vector2((vec.x * _m01 + vec.y) * _m00, (vec.y * _m12 + vec.x * _m11));
+        public Vector2 MultiplyAbsVector(Vector2 vec) => 
+            new Vector2((vec.x * MathS.Abs(_m01) + vec.y * MathS.Abs(_m02)) * _m00, 
+                        (vec.y * MathS.Abs(_m12) + vec.x * MathS.Abs(_m11)) * _m10);
         public Vector2 ScaleVector(Vector2 vec) => new Vector2(vec.x * _m00, vec.y * _m10);
         public float Rotate(float rotation) => rotation + _m22;
 
@@ -212,9 +218,9 @@ namespace Joonaxii.Math
         }
         public void SetRotation(float zRotation)
         {
-            float rads = zRotation * MathJX.Deg2Rad;
-            _m01 = MathJX.Cos(rads);
-            _m11 = MathJX.Sin(rads);
+            float rads = zRotation * Maths.Deg2Rad;
+            _m01 = Maths.Cos(rads);
+            _m11 = Maths.Sin(rads);
 
             _m02 = -_m11;
             _m12 = _m01;

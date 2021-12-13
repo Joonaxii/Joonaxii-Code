@@ -1,7 +1,7 @@
 ﻿using Joonaxii.Collections;
 using Joonaxii.Debugging;
 using Joonaxii.IO;
-using Joonaxii.Math;
+using Joonaxii.MathJX;
 using Joonaxii.Pooling;
 using System;
 using System.Collections.Generic;
@@ -135,8 +135,8 @@ namespace Joonaxii.Text.Compression
                 HuffmanNodeTrace[] leafData = new HuffmanNodeTrace[leaves];
                 System.Diagnostics.Debug.Print($"Huffman Header: {bitCount}, {valSize}, {traceSize}, {leaves}");
                 long posStart = br.BaseStream.Position;
-        
-                using (MemoryStream streamIn = new MemoryStream((br.BaseStream as MemoryStream).ToArray()))
+
+                using (MemoryStream streamIn = new MemoryStream(br.BaseStream.GetData()))
                 using (BitReader btR = new BitReader(streamIn))
                 {
                     streamIn.Position = posStart;

@@ -1,15 +1,39 @@
 ﻿using System;
 
-namespace Joonaxii.Math
+namespace Joonaxii.MathJX
 {
-    public static class MathJX
+    public static class Maths
     {
-        public const float PI = (float)System.Math.PI;
+        public const float PI = (float)Math.PI;
         public const float TWO_PI = PI * 2.0f;
         public const float Epsilon = 1E-15f;
 
         public const float Deg2Rad = PI / 180;
         public const float Rad2Deg = 360.0f / TWO_PI;
+
+        public static byte GetRange(this byte val, byte start, byte length)
+        {
+            byte v = 0;
+
+            int ii = 0;
+            for (byte i = start; i < start + length; i++)
+            {
+                v = v.SetBit(ii++, val.IsBitSet(i));
+            }
+            return v;
+        }
+
+        public static byte SetRange(this byte val, byte start, byte length, byte value)
+        {
+            byte v = val;
+
+            int ii = 0;
+            for (byte i = start; i < start + length; i++)
+            {
+                v = v.SetBit(i, value.IsBitSet(ii++));
+            }
+            return v;
+        }
 
         public static bool IsBitSet(this ulong val, int bit) => (val & (1ul << bit)) != 0;
         public static ulong SetBit(this ulong input, int bitIndex, bool value)

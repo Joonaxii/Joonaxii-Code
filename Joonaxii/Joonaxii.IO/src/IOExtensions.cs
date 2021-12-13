@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Text;
 
 namespace Joonaxii.IO
@@ -33,8 +34,21 @@ namespace Joonaxii.IO
             return value;
         }
 
-        public static int BitsNeeded(int value) => (int)(System.Math.Log(value) / System.Math.Log(2)) + 1;
+        public static byte[] GetData(this Stream stream)
+        {
+            if (stream is MemoryStream ms)
+            {
+                return ms.ToArray();
+            }
 
+            using (ms = new MemoryStream())
+            {
+                stream.CopyTo(ms);
+                return ms.ToArray();
+            }
+        }
+
+        public static int BitsNeeded(int value) => value < 1 ? 1 : (int)(System.Math.Log(value) / System.Math.Log(2)) + 1;
 
         public static string ToHexString(this string str, string separator = "")
         {

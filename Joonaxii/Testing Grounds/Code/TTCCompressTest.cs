@@ -61,7 +61,7 @@ namespace Testing_Grounds
 
             if (compress)
             {
-                Console.WriteLine("\nWhat type of Index compression would you like to use?\n  -None: 0\n  -LZW: 1\n  -Huffman: 2");
+                Console.WriteLine("\nWhat type of Index compression would you like to use?\n  -None: 0\n  -LZW: 1\n  -LZW Chunked: 2\n  -Huffman: 3");
                 while (true)
                 {
                     bool selected = false;
@@ -76,6 +76,10 @@ namespace Testing_Grounds
                             compMode = IndexCompressionMode.LZW;
                             break;
                         case ConsoleKey.D2:
+                            selected = true;
+                            compMode = IndexCompressionMode.LZWChunked;
+                            break;
+                        case ConsoleKey.D3:
                             selected = true;
                             compMode = IndexCompressionMode.Huffman;
                             break;
@@ -180,7 +184,7 @@ namespace Testing_Grounds
                             {
                                 sb.Append($"Header: [{(char)data[0 + pos]},{(char)data[1 + pos]},{(char)data[2 + pos]}, {data.ToInt(3 + (int)pos)}, {data[7 + pos]}, {data.ToUShort(8 + (int)pos)}]\n");
                                 sb.Append($"Data: [");
-                                for (long i = LZW.HEADER_SIZE + pos; i < data.Length; i++)
+                                for (long i = 10 + pos; i < data.Length; i++)
                                 {
                                     sb.Append($"{(i < data.Length - 1 ? $"{data[i]}," : $"{data[i]}")}");
                                 }

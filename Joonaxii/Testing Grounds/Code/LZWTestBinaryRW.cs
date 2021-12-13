@@ -15,6 +15,7 @@ namespace Testing_Grounds
         {
             Console.WriteLine("Do you want to load the text from a file? (Y/N)");
             bool fromFile = false;
+            bool useChunks = false;
 
             while (true)
             {
@@ -28,7 +29,20 @@ namespace Testing_Grounds
                 if (key == ConsoleKey.N) { break; }
             }
 
-        file:
+            Console.WriteLine("Do you want to use index data chunking? (Y/N)");
+            while (true)
+            {
+                ConsoleKey key = Console.ReadKey(true).Key;
+                if (key == ConsoleKey.Y)
+                {
+                    useChunks = true;
+                    break;
+                }
+
+                if (key == ConsoleKey.N) { break; }
+            }
+
+            file:
             Console.WriteLine(fromFile ? "Please enter the path to the text file that should be read" : "Please enter a string you'd like to compress");
             string compressable = "";
 
@@ -53,7 +67,7 @@ namespace Testing_Grounds
             using (MemoryStream stream = new MemoryStream())
             using (BinaryWriter bw = new BinaryWriter(stream))
             {
-                LZW.Compress(compressable, bw);
+                LZW.Compress(compressable, useChunks, bw);
                 bytes = stream.ToArray();
 
                 if (fromFile)
@@ -119,7 +133,7 @@ namespace Testing_Grounds
                 Console.WriteLine($"\nDecompressed String [{decompressed.Length} chars]");
 
                 Console.WriteLine($"\nSize of original string (Inc. length (4 bytes)): {compressable.Length * compressable.GetCharSize() + (4)} bytes");
-                Console.WriteLine($"Size of compressed string (Inc. Header ({LZW.HEADER_SIZE} bytes)): {data.Length * size + (LZW.HEADER_SIZE)} bytes");
+                Console.WriteLine($"Size of compressed string (Inc. Header): {data.Length * size} bytes");
             }
             else
             {
@@ -132,7 +146,7 @@ namespace Testing_Grounds
                 Console.WriteLine($"\nDecompressed String [{decompressed}]");
 
                 Console.WriteLine($"\nSize of original string (Inc. length (4 bytes)): {compressable.Length * compressable.GetCharSize() + (4)} bytes");
-                Console.WriteLine($"Size of compressed string (Inc. Header ({LZW.HEADER_SIZE} bytes)): {data.Length * size + (LZW.HEADER_SIZE)} bytes");
+                Console.WriteLine($"Size of compressed string (Inc. Header): {data.Length * size} bytes");
             }
 
             Console.WriteLine($"\nPress enter to go back to the menu.");

@@ -1,4 +1,4 @@
-﻿namespace Joonaxii.Math
+﻿namespace Joonaxii.MathJX
 {
     public struct Rect
     {
@@ -53,7 +53,14 @@
             _max = pos + _size;
         }
 
-        public void Set(Vector2 min, Vector2 max)
+        public void Set(Vector2 pos, Vector2 size)
+        {
+            _size = size;
+            _sizeHalf = _size * 0.5f;
+            Set(pos);
+        }
+
+        public void SetMinMax(Vector2 min, Vector2 max)
         {
             _min.x = min.x;
             _min.y = min.y;
@@ -67,5 +74,8 @@
             _center = _min + _sizeHalf;
             _max = _min + _size;
         }
+
+        public bool Overlaps(Rect rect) => !(_min.x > rect._max.x | _min.y > rect._max.y | _max.x < rect._min.x | _max.y < rect._min.y);
+        public bool Contains(Vector2 point) => !(_min.x > point.x | _min.y > point.y | _max.x < point.x | _max.y < point.y);
     }
 }
