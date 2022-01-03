@@ -7,79 +7,124 @@ namespace Joonaxii.IO
 {
     public class BitReader : BinaryReader
     {
-        public byte BitPosition { get; private set; } = 0;
-        private byte _bufferBits = 0;
+        public bool IsEoF { get => BaseStream.Position >= BaseStream.Length; }
 
-        public BitReader(Stream stream) : base(stream) { BitPosition = 8; }
+        private byte _buffer;
+        private byte _bufferPos;
+
+        private Encoding _encoding;
+        private Decoder _decoder;
+
+        private const int MAX_CHAR_BYTES = 128;
+        private byte[] _charBytes;
+        private char[] _singleChar;
+        private char[] _charBuffer;
+        private int _maxCharsSize;
+
+        private bool _2BytesPerChar;
+        private bool _isMemoryStream;
+
+        public BitReader(Stream input) : this(input, Encoding.UTF8)
+        {
+        }
+
+        public BitReader(Stream input, Encoding encoding) : base(input)
+        {
+            _bufferPos = 8;
+            _encoding = encoding;
+            _decoder = encoding?.GetDecoder();
+
+            _maxCharsSize = encoding != null ? encoding.GetMaxCharCount(MAX_CHAR_BYTES) : MAX_CHAR_BYTES / 2;
+
+            _2BytesPerChar = encoding is UnicodeEncoding;
+            _isMemoryStream = input.GetType() == typeof(MemoryStream);
+        }
 
         public override bool ReadBoolean()
         {
-            FlushIfNeeded();
-            return _bufferBits.IsBitSet(BitPosition++);
+            ReadBuffer();
+            return _buffer.IsBitSet(_bufferPos++);
         }
 
-        public override byte ReadByte()
+        public override byte ReadByte() => ReadByte(8);
+        public override sbyte ReadSByte() => ReadSByte(8);
+
+        public override char ReadChar() => (char)ReadUInt16(16);
+
+        public override short ReadInt16() => ReadInt16(16);
+        public override ushort ReadUInt16() => ReadUInt16(16);
+
+        public override int ReadInt32() => ReadInt32(32);
+        public override uint ReadUInt32() => ReadUInt32(32);
+
+        public override long ReadInt64() => ReadInt64(64);
+        public override ulong ReadUInt64() => ReadUInt64(64);
+
+        public override string ReadString()
         {
-            FlushIfNeeded();
+            int len = Read7BitInt();
+            StringBuilder sb = null;
 
-            byte byt = 0;
-            for (int i = 0; i < 8; i++)
+            if (_encoding == null)
             {
-                byt = byt.SetBit(i, ReadBoolean());
-            }
-            return byt;
-        }
-
-        public byte ReadByte(int bitsPerByte, int bitJump = 1, bool debug = false)
-        {
-            FlushIfNeeded();
-
-            byte byt = 0;
-            byte bytI = 0;
-            while (bytI < 8)
-            {
-                for (int i = 0; i < bitsPerByte; i++)
+                sb = new StringBuilder();
+                for (int i = 0; i < len; i++)
                 {
-                    byt = byt.SetBit(bytI++, ReadBoolean());
-                    if(bytI >= 8) { break; }
+                    sb.Append(ReadChar());
                 }
-
-                for (int i = 0; i < bitJump; i++)
-                {
-                    BitPosition = 8;
-                    FlushIfNeeded();
-                    BitPosition = 8;
-                }
+                return sb.ToString();
             }
 
-            if (debug)
+            if(len <= 0) { return string.Empty; }
+
+            if(_charBytes == null)
             {
-                System.Diagnostics.Debug.Print($"{_bufferBits} [{Convert.ToString(_bufferBits, 2).PadLeft(8, '0')}]");
+                _charBytes = new byte[MAX_CHAR_BYTES];
             }
-            return byt;
+
+            if (_charBuffer == null)
+            {
+                _charBuffer = new char[_maxCharsSize];
+            }
+
+            int currPos = 0;
+            int n;
+            int rLen;
+            int cRead;
+
+            while(currPos < len)
+            {
+                rLen = ((len - currPos) > MAX_CHAR_BYTES) ? MAX_CHAR_BYTES : (len - currPos);
+                n = Read(_charBytes, 0, rLen);
+
+                if(n == 0) { break; }
+
+                cRead = _decoder.GetChars(_charBytes, 0, n, _charBuffer, 0);
+                if(currPos == 0 & n == len) { return new string(_charBuffer, 0, cRead); }
+
+                if(sb == null) { sb = new StringBuilder(len); }
+                sb.Append(_charBuffer, 0, cRead);
+                currPos += n;
+            }
+            return sb == null ? string.Empty : sb.ToString();
         }
 
-        public int ReadValue(int bits)
+        public override int Read() => BaseStream.Position >= BaseStream.Length ? -1 : ReadByte();
+
+        public override int Read(char[] buffer, int index, int count)
         {
-            int val = 0;
-            for (int i = 0; i < bits; i++)
-            {
-                val = val.SetBit(i, ReadBoolean());
-            }
-            return val;
+            int c = Math.Min(count, buffer.Length);
+            Buffer.BlockCopy(ReadChars(count), 0, buffer, index, c * 2);
+            return c;
         }
-
-        public ulong ReadValue(byte leastBits, int bytes, int bitJump = 1, bool debug = false)
+        public override char[] ReadChars(int count)
         {
-            FlushIfNeeded();
-
-            ulong val = 0;
-
-            for (int i = 0; i < bytes; i++)
+            char[] chars = new char[count];
+            for (int i = 0; i < count; i++)
             {
-                val += ((ulong)ReadByte(leastBits, bitJump) << i * 8);
+                chars[i] = ReadChar();
             }
-            return val;
+            return chars;
         }
 
         public override byte[] ReadBytes(int count)
@@ -91,73 +136,149 @@ namespace Joonaxii.IO
             }
             return bytes;
         }
-
         public override int Read(byte[] buffer, int index, int count)
         {
-            for (int i = index; i < index + count; i++)
-            {
-                if (i >= buffer.Length) { return buffer.Length; }
-                buffer[i] = ReadByte();
-            }
-            return count;
+            int c = Math.Min(count, buffer.Length);
+            Buffer.BlockCopy(ReadBytes(count), 0, buffer, index, c);
+            return c;
         }
 
-        public override int Read(char[] chars, int index, int count)
+        public override unsafe float ReadSingle()
         {
-            for (int i = index; i < index + count; i++)
-            {
-                if (i >= chars.Length) { return chars.Length; }
-                chars[i] = ReadChar();
-            }
-            return count;
+            uint tmpBuf = (uint)(ReadByte() | ReadByte() << 8 | ReadByte() << 16 | ReadByte() << 24);
+            return *((float*)&tmpBuf);
         }
 
-        public override char ReadChar() => BitConverter.ToChar(ReadBytes(2), 0);
-        public override char[] ReadChars(int count)
+        public override unsafe double ReadDouble()
         {
-            var chars = new char[count];
-            Read(chars, 0, count);
-            return chars;
+            uint lo = (uint)(ReadByte() | ReadByte() << 8 | ReadByte() << 16 | ReadByte() << 24);
+            uint hi = (uint)(ReadByte() | ReadByte() << 8 | ReadByte() << 16 | ReadByte() << 24);
+
+            ulong tmp = ((ulong)hi) << 32 | lo;
+            return *((double*)&tmp);
         }
 
         public override decimal ReadDecimal()
         {
-            int[] ints = new int[4];
-            for (int i = 0; i < ints.Length; i++)
-            {
-                ints[i] = ReadInt32();
-            }
-            return new decimal(ints);
-        }
-        public override double ReadDouble() => BitConverter.ToDouble(ReadBytes(8), 0);
-        public override short ReadInt16() => (short)ReadValue(16);
-        public override int ReadInt32() => ReadValue(32);
-        public int ReadInt32(byte bits, int bitJump = 1) => (int)ReadValue(bits, 4, bitJump);
-        public override long ReadInt64() => BitConverter.ToInt64(ReadBytes(8), 0);
-        public ulong ReadUInt64(byte bits, int bitJump = 1) => ReadValue(bits, 8, bitJump);
-        public override sbyte ReadSByte() => (sbyte)ReadByte();
-        public override float ReadSingle() => BitConverter.ToSingle(ReadBytes(4), 0);
-        public override string ReadString()
-        {
-            int l = ReadInt32();
-            StringBuilder sb = new StringBuilder(l);
-            for (int i = 0; i < l; i++)
-            {
-                sb.Append(ReadChar());
-            }
-            return sb.ToString();
-        }
-        public override ushort ReadUInt16() => (ushort)ReadValue(16);
-        public ushort ReadUInt16(byte bits, int bitJump = 1) => (ushort)ReadValue(bits, 2, bitJump);
-        public override uint ReadUInt32() => (uint)ReadValue(32);
-        public override ulong ReadUInt64() => BitConverter.ToUInt64(ReadBytes(8), 0);
+            int[] buff = new int[4];
+            Buffer.BlockCopy(ReadBytes(16), 0, buff, 0, 16);
 
-        private void FlushIfNeeded()
+            return new Decimal(buff);
+        }
+
+        public byte ReadByte(byte bits)
         {
-            if (BitPosition >= 8)
+            byte v = 0;
+            for (byte i = 0; i < bits; i++)
             {
-                _bufferBits = base.ReadByte();
-                BitPosition = 0;
+                v = v.SetBit(i, ReadBoolean());
+            }
+            return v;
+        }
+        public sbyte ReadSByte(byte bits)
+        {
+            sbyte v = 0;
+            for (byte i = 0; i < bits; i++)
+            {
+                v = v.SetBit(i, ReadBoolean());
+            }
+            return v;
+        }
+
+        public short ReadInt16(byte bits)
+        {
+            short v = 0;
+            for (byte i = 0; i < bits; i++)
+            {
+                v = v.SetBit(i, ReadBoolean());
+            }
+            return v;
+        }
+        public ushort ReadUInt16(byte bits)
+        {
+            ushort v = 0;
+            for (byte i = 0; i < bits; i++)
+            {
+                v = v.SetBit(i, ReadBoolean());
+            }
+            return v;
+        }
+
+        public int ReadInt32(byte bits)
+        {
+            int v = 0;
+            for (byte i = 0; i < bits; i++)
+            {
+                v = v.SetBit(i, ReadBoolean());
+            }
+            return v;
+        }
+        public uint ReadUInt32(byte bits)
+        {
+            uint v = 0;
+            for (byte i = 0; i < bits; i++)
+            {
+                v = v.SetBit(i, ReadBoolean());
+            }
+            return v;
+        }
+
+        public long ReadInt64(byte bits)
+        {
+            long v = 0;
+            for (int i = 0; i < bits; i++)
+            {
+                v = v.SetBit(i, ReadBoolean());
+            }
+            return v;
+        }
+        public ulong ReadUInt64(byte bits)
+        {
+            ulong v = 0;
+            for (byte i = 0; i < bits; i++)
+            {
+                v = v.SetBit(i, ReadBoolean());
+            }
+            return v;
+        }
+
+        public byte[] ReadToEnd()
+        {
+            if(_bufferPos < 8 & _bufferPos > 0) { DiscardBitBuffer(false); }
+            int count = /*_bufferPos >= 8 ? (int)(BaseStream.Length - BaseStream.Position) - 1 : */(int)(BaseStream.Length - BaseStream.Position);
+            return ReadBytes(count);
+        }
+
+        public int Read7BitInt()
+        {
+            int count = 0;
+            int shift = 0;
+
+            byte b = ReadByte();
+            count |= (b & 0x7F) << shift;
+            shift += 7;
+
+            while ((b & 0x80) != 0)
+            {
+                if (shift >= 5 * 7) { break; }
+
+                b = ReadByte();
+                count |= (b & 0x7F) << shift;
+                shift += 7;
+
+            }
+            return count;
+        }
+        public uint Read7BitUInt() => (uint)Read7BitInt();
+
+        public void DiscardBitBuffer(bool ignoreFirst = false) => ReadBuffer(ignoreFirst || _bufferPos > 0);
+
+        private void ReadBuffer(bool force = false)
+        {
+            if (_bufferPos >= 8 | force)
+            {
+                _buffer = IsEoF ? (byte)0 : base.ReadByte();
+                _bufferPos = 0;
             }
         }
     }

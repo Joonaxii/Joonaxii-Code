@@ -11,6 +11,18 @@ namespace Joonaxii.MathJX
         public const float Deg2Rad = PI / 180;
         public const float Rad2Deg = 360.0f / TWO_PI;
 
+        public static int GetRange(this int val, byte start, byte length)
+        {
+            int v = 0;
+
+            int ii = 0;
+            for (byte i = start; i < start + length; i++)
+            {
+                v = v.SetBit(ii++, val.IsBitSet(i));
+            }
+            return v;
+        }
+
         public static byte GetRange(this byte val, byte start, byte length)
         {
             byte v = 0;
@@ -33,6 +45,51 @@ namespace Joonaxii.MathJX
                 v = v.SetBit(i, value.IsBitSet(ii++));
             }
             return v;
+        }
+
+        public static int Encode7Bit(this int input)
+        {
+            int val = 0;
+            uint v = (uint)input;
+
+            byte i = 0;
+            while (v >= 0x80)
+            {
+                val += ((byte)(v | 0x80) << i++);
+                v >>= 7;
+            }
+
+            val += ((byte)v << i);
+            return val;
+        }
+
+        public static int Decode7Bit(this int input)
+        {
+            int count = 0;
+            int shift = 0;
+            byte i = 0;
+
+            int b = input.GetRange(0, 8);
+            count |= (b & 0x7F) << shift;
+            shift += 7;
+
+            i++;
+            while ((b & 0x80) != 0)
+            {
+                if (shift >= 5 * 7) { break; }
+
+                b = input.GetRange((byte)((i++) * 8), 8);
+                count |= (b & 0x7F) << shift;
+                shift += 7;
+            }
+            return count;
+        }
+
+        public static bool IsBitSet(this long val, int bit) => (val & (1L << bit)) != 0;
+        public static long SetBit(this long input, int bitIndex, bool value)
+        {
+            if (value) { return input |= (1L << bitIndex); }
+            return input &= ~(1L << bitIndex);
         }
 
         public static bool IsBitSet(this ulong val, int bit) => (val & (1ul << bit)) != 0;
@@ -63,6 +120,20 @@ namespace Joonaxii.MathJX
             return input &= (ushort)~(1 << bitIndex);
         }
 
+        public static bool IsBitSet(this char val, byte bit) => (val & (1 << bit)) != 0;
+        public static char SetBit(this char input, byte bitIndex, bool value)
+        {
+            if (value) { return input |= (char)(1 << bitIndex); }
+            return input &= (char)~(1 << bitIndex);
+        }
+
+        public static bool IsBitSet(this short val, byte bit) => (val & (1 << bit)) != 0;
+        public static short SetBit(this short input, byte bitIndex, bool value)
+        {
+            if (value) { return input |= (short)(1 << bitIndex); }
+            return input &= (short)~(1 << bitIndex);
+        }
+
         public static bool IsBitSet(this int val, int bit) => (val & (1 << bit)) != 0;
         public static int SetBit(this int input, int bitIndex, bool value)
         {
@@ -70,11 +141,25 @@ namespace Joonaxii.MathJX
             return input &= ~(1 << bitIndex);
         }
 
+        public static bool IsBitSet(this uint val, int bit) => (val & (1u << bit)) != 0;
+        public static uint SetBit(this uint input, int bitIndex, bool value)
+        {
+            if (value) { return input |= (1u << bitIndex); }
+            return input &= ~(1u << bitIndex);
+        }
+
         public static bool IsBitSet(this byte val, int bit) => (val & (1 << bit)) != 0;
         public static byte SetBit(this byte input, int bitIndex, bool value)
         {
             if (value) { return input |= (byte)(1 << bitIndex); }
             return input &= (byte)~(1 << bitIndex);
+        }
+
+        public static bool IsBitSet(this sbyte val, int bit) => (val & (1 << bit)) != 0;
+        public static sbyte SetBit(this sbyte input, int bitIndex, bool value)
+        {
+            if (value) { return input |= (sbyte)(1 << bitIndex); }
+            return input &= (sbyte)~(1 << bitIndex);
         }
 
         #region Math Logic

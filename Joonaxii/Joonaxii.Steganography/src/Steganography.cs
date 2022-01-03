@@ -294,28 +294,30 @@ namespace Joonaxii.Stegaography
 
         public static void Decrypt(byte[] data, byte bitJump, out string name, out byte[] dataOut)
         {
+            dataOut = null;
+            name = "";
             using (MemoryStream stream = new MemoryStream(data))
             using (BitReader br = new BitReader(stream))
             {
-                byte leastSigBits = br.ReadByte(1, bitJump);
+                //byte leastSigBits = br.ReadByte(1, bitJump);
 
-                ulong bitLen = br.ReadUInt64(leastSigBits, bitJump);
-                int nameL = br.ReadInt32(leastSigBits, bitJump);
+                //ulong bitLen = br.ReadUInt64(leastSigBits, bitJump);
+                //int nameL = br.ReadInt32(leastSigBits, bitJump);
 
-                StringBuilder sb = new StringBuilder(nameL);
-                for (int i = 0; i < nameL; i++)
-                {
-                    sb.Append((char)br.ReadUInt16(leastSigBits, bitJump));
-                }
-                name = sb.ToString();
+                //StringBuilder sb = new StringBuilder(nameL);
+                //for (int i = 0; i < nameL; i++)
+                //{
+                //    sb.Append((char)br.ReadUInt16(leastSigBits, bitJump));
+                //}
+                //name = sb.ToString();
 
-                System.Diagnostics.Debug.Print($"Read header with '{leastSigBits}' least-sig-bit, byte count of '{bitLen}' & name of {name}");
-                dataOut = new byte[bitLen];
+                //System.Diagnostics.Debug.Print($"Read header with '{leastSigBits}' least-sig-bit, byte count of '{bitLen}' & name of {name}");
+                //dataOut = new byte[bitLen];
 
-                for (ulong i = 0; i < bitLen; i++)
-                {
-                    dataOut[i] = br.ReadByte(leastSigBits, bitJump);
-                }
+                //for (ulong i = 0; i < bitLen; i++)
+                //{
+                //     dataOut[i] = br.ReadByte(leastSigBits, bitJump);
+                //}
             }
         }
 

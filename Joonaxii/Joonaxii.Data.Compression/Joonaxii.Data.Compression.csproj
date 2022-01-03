@@ -4,21 +4,22 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{0A47274A-B72F-4601-B3F1-BEAB27216BED}</ProjectGuid>
+    <ProjectGuid>{228B01CC-0F58-424F-AF82-06FDF122F401}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Joonaxii.MathJX</RootNamespace>
-    <AssemblyName>Joonaxii.MathJX</AssemblyName>
+    <RootNamespace>Joonaxii.Data.Compression</RootNamespace>
+    <AssemblyName>Joonaxii.Data.Compression</AssemblyName>
     <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;J_MATH_PRESENT</DefineConstants>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -27,7 +28,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;J_MATH_PRESENT</DefineConstants>
+    <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -35,7 +36,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>bin\x86\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;J_MATH_PRESENT</DefineConstants>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DebugType>full</DebugType>
     <PlatformTarget>x86</PlatformTarget>
@@ -44,7 +45,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <OutputPath>bin\x86\Release\</OutputPath>
-    <DefineConstants>TRACE;J_MATH_PRESENT</DefineConstants>
+    <DefineConstants>TRACE</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
@@ -63,17 +64,26 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="src\ComparisonType.cs" />
-    <Compile Include="src\Maths.cs" />
+    <Compile Include="src\Huffman\Huffman.cs" />
+    <Compile Include="src\Huffman\HuffmanBranch.cs" />
+    <Compile Include="src\Huffman\HuffmanLeaf.cs" />
+    <Compile Include="src\Huffman\HuffmanNode.cs" />
+    <Compile Include="src\Huffman\HuffmanTrace.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="src\Matrix3x3.cs" />
-    <Compile Include="src\Range.cs" />
-    <Compile Include="src\Rect.cs" />
-    <Compile Include="src\RectInt.cs" />
-    <Compile Include="src\Vector2.cs" />
-    <Compile Include="src\Vector2Int.cs" />
-    <Compile Include="src\Vector3.cs" />
-    <Compile Include="src\Vector3Int.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Joonaxii.Collections\Joonaxii.Collections.csproj">
+      <Project>{68986e7f-1281-485b-941e-fb1d69cc8427}</Project>
+      <Name>Joonaxii.Collections</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.IO\Joonaxii.IO.csproj">
+      <Project>{5bcc1979-54d1-4c35-b402-9520c1734766}</Project>
+      <Name>Joonaxii.IO</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.MathJX\Joonaxii.MathJX.csproj">
+      <Project>{0a47274a-b72f-4601-b3f1-beab27216bed}</Project>
+      <Name>Joonaxii.MathJX</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -1,9 +1,14 @@
-﻿using Joonaxii.Debugging;
+﻿using Joonaxii.Data.Compression.Huffman;
+using Joonaxii.Debugging;
 using Joonaxii.IO;
 using Joonaxii.Text.Compression;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Testing_Grounds
@@ -13,6 +18,12 @@ namespace Testing_Grounds
         private static MenuItem[] _menu = new MenuItem[]
         {
             new TTCCompressTest("TTC Compression/Decompression"),
+            new TTCCompressDataTest("TTC Data Decompress"),
+            new BmpDecodeTest("Bmp Decode Test"),
+            new WebpDecodeTest("Webp Decode Test"),
+
+            new HuffmanCompressTest("Huffman Compression/Decompression"),
+
             new SteganographyTest("Steganography Testing"),
 
             new LZWTest("LZW Compression/Decompression"),

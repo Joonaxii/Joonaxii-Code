@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Joonaxii.MathJX;
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -6,18 +8,78 @@ namespace Joonaxii.IO
 {
     public static class IOExtensions
     {
+        public static void CopyToLongList(List<long> longs, IEnumerable<byte> values)
+        {
+            foreach (var item in values)
+            {
+                longs.Add(item);
+            }
+        }
+
+        public static void CopyToLongList(List<long> longs, IEnumerable<int> values)
+        {
+            foreach (var item in values)
+            {
+                longs.Add(item);
+            }
+        }
+
+        public static byte ConvertToLongList(List<long> longs, IEnumerable<byte> values)
+        {
+            byte padding = 0;
+            List<byte> bytes = new List<byte>(values);
+            int ii = 0;
+            while (ii < bytes.Count)
+            {
+                long val = 0;
+                for (int i = 0; i < 8; i++)
+                {
+                    val += ((long)bytes[ii++] << i * 8);
+                    if (ii >= bytes.Count)
+                    {
+                        padding = (byte)(8 - i);
+                        break;
+                    }
+                }
+                longs.Add(val);
+            }
+            return padding;
+        }
+
+        public static byte ConvertToLongList(List<long> longs, IEnumerable<int> values)
+        {
+            byte padding = 0;
+            List<int> ints = new List<int>(values);
+            int ii = 0;
+            while (ii < ints.Count)
+            {
+                long val = 0;
+                for (int i = 0; i < 2; i++)
+                {
+                    val += ((long)ints[ii++] << i * 32);
+                    if (ii >= ints.Count)
+                    {
+                        padding = (byte)(2 - i);
+                        break;
+                    }
+                }
+                longs.Add(val);
+            }
+            return padding;
+        }
+
         public static int GetCharSize(this string str)
         {
             for (int i = 0; i < str.Length; i++)
             {
-                if(str[i] > byte.MaxValue) { return 2; }
+                if (str[i] > byte.MaxValue) { return 2; }
             }
             return 1;
         }
 
         public static int NextPowerOf(int value, int power)
         {
-            while(value % power != 0)
+            while (value % power != 0)
             {
                 value++;
             }
@@ -27,11 +89,21 @@ namespace Joonaxii.IO
 
         public static long NextPowerOf(long value, int power)
         {
-            while(value % power != 0)
+            while (value % power != 0)
             {
                 value++;
             }
             return value;
+        }
+
+        public static void CopyToWithPos(this Stream stream, Stream other)
+        {
+            long pos = stream.Position;
+            stream.Position = 0;
+
+            stream.CopyTo(other);
+            other.Position = pos;
+            stream.Position = pos;
         }
 
         public static byte[] GetData(this Stream stream)
@@ -43,12 +115,70 @@ namespace Joonaxii.IO
 
             using (ms = new MemoryStream())
             {
+                long pos = stream.Position;
+                stream.Position = 0;
                 stream.CopyTo(ms);
+                stream.Position = pos;
                 return ms.ToArray();
             }
         }
 
-        public static int BitsNeeded(int value) => value < 1 ? 1 : (int)(System.Math.Log(value) / System.Math.Log(2)) + 1;
+        public static byte GetRequired7BitBytes(int value)
+        {
+            byte b = 0;
+            uint v = (uint)value;
+            while (v >= 0x80)
+            {
+                b++;
+                v >>= 7;
+            }
+            b++;
+            return b;
+        }
+
+        public static void Encode7BitInt(this BinaryWriter br, int value)
+        {
+            uint v = (uint)value;
+            while (v >= 0x80)
+            {
+                br.Write((byte)(v | 0x80));
+                v >>= 7;
+            }
+            br.Write((byte)v);
+        }
+
+        public static int Decode7BitInt(this BinaryReader br)
+        {
+            int count = 0;
+            int shift = 0;
+
+            byte b = br.ReadByte();
+            count |= (b & 0x7F) << shift;
+            shift += 7;
+
+            while ((b & 0x80) != 0)
+            {
+                if (shift >= 5 * 7) { break; }
+
+                b = br.ReadByte();
+                count |= (b & 0x7F) << shift;
+                shift += 7;
+
+            }
+            return count;
+        }
+
+        public static byte BitsNeeded(sbyte value) { unsafe { return BitsNeeded(*(byte*)&value); }; }
+        public static byte BitsNeeded(byte value) => value < 1 ? (byte)1 : (byte)((Math.Log(value) / Math.Log(2)) + 1.0);
+
+        public static byte BitsNeeded(short value) { unsafe { return BitsNeeded(*(ushort*)&value); }; }
+        public static byte BitsNeeded(ushort value) => value < 1 ? (byte)1 : (byte)((Math.Log(value) / Math.Log(2)) + 1.0);
+
+        public static byte BitsNeeded(int value) { unsafe { return BitsNeeded(*(uint*)&value); }; }
+        public static byte BitsNeeded(uint value) => value < 1 ? (byte)1 : (byte)((Math.Log(value) / Math.Log(2)) + 1.0);
+
+        public static byte BitsNeeded(long value) { unsafe { return BitsNeeded(*(ulong*)&value); }; }
+        public static byte BitsNeeded(ulong value) => value < 1 ? (byte)1 : (byte)((Math.Log(value) / Math.Log(2)) + 1.0);
 
         public static string ToHexString(this string str, string separator = "")
         {
@@ -118,6 +248,45 @@ namespace Joonaxii.IO
                 val += (short)((data[i + start] << (i * 8)));
             }
             return val;
+        }
+
+        public static void ReadBits(this BinaryReader br, long bitCount, List<bool> bits)
+        {
+            byte bI = 0;
+            byte val = br.ReadByte();
+            for (long i = 0; i < bitCount; i++)
+            {
+                if(bI >= 8)
+                {
+                    val = br.ReadByte();
+                    bI = 0;
+                }
+                bits.Add(val.IsBitSet(bI++));
+            }
+        }
+
+        public static void WriteBits(this BinaryWriter bw, Stack<bool> bits)
+        {
+            byte val = 0;
+            byte bI = 0;
+
+            while(bits.Count > 0)
+            {
+                val = val.SetBit(bI, bits.Pop());
+
+                bI++;
+                if(bI >= 8)
+                {
+                    bI = 0;
+                    bw.Write(val);
+                    val = 0;
+                }
+            }
+
+            if (bI > 0)
+            {
+                bw.Write(val);
+            }
         }
 
         public static ushort ToUShort(this byte[] data, bool bigEndian = false) => ToUShort(data, 0, bigEndian);

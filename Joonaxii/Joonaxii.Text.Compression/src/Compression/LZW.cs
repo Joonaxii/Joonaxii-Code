@@ -98,7 +98,6 @@ namespace Joonaxii.Text.Compression
 
         /// <summary>
         /// <para>Reads a LZW compressed string from a BinaryReader</para>
-        /// THE COMPRESSED STRING MUST BE ONE THAT HAS THE HEADER!
         /// </summary>
         /// <param name="br">The BinaryReader to read from</param>
         /// <returns></returns>
@@ -212,8 +211,10 @@ namespace Joonaxii.Text.Compression
 
                 entry = k == dictionary.Count ? w + w[0] : dictionary.TryGetValue(k, out string val) ? val : entry;
 
+                char c = entry.Length < 1 ? '\0' : entry[0];
+
                 sb.Append(entry);
-                dictionary.Add(dictionary.Count, w + entry[0]);
+                dictionary.Add(dictionary.Count, w + c);
                 w = entry;
             }
             timeStamper?.Stamp();
@@ -329,7 +330,7 @@ namespace Joonaxii.Text.Compression
         {
             public int ActualMax { get => min == max ? max : max - min; }
 
-            public int bitSize;
+            public byte bitSize;
 
             public int min;
             public int max;
@@ -344,7 +345,7 @@ namespace Joonaxii.Text.Compression
                 indices = new List<int>();
             }
 
-            public LZWChunk(int start, int end, int bits)
+            public LZWChunk(int start, int end, byte bits)
             {
                 this.start = start;
                 this.end = end;
@@ -370,8 +371,8 @@ namespace Joonaxii.Text.Compression
 
             public void Write(BitWriter bw)
             {
-                int minBits = IOExtensions.BitsNeeded(min);
-                int countBits = IOExtensions.BitsNeeded(indices.Count);
+                byte minBits = IOExtensions.BitsNeeded(min);
+                byte countBits = IOExtensions.BitsNeeded(indices.Count);
 
                 bw.Write(minBits - 1, 5);
                 bw.Write(bitSize - 1, 5);
@@ -388,17 +389,17 @@ namespace Joonaxii.Text.Compression
 
             public void Read(BitReader br)
             {
-                int minBits = br.ReadValue(5) + 1;
-                bitSize = br.ReadValue(5) + 1;
-                int countBits = br.ReadValue(4) + 1;
+                byte minBits = (byte)(br.ReadByte(5) + 1);
+                bitSize = (byte)(br.ReadByte(5) + 1);
+                byte countBits = (byte)(br.ReadByte(4) + 1);
 
-                min = br.ReadValue(minBits);
-                int count = br.ReadValue(countBits);
+                min = br.ReadInt32(minBits);
+                int count = br.ReadInt32(countBits);
 
                 indices.Clear();
                 for (int i = 0; i < count; i++)
                 {
-                    indices.Add(br.ReadValue(bitSize) + min);
+                    indices.Add(br.ReadInt32(bitSize) + min);
                 }
             }
 
@@ -407,16 +408,31 @@ namespace Joonaxii.Text.Compression
 
         private static void ReadValues(BinaryReader br, byte size, List<int> values)
         {
-            using (MemoryStream stream = new MemoryStream(br.BaseStream.GetData()))
-            using (BitReader brW = new BitReader(stream))
+            BitReader brW = br as BitReader;
+            MemoryStream stream = null;
+
+            bool isBitReader = brW != null;
+            if (!isBitReader)
             {
-                stream.Position = br.BaseStream.Position;
+                stream = new MemoryStream();
+                br.BaseStream.CopyToWithPos(stream);
+                brW = new BitReader(stream);
+            }
+         
+            //using (MemoryStream stream = new MemoryStream(br.BaseStream.GetData()))
+            //using (BitReader brW = new BitReader(stream))
+            {
                 for (int i = 0; i < values.Capacity; i++)
                 {
-                    values.Add(brW.ReadValue(size));
+                    values.Add(brW.ReadInt32(size));
                 }
-                br.BaseStream.Position = stream.Position;
-                br.BaseStream.Flush();
+
+                if (!isBitReader)
+                {
+                    br.BaseStream.Position = stream.Position;
+                    stream.Dispose();
+                    brW.Dispose();
+                }
             }
         }
         private static void WriteValues(BinaryWriter bw, byte size, IEnumerable<int> values)

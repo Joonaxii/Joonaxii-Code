@@ -10,7 +10,7 @@ using MathS = System.Math;
 namespace Joonaxii.MathJX
 {
     [StructLayout(LayoutKind.Sequential, Size = 36)]
-    public struct Matrix3x3
+    public struct Matrix3x3 
     {
         public static Matrix3x3 identity { get; } = new Matrix3x3(1, 0, 0, 0, 1, 0, 0, 0, 1);
         public static Matrix3x3 zero { get; } = new Matrix3x3(0, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -195,12 +195,33 @@ namespace Joonaxii.MathJX
             return new Vector2(detG, detH);
         }
 
-        public Vector2 MultiplyPoint(Vector2 point) => new Vector2((point.x * _m01 + point.y * _m02) * _m00 + _m20, (point.y * _m12 + point.x * _m11) * _m10 + _m21);
-        public Vector2 MultiplyVector(Vector2 vec) => new Vector2((vec.x * _m01 + vec.y) * _m00, (vec.y * _m12 + vec.x * _m11));
-        public Vector2 RotatePoint(Vector2 vec) => new Vector2((vec.x * _m01 + vec.y) * _m00, (vec.y * _m12 + vec.x * _m11));
-        public Vector2 MultiplyAbsVector(Vector2 vec) => 
-            new Vector2((vec.x * MathS.Abs(_m01) + vec.y * MathS.Abs(_m02)) * _m00, 
-                        (vec.y * MathS.Abs(_m12) + vec.x * MathS.Abs(_m11)) * _m10);
+        public Vector2 MultiplyPoint(Vector2 point)
+        {
+            float pX = point.x * _m00;
+            float pY = point.y * _m10;
+            return new Vector2((pX * _m01 + pY * _m02) + _m20, (pY * _m12 + pX * _m11) + _m21);
+        }
+
+        public Vector2 MultiplyVector(Vector2 vec)
+        {
+            float pX = vec.x * _m00;
+            float pY = vec.y * _m10;
+            return new Vector2((pX * _m01 + pY * _m02), (pY * _m12 + pX * _m11));
+        }
+
+        public Vector2 RotatePoint(Vector2 vec) => 
+            new Vector2(
+            (vec.x * _m01 + vec.y * _m02), 
+            (vec.y * _m12 + vec.x * _m11));
+
+        public Vector2 MultiplyAbsVector(Vector2 vec) 
+        {
+            float pX = vec.x * _m00;
+            float pY = vec.y * _m10;
+            return new Vector2((pX * MathS.Abs(_m01) + pY * MathS.Abs(_m02)),
+                        (pY * MathS.Abs(_m12) + pX * MathS.Abs(_m11)));
+        }
+
         public Vector2 ScaleVector(Vector2 vec) => new Vector2(vec.x * _m00, vec.y * _m10);
         public float Rotate(float rotation) => rotation + _m22;
 
