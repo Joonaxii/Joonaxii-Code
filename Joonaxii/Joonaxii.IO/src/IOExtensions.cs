@@ -24,6 +24,14 @@ namespace Joonaxii.IO
             }
         }
 
+        public static void CopyToIntList(List<int> ints, IEnumerable<long> values)
+        {
+            foreach (var item in values)
+            {
+                ints.Add((int)item);
+            }
+        }
+
         public static byte ConvertToLongList(List<long> longs, IEnumerable<byte> values)
         {
             byte padding = 0;
@@ -163,7 +171,6 @@ namespace Joonaxii.IO
                 b = br.ReadByte();
                 count |= (b & 0x7F) << shift;
                 shift += 7;
-
             }
             return count;
         }

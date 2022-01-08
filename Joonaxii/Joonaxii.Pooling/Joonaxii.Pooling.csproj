@@ -59,10 +59,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="src\FixedObjectPool.cs" />
     <Compile Include="src\GenericObjectPool.cs" />
+    <Compile Include="src\IFixedPoolable.cs" />
     <Compile Include="src\IPoolable.cs" />
     <Compile Include="src\ObjectPool.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Joonaxii.Collections\Joonaxii.Collections.csproj">
+      <Project>{68986E7F-1281-485B-941E-FB1D69CC8427}</Project>
+      <Name>Joonaxii.Collections</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

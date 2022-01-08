@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using Joonaxii.Data.Compression.Huffman;
 using Joonaxii.IO;
 using Joonaxii.MathJX;
+using Joonaxii.Data.Compression.RLE;
 
 namespace Joonaxii.Text.Compression
 {
@@ -147,28 +148,41 @@ namespace Joonaxii.Text.Compression
             #endregion
             timeStamper?.Stamp();
 
-            if(bw is BitWriter bwI) { bwI.FlushBitBuffer(); }
+            BitWriter bwI = bw as BitWriter;
+            MemoryStream stream = null;
+            bool isBitWriter = bwI != null;
+
+            //Make sure we're byte aligned
+            if (isBitWriter) { bwI.ByteAlign(); }
+            else
+            {
+                stream = new MemoryStream();
+                bwI = new BitWriter(stream);
+            }
 
             byte tokenSize = (byte)(tokenIntLookup.Count > byte.MaxValue ? 2 : 1);
 
             fileDebugger?.Start($"TTC Header");
 
             fileDebugger?.StartSub("Common");
-            bw.Write(HEADER_STR_BYTES);
-            bw.Write((byte)idxCompression);
-            bw.Write(tokenIntLookup.Count);
+            bwI.Write(HEADER_STR_BYTES);
+            bwI.Write((byte)idxCompression);
+            bwI.Write(tokenIntLookup.Count);
             fileDebugger?.Stamp();
 
+            List<int> indices = new List<int>();
+            Dictionary<RLEChunk, int> chunkLut = new Dictionary<RLEChunk, int>();
+            List<RLEChunk> chunkList = new List<RLEChunk>();
             switch (idxCompression)
             {
                 case IndexCompressionMode.None:
 
                     fileDebugger?.StartSub("No Index Compression");
-                    bw.Write(tokenSize);
-                    bw.Write(tokenIndices.Count);
+                    bwI.Write(tokenSize);
+                    bwI.Write(tokenIndices.Count);
                     fileDebugger?.Stamp(true);
 
-                    WriteTokens(tokenIntLookup, tokenRanges, bw, timeStamper, fileDebugger);
+                    WriteTokens(tokenIntLookup, tokenRanges, bwI, timeStamper, fileDebugger);
 
                     timeStamper?.Start($"TTC (Compress): Token Index writing '{tokenIndices.Count}' tokens");
                     #region Token Index Writing
@@ -189,28 +203,73 @@ namespace Joonaxii.Text.Compression
                 case IndexCompressionMode.LZW:
                 case IndexCompressionMode.LZWChunked:
                     fileDebugger?.StartSub("LZW Index Compression");
-                    bw.Write(tokenSize);
-                    bw.Write(tokenIndices.Count);
+                    bwI.Write(tokenSize);
+                    bwI.Write(tokenIndices.Count);
                     fileDebugger?.Stamp(true);
 
-                    WriteTokens(tokenIntLookup, tokenRanges, bw, timeStamper, fileDebugger);
+                    WriteTokens(tokenIntLookup, tokenRanges, bwI, timeStamper, fileDebugger);
 
-                    LZW.CompressToStream(tokenIndices, tokenSize, idxCompression == IndexCompressionMode.LZWChunked, bw, timeStamper, fileDebugger);
+                    LZW.CompressToStream(tokenIndices, tokenSize, idxCompression == IndexCompressionMode.LZWChunked, bwI, timeStamper, fileDebugger);
                     break;
 
                 case IndexCompressionMode.Huffman:
-
-                    WriteTokens(tokenIntLookup, tokenRanges, bw, timeStamper, fileDebugger);
+                    WriteTokens(tokenIntLookup, tokenRanges, bwI, timeStamper, fileDebugger);
 
                     timeStamper?.Start($"Huffman Encoding on '{tokenIndices.Count}' indices");
 
                     fileDebugger?.Start("Huffman Index Compression");
-                    Huffman.CompressToStream(bw, tokenIndices, true, out byte pad);
+                    Huffman.CompressToStream(bwI, tokenIndices, true, out byte pad);
                     fileDebugger?.Stamp(true);
 
                     timeStamper?.Stamp();
-
                     break;
+
+                case IndexCompressionMode.RLE:
+                    WriteTokens(tokenIntLookup, tokenRanges, bwI, timeStamper, fileDebugger);
+
+                    timeStamper?.Start($"RLE on '{tokenIndices.Count}' indices");
+
+                    fileDebugger?.Start("RLE Index Compression");
+                    RLE.CompressToStream(bw, tokenIndices);
+                    fileDebugger?.Stamp(true);
+
+                    timeStamper?.Stamp();
+                    break;
+
+                case IndexCompressionMode.RLEHuffman:
+                    WriteTokens(tokenIntLookup, tokenRanges, bwI, timeStamper, fileDebugger); 
+                    indices = new List<int>();
+                    chunkLut = new Dictionary<RLEChunk, int>(); 
+                    chunkList = new List<RLEChunk>();
+
+                    timeStamper?.Start($"RLE + Huffman Encoding on '{indices.Count}' indices");
+                    fileDebugger?.Start("RLE Index Compression");
+                    RLE.CompressToLUT(tokenIndices, chunkLut, chunkList, indices, out byte lenBits, out byte valBits);
+                    bwI.Write(lenBits - 1, 3);
+                    bwI.Write(valBits - 1, 5);
+
+                    bwI.Write7BitInt(chunkList.Count);
+                    for (int i = 0; i < chunkList.Count; i++)
+                    {
+                        chunkList[i].Write(bwI, lenBits, valBits);
+                    }
+                    fileDebugger?.Stamp(true);
+                    bwI.ByteAlign();
+
+                    fileDebugger?.Start("Huffman Index Compression");
+                    Huffman.CompressToStream(bwI, indices, true, out pad);
+                    fileDebugger?.Stamp(true);
+                    timeStamper?.Stamp();
+                    break;
+            }
+
+            if (!isBitWriter)
+            {
+                bwI.Flush();
+                bw.Write(stream.ToArray());
+
+                bwI.Dispose();
+                stream.Dispose();
             }
         }
 
@@ -233,20 +292,31 @@ namespace Joonaxii.Text.Compression
 
         public static string Decompress(BinaryReader br, TimeStamper timeStamper = null)
         {
-            if (br is BitReader brI) { brI.DiscardBitBuffer(); }
+            BitReader brI = br as BitReader;
+            bool isBitReader = brI != null;
+            MemoryStream stream = null;
+
+            //Make sure we're byte aligned
+            if (isBitReader) { brI.ByteAlign(); }
+            else
+            {
+                stream = new MemoryStream();
+                br.BaseStream.CopyToWithPos(stream);
+                brI = new BitReader(stream);
+            }
 
             for (int i = 0; i < 3; i++)
             {
-                if (br.ReadByte() != HEADER_STR_BYTES[i]) { br.BaseStream.Position -= (i + 1); return br.ReadString(); }
+                if (brI.ReadByte() != HEADER_STR_BYTES[i]) { brI.BaseStream.Seek(-(i + 1), SeekOrigin.Current); return brI.ReadString(); }
             }
 
             StringBuilder sb = new StringBuilder();
-            IndexCompressionMode mode = (IndexCompressionMode)br.ReadByte();
+            IndexCompressionMode mode = (IndexCompressionMode)brI.ReadByte();
             byte tokenPaletteSize;
             int tokenCount;
             int tokenLookups;
 
-            tokenLookups = br.ReadInt32();
+            tokenLookups = brI.ReadInt32();
 
             List<(byte bits, byte size, RangeInt range)> ranges = new List<(byte bits, byte size, RangeInt range)>();
             WordToken[] tokenLookup = new WordToken[tokenLookups];
@@ -254,25 +324,25 @@ namespace Joonaxii.Text.Compression
             switch (mode)
             {
                 case IndexCompressionMode.None:
-                    tokenPaletteSize = br.ReadByte();
-                    tokenCount = br.ReadInt32();
+                    tokenPaletteSize = brI.ReadByte();
+                    tokenCount = brI.ReadInt32();
 
-                    ReadTokens(ranges, tokenLookup, br, timeStamper);
+                    ReadTokens(ranges, tokenLookup, brI, timeStamper);
                     timeStamper?.Start($"TTC (Decompress): Reading '{tokenCount}' tokens");
                     for (int i = 0; i < tokenCount; i++)
                     {
-                        sb.Append(tokenLookup[ReadIndex(br, tokenPaletteSize)].word);
+                        sb.Append(tokenLookup[ReadIndex(brI, tokenPaletteSize)].word);
                     }
                     timeStamper?.Stamp();
                     break;
 
                 case IndexCompressionMode.LZWChunked:
                 case IndexCompressionMode.LZW:
-                    tokenPaletteSize = br.ReadByte();
-                    tokenCount = br.ReadInt32();
+                    tokenPaletteSize = brI.ReadByte();
+                    tokenCount = brI.ReadInt32();
 
-                    ReadTokens(ranges, tokenLookup, br, timeStamper);
-                    char[] output = LZW.Decompress(br, timeStamper);
+                    ReadTokens(ranges, tokenLookup, brI, timeStamper);
+                    char[] output = LZW.Decompress(brI, timeStamper);
                     switch (tokenPaletteSize)
                     {
                         case 1:
@@ -294,31 +364,82 @@ namespace Joonaxii.Text.Compression
                     }
                     break;
                 case IndexCompressionMode.Huffman:
-
-                    ReadTokens(ranges, tokenLookup, br, timeStamper);
+                    ReadTokens(ranges, tokenLookup, brI, timeStamper);
                     List<long> codes = new List<long>();
 
                     timeStamper?.Start($"Huffman Decoding");
-                    Huffman.DecompressFromStream(br, codes);
+                    Huffman.DecompressFromStream(brI, codes);
                     timeStamper?.Stamp();
 
                     for (int i = 0; i < codes.Count; i++)
                     {
                         sb.Append(tokenLookup[codes[i]].word);
                     }
+                    break;
+                case IndexCompressionMode.RLE:
+                    ReadTokens(ranges, tokenLookup, brI, timeStamper);
+                    List<int> inds = new List<int>();
+
+                    timeStamper?.Start($"RLE Decoding");
+                    RLE.DecompressFromStream(brI, inds);
+                    timeStamper?.Stamp();
+
+                    for (int i = 0; i < inds.Count; i++)
+                    {
+                        sb.Append(tokenLookup[inds[i]].word);
+                    }
+                    break;
+
+                case IndexCompressionMode.RLEHuffman:
+                    ReadTokens(ranges, tokenLookup, brI, timeStamper);
+                    List<int> indices = new List<int>();
+
+                    byte lenBits = (byte)(brI.ReadByte(3) + 1);
+                    byte valBits = (byte)(brI.ReadByte(5) + 1);
+
+                    int count = brI.Read7BitInt();
+                    RLEChunk[] chunkList = new RLEChunk[count];
+                    for (int i = 0; i < count; i++)
+                    {
+                        chunkList[i].Read(brI, lenBits, valBits);
+                    }
+                    brI.ByteAlign();
+
+                    timeStamper?.Start($"Huffman Decoding!");
+                    Huffman.DecompressFromStream(brI, indices);
+                    timeStamper?.Stamp();
+
+                    timeStamper?.Start($"RLE Decoding!");
+                    for (int i = 0; i < indices.Count; i++)
+                    {
+                        var chnk = chunkList[indices[i]];
+                        var tok = tokenLookup[chnk.value.ToInt32];
+                        for (int j = 0; j <= chnk.count; j++)
+                        {
+                            sb.Append(tok.word);
+                        }        
+                    }
+                    timeStamper?.Stamp();
 
                     break;
             }
 
+            if (!isBitReader)
+            {
+                br.BaseStream.Seek(brI.BaseStream.Position, SeekOrigin.Begin);
+
+                brI.Dispose();
+                stream.Dispose();
+            }
             return sb.ToString();
         }
 
-        private static void ReadTokens(List<(byte bits, byte size, RangeInt range)> ranges, WordToken[] tokenLookup, BinaryReader br, TimeStamper timeStamper)
+        private static void ReadTokens(List<(byte bits, byte size, RangeInt range)> ranges, WordToken[] tokenLookup, BitReader br, TimeStamper timeStamper)
         {
             timeStamper?.Start("TTC (Decompress): Reading token size ranges");
             while (true)
             {
-                if (Encoding.ASCII.GetString(br.ReadBytes(3)) != TOKEN_STR) { br.BaseStream.Position -= 3; break; }
+                if (Encoding.ASCII.GetString(br.ReadBytes(3)) != TOKEN_STR) { br.BaseStream.Seek(-3, SeekOrigin.Current); break; }
 
                 byte bits = br.ReadByte();
                 byte size = br.ReadByte();
@@ -334,17 +455,6 @@ namespace Joonaxii.Text.Compression
             var curRange = ranges[0];
             int curRangeI = 0;
 
-            BitReader btR = br as BitReader;
-            MemoryStream bStream = null;
-            bool isBitReader = btR != null;
-
-            if(!isBitReader)
-            {
-                bStream = new MemoryStream();
-                br.BaseStream.CopyToWithPos(bStream);
-                btR = new BitReader(bStream);
-            }
-
             for (int i = 0; i < tokenLookup.Length; i++)
             {
                 if (i >= curRange.range.end && curRangeI < ranges.Count - 1)
@@ -352,21 +462,13 @@ namespace Joonaxii.Text.Compression
                     curRangeI++;
                     curRange = ranges[curRangeI];
                 }
-                tokenLookup[i].ReadBytes(btR, curRange.bits, curRange.size);
+                tokenLookup[i].ReadBytes(br, curRange.bits, curRange.size);
             }
-             
-            if (!isBitReader)
-            {
-                br.BaseStream.Position = bStream.Position;
-
-                bStream.Dispose();
-                btR.Dispose();
-            }
-            else { btR.DiscardBitBuffer(); }
+            br.ByteAlign();
             timeStamper?.Stamp();
         }
 
-        private static void WriteTokens(List<WordToken> tokenIntLookup, Dictionary<byte, TokenRange> tokenData, BinaryWriter bw, TimeStamper timeStamper, FileDebugger fileDebugger)
+        private static void WriteTokens(List<WordToken> tokenIntLookup, Dictionary<byte, TokenRange> tokenData, BitWriter bw, TimeStamper timeStamper, FileDebugger fileDebugger)
         {
             int startI = 0;
             byte sizeI = tokenIntLookup[0].size;
@@ -406,18 +508,12 @@ namespace Joonaxii.Text.Compression
                 bw.Write(tokenIntLookup.Count);
             }
 
-            using (MemoryStream bStream = new MemoryStream())
-            using (BitWriter btW = new BitWriter(bStream))
+            for (int i = 0; i < tokenIntLookup.Count; i++)
             {
-                for (int i = 0; i < tokenIntLookup.Count; i++)
-                {
-                    var tok = tokenIntLookup[i];
-                    tok.WriteBytes(btW, tokenData[tok.size].bits);
-                }
-
-                btW.Flush();
-                bw.Write(bStream.ToArray());
+                var tok = tokenIntLookup[i];
+                tok.WriteBytes(bw, tokenData[tok.size].bits);
             }
+            bw.ByteAlign();
 
             #endregion
             fileDebugger?.Stamp();

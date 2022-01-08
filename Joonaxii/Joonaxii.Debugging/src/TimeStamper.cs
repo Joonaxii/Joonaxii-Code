@@ -79,8 +79,8 @@ namespace Joonaxii.Debugging
                 totMS += _timeStamps[i].ms;
                 totTicks += _timeStamps[i].ticks;
             }
-            sb.AppendLine(new string('=', 64));
             sb.AppendLine($"Total Time Elapsed: {totS} seconds, {totMS} ms, {totTicks} ticks");
+            sb.AppendLine(new string('=', 64));
             return sb.ToString();
         }
 

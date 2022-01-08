@@ -31,6 +31,15 @@ namespace Joonaxii.Data.Image
             this.b = b;
             a = 255;
         }
+
+        public FastColor(byte v)
+        {
+            _rgba = 0;
+            this.r = v;
+            this.g = v;
+            this.b = v;
+            a = 255;
+        }
         public FastColor(int rgba) : this()
         {
             _rgba = rgba;

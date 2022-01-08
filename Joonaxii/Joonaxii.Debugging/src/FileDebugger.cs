@@ -85,10 +85,10 @@ namespace Joonaxii.Debugging
 
             public string ToString(bool isChild = false)
             {
-                if(segments.Count < 1) { return isChild ? $"{name}: {DebugExtensions.GetFileSizeString((endPos - startPos))}" : $"├{name}: {DebugExtensions.GetFileSizeString((endPos - startPos))}"; }
+                if(segments.Count < 1) { return isChild ? $"{name}: {DebugExtensions.ToFileSizeString((endPos - startPos))}" : $"├{name}: {DebugExtensions.ToFileSizeString((endPos - startPos))}"; }
 
                 StringBuilder sb = new StringBuilder();
-                sb.AppendLine($"├┬{name}: {DebugExtensions.GetFileSizeString((endPos - startPos))}");
+                sb.AppendLine($"├┬{name}: {DebugExtensions.ToFileSizeString((endPos - startPos))}");
                 for (int i = 0; i < segments.Count; i++)
                 {
                     bool isLast = i >= segments.Count - 1;

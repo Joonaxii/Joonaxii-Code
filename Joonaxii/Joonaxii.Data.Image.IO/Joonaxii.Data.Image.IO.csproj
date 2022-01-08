@@ -41,14 +41,26 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="src\BmpDecoder.cs" />
-    <Compile Include="src\ImageDecoderBase.cs" />
-    <Compile Include="src\ImageDecodeResult.cs" />
-    <Compile Include="src\ImageDecoder.cs" />
+    <Compile Include="src\Decoders\BmpDecoder.cs" />
+    <Compile Include="src\ColorMode.cs" />
+    <Compile Include="src\Decoders\ImageDecoderBase.cs" />
+    <Compile Include="src\Decoders\ImageDecodeResult.cs" />
+    <Compile Include="src\Decoders\ImageDecoder.cs" />
+    <Compile Include="src\Decoders\RawTextureDecoder.cs" />
+    <Compile Include="src\Encoders\ImageEncoderBase.cs" />
+    <Compile Include="src\Encoders\ImageEncodeResult.cs" />
+    <Compile Include="src\Encoders\RawTextureCompressMode.cs" />
+    <Compile Include="src\Encoders\RawTextureEncoder.cs" />
     <Compile Include="src\ImageIOExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="src\Pre-Processing\ImageNoiseDetector.cs" />
+    <Compile Include="src\Pre-Processing\ImageProcessBase.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Joonaxii.Data.Compression\Joonaxii.Data.Compression.csproj">
+      <Project>{228b01cc-0f58-424f-af82-06fdf122f401}</Project>
+      <Name>Joonaxii.Data.Compression</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Joonaxii.Data.Image.GIFDecoder\Joonaxii.Data.Image.GIFDecoder.csproj">
       <Project>{bc87154a-96a0-46ee-8a09-0e848eba71bf}</Project>
       <Name>Joonaxii.Data.Image.GIFDecoder</Name>
@@ -60,6 +72,10 @@
     <ProjectReference Include="..\Joonaxii.Data\Joonaxii.Data.csproj">
       <Project>{b74db02e-ed4d-4fd2-9011-8262f560db59}</Project>
       <Name>Joonaxii.Data</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.Debugging\Joonaxii.Debugging.csproj">
+      <Project>{17ad5d61-4e53-4f6b-81ca-6c206631afd0}</Project>
+      <Name>Joonaxii.Debugging</Name>
     </ProjectReference>
     <ProjectReference Include="..\Joonaxii.IO\Joonaxii.IO.csproj">
       <Project>{5bcc1979-54d1-4c35-b402-9520c1734766}</Project>

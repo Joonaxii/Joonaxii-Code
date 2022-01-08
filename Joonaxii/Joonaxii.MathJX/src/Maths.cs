@@ -11,41 +11,54 @@ namespace Joonaxii.MathJX
         public const float Deg2Rad = PI / 180;
         public const float Rad2Deg = 360.0f / TWO_PI;
 
-        public static int GetRange(this int val, byte start, byte length)
+        public static int GetRange(this int val, int start, int length)
         {
             int v = 0;
 
             int ii = 0;
-            for (byte i = start; i < start + length; i++)
+            for (int i = start; i < start + length; i++)
             {
                 v = v.SetBit(ii++, val.IsBitSet(i));
             }
             return v;
         }
 
-        public static byte GetRange(this byte val, byte start, byte length)
+        public static byte GetRange(this byte val, int start, int length)
         {
             byte v = 0;
 
             int ii = 0;
-            for (byte i = start; i < start + length; i++)
+            for (int i = start; i < start + length; i++)
             {
                 v = v.SetBit(ii++, val.IsBitSet(i));
             }
             return v;
         }
 
-        public static byte SetRange(this byte val, byte start, byte length, byte value)
+        public static byte SetRange(this byte val, int start, int length, byte value)
         {
             byte v = val;
 
             int ii = 0;
-            for (byte i = start; i < start + length; i++)
+            for (int i = start; i < start + length; i++)
             {
                 v = v.SetBit(i, value.IsBitSet(ii++));
             }
             return v;
         }
+
+        public static long SetRange(this long val, int start, int length, long value)
+        {
+            long v = val;
+
+            int ii = 0;
+            for (int i = start; i < start + length; i++)
+            {
+                v = v.SetBit(i, value.IsBitSet(ii++));
+            }
+            return v;
+        }
+
 
         public static int Encode7Bit(this int input)
         {
@@ -55,11 +68,11 @@ namespace Joonaxii.MathJX
             byte i = 0;
             while (v >= 0x80)
             {
-                val += ((byte)(v | 0x80) << i++);
+                val += ((byte)(v | 0x80) << (8 * i++));
                 v >>= 7;
             }
 
-            val += ((byte)v << i);
+            val += ((byte)v << i * 8);
             return val;
         }
 
@@ -78,7 +91,7 @@ namespace Joonaxii.MathJX
             {
                 if (shift >= 5 * 7) { break; }
 
-                b = input.GetRange((byte)((i++) * 8), 8);
+                b = input.GetRange((byte)(8 * i++), 8);
                 count |= (b & 0x7F) << shift;
                 shift += 7;
             }

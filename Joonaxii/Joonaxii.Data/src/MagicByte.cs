@@ -17,6 +17,13 @@
         public static implicit operator MagicByte(char c) => c > 0xFF ? any : new MagicByte((byte)c);
         public static implicit operator MagicByte(int i) => i > 0xFF ? any : new MagicByte((byte)i);
 
+        public byte GetValue() => _value;
+        public bool GetByte(out byte value)
+        {
+            value = _value;
+            return !_canBeAny;
+        }
+
         public bool IsValid(byte b) => _canBeAny | _value == b;
     }
 }

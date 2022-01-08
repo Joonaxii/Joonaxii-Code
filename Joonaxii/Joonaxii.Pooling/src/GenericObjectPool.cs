@@ -5,8 +5,8 @@ namespace Joonaxii.Pooling
 {
     public class GenericObjectPool<T>
     {
-        private Func<T> _createNew;
-        private Queue<T> _pool;
+        protected Func<T> _createNew;
+        protected Queue<T> _pool;
 
         public GenericObjectPool(int initCount, Func<T> createNew)
         {
@@ -20,8 +20,10 @@ namespace Joonaxii.Pooling
 
         public GenericObjectPool(Func<T> createNew) : this(32, createNew) { }
 
+        protected GenericObjectPool() { }
+
         public virtual T GetNew() => _createNew.Invoke();
-        public T Get() => _pool.Count > 0 ? _pool.Dequeue() : GetNew();
-        public void Return(T input) => _pool.Enqueue(input);
+        public virtual T Get() => _pool.Count > 0 ? _pool.Dequeue() : GetNew();
+        public virtual void Return(T input) => _pool.Enqueue(input);
     }
 }

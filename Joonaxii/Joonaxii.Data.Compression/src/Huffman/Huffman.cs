@@ -1,4 +1,5 @@
 ﻿using Joonaxii.Collections;
+using Joonaxii.Collections.PriorityQueue;
 using Joonaxii.IO;
 using Joonaxii.MathJX;
 using System;
@@ -103,7 +104,7 @@ namespace Joonaxii.Data.Compression.Huffman
             }
             freqLut.Clear();
 
-            PriorityQueue<HuffmanNode> nodeQueue = new PriorityQueue<HuffmanNode>(nodes);
+            PriorityQueue<HuffmanNode> nodeQueue = new PriorityQueue<HuffmanNode>(true, nodes);
             nodes.Clear();
             while (nodeQueue.Count > 1)
             {
@@ -125,7 +126,7 @@ namespace Joonaxii.Data.Compression.Huffman
             foreach (var n in idToNode)
             {
                 int depth = n.Value.GetDepth();
-                nodesToSave.Add(new HuffmanInstance(n.Value, depth, IOExtensions.BitsNeeded(depth), IOExtensions.BitsNeeded(n.Value.Value)));
+                nodesToSave.Add(new HuffmanInstance(n.Value, depth, IOExtensions.BitsNeeded(n.Value.Value), IOExtensions.BitsNeeded(depth)));
             }
 
             BitWriter bwI = bw as BitWriter;
@@ -133,7 +134,7 @@ namespace Joonaxii.Data.Compression.Huffman
             bool isBitWriter = bwI != null;
 
             //Make sure we're byte aligned
-            if (isBitWriter) { bwI.FlushBitBuffer(); }
+            if (isBitWriter) { bwI.ByteAlign(); }
             else
             {
                 stream = new MemoryStream();
@@ -151,9 +152,11 @@ namespace Joonaxii.Data.Compression.Huffman
             //------H---------U---------F---------F-----|---1---|----2----+----2----|-------------------255-------------------|---------------------------------------255---------------------------------------|
             //===================================================================================================================================================================================================
 
-            long bitCount = 0;
-            bwI.Write(Encoding.ASCII.GetBytes(HUFFMAN_STR));
+            var bytes = Encoding.ASCII.GetBytes(HUFFMAN_STR);
+            bwI.Write(bytes);
 
+            long bitCount = 0;
+    
             ulong estimated = IOExtensions.GetRequired7BitBytes(nodesToSave.Count - 1) * 8ul;
             for (int i = 0; i < nodesToSave.Count; i++)
             {
@@ -175,6 +178,7 @@ namespace Joonaxii.Data.Compression.Huffman
             {
                 bwI.Write((chunks.Count - 1), 12);
             }
+            bwI.ByteAlign();
 
             //Write down the start position of 'bitCount' 
             long pos = bwI.BaseStream.Position;
@@ -207,7 +211,7 @@ namespace Joonaxii.Data.Compression.Huffman
                 while (stack.Count > 0) { bitsWritten++; bwI.Write(stack.Pop()); }
             }
 
-            bwI.FlushBitBuffer();
+            bwI.ByteAlign();
             long posEnd = bwI.BaseStream.Position;
 
             bwI.BaseStream.Seek(pos, SeekOrigin.Begin);
@@ -362,6 +366,14 @@ namespace Joonaxii.Data.Compression.Huffman
             bitsOut += chnk.GetBitsRequired(instances);
         }
 
+        public static bool DecompressFromStream(BinaryReader br, List<int> values)
+        {
+            List<long> longs = new List<long>();
+            DecompressFromStream(br, longs);
+            IOExtensions.CopyToIntList(values, longs);
+            return true;
+        }
+
         public static bool DecompressFromStream(BinaryReader br, List<long> values)
         {
             BitReader brI = br as BitReader;
@@ -369,14 +381,13 @@ namespace Joonaxii.Data.Compression.Huffman
             MemoryStream stream = null;
 
             //Make sure we're byte aligned
-            if (isBitReader) { brI.DiscardBitBuffer(); }
+            if (isBitReader) { brI.ByteAlign(); }
             else
             {
                 stream = new MemoryStream();
                 br.BaseStream.CopyToWithPos(stream);
                 brI = new BitReader(stream);
             }
-
             if (Encoding.ASCII.GetString(brI.ReadBytes(HUFFMAN_STR.Length)) != HUFFMAN_STR) { return false; }
 
             List<HuffmanTrace> traces = null;
@@ -403,7 +414,6 @@ namespace Joonaxii.Data.Compression.Huffman
             long bitCount = brI.ReadInt64();
 
             Stack<bool> bitVals = new Stack<bool>();
-
             if (mode == 0)
             {
                 for (int i = 0; i < leafCount; i++)
@@ -425,7 +435,7 @@ namespace Joonaxii.Data.Compression.Huffman
                     HuffmanChunk.Read(brI, traces);
                 }
             }
-
+     
             HuffmanNode root = new HuffmanBranch(traces);
 
             HuffmanNode nodeTmp = root;
@@ -440,7 +450,7 @@ namespace Joonaxii.Data.Compression.Huffman
                     nodeTmp = root;
                 }
             }
-            brI.DiscardBitBuffer();
+            brI.ByteAlign();
 
             if (!isBitReader)
             {
@@ -496,7 +506,10 @@ namespace Joonaxii.Data.Compression.Huffman
                     bw.Write(inst.node.Value, _bitsValue);
                     bw.Write(inst.depth, _bitsDepth);
 
-                    HuffmanNode.TraceNode(inst.node, (bool bit) => { bw.Write(bit); });
+                    HuffmanNode.TraceNode(inst.node, (bool bit) => 
+                    { 
+                        bw.Write(bit); 
+                    });
                 }
             }
 

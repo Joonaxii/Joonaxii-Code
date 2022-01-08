@@ -61,7 +61,7 @@ namespace Testing_Grounds
 
             if (compress)
             {
-                Console.WriteLine("\nWhat type of Index compression would you like to use?\n  -None: 0\n  -LZW: 1\n  -LZW Chunked: 2\n  -Huffman: 3");
+                Console.WriteLine("\nWhat type of Index compression would you like to use?\n  -None: 0\n  -LZW: 1\n  -LZW Chunked: 2\n  -Huffman: 3\n  -RLE: 4\n  -RLE + Huffman: 5");
                 while (true)
                 {
                     bool selected = false;
@@ -82,6 +82,14 @@ namespace Testing_Grounds
                         case ConsoleKey.D3:
                             selected = true;
                             compMode = IndexCompressionMode.Huffman;
+                            break;
+                        case ConsoleKey.D4:
+                            selected = true;
+                            compMode = IndexCompressionMode.RLE;
+                            break;
+                        case ConsoleKey.D5:
+                            selected = true;
+                            compMode = IndexCompressionMode.RLEHuffman;
                             break;
                     }
                     if (selected) { break; }
@@ -237,8 +245,8 @@ namespace Testing_Grounds
             float percent = compressedSize / (float)origSize;
 
             Console.WriteLine($"\nFile Size Results: [{((1.0f - percent) * 100.0f).ToString("F2")}% saved!]");
-            Console.WriteLine($"Original Size: [{DebugExtensions.GetFileSizeString(origSize)}]");
-            Console.WriteLine($"Compressed Size: [{DebugExtensions.GetFileSizeString(compressedSize)}] with index compression mode '{compMode}'");
+            Console.WriteLine($"Original Size: [{DebugExtensions.ToFileSizeString(origSize)}]");
+            Console.WriteLine($"Compressed Size: [{DebugExtensions.ToFileSizeString(compressedSize)}] with index compression mode '{compMode}'");
 
             if (!fromFile)
             {

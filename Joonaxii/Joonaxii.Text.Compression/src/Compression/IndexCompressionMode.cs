@@ -6,5 +6,7 @@
         LZW,
         LZWChunked,
         Huffman,
+        RLE,
+        RLEHuffman,
     }
 }

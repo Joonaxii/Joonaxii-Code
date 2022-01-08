@@ -7,4 +7,10 @@ namespace Joonaxii.IO
         void Read(BinaryReader br);
         void Write(BinaryWriter bw);
     }
+
+    public interface IBinaryIO<T>
+    {
+        T Read(BinaryReader br);
+        T Write(BinaryWriter bw);
+    }
 }

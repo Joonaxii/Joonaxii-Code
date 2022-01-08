@@ -8,6 +8,8 @@ namespace Joonaxii.Data.Image.IO
         public int Width { get => _width; }
         public int Height { get => _height; }
         public byte BitsPerPixel { get => _bpp; }
+        public ColorMode ColorMode { get => _colorMode; }
+        public bool IsDecoded { get => _pixels != null; }
 
         protected Stream _stream;
         protected BinaryReader _br;
@@ -17,6 +19,7 @@ namespace Joonaxii.Data.Image.IO
         protected int _height;
 
         protected byte _bpp;
+        protected ColorMode _colorMode;
         protected FastColor[] _pixels;
         
         public ImageDecoderBase(Stream stream)
@@ -36,6 +39,20 @@ namespace Joonaxii.Data.Image.IO
 
         public abstract ImageDecodeResult Decode(bool skipHeader);
 
+        public FastColor[] GetPixels()
+        {
+            FastColor[] pix = new FastColor[_pixels.Length];
+            Array.Copy(_pixels, pix, pix.Length);
+            return pix;
+        }
+
+        public int GetPixels(FastColor[] buffer)
+        {
+            int min = buffer.Length < _pixels.Length ? _pixels.Length : buffer.Length;
+            Array.Copy(_pixels, buffer, min);
+            return min;
+        }
+
         public FastColor GetPixel(int i) => _pixels[i];
         public FastColor GetPixel(int x, int y) => _pixels[y * _width + x];
 
@@ -47,5 +64,6 @@ namespace Joonaxii.Data.Image.IO
 
             _pixels = null;
         }
+
     }
 }

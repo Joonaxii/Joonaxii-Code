@@ -1,12 +1,15 @@
-﻿using System;
+﻿using Joonaxii.Collections.PriorityQueue;
+using System;
 using System.Collections.Generic;
 
 namespace Joonaxii.Data.Compression.Huffman
 {
-    internal abstract class HuffmanNode : IComparable<HuffmanNode>
+    internal abstract class HuffmanNode : IComparable<HuffmanNode>, IPriorityQueueNode
     {
         public abstract bool IsLeaf { get; }
         public bool IsRight { get => parent?.Right == this; }
+
+        public ulong Priority { get => frequency; }
 
         public uint frequency;
         public HuffmanNode parent;

@@ -70,11 +70,18 @@
     <Compile Include="src\Huffman\HuffmanNode.cs" />
     <Compile Include="src\Huffman\HuffmanTrace.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="src\Run Length Encoding\RLE.cs" />
+    <Compile Include="src\Run Length Encoding\RLEChunk.cs" />
+    <Compile Include="src\Run Length Encoding\RLEValue.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Joonaxii.Collections\Joonaxii.Collections.csproj">
       <Project>{68986e7f-1281-485b-941e-fb1d69cc8427}</Project>
       <Name>Joonaxii.Collections</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.Debugging\Joonaxii.Debugging.csproj">
+      <Project>{17ad5d61-4e53-4f6b-81ca-6c206631afd0}</Project>
+      <Name>Joonaxii.Debugging</Name>
     </ProjectReference>
     <ProjectReference Include="..\Joonaxii.IO\Joonaxii.IO.csproj">
       <Project>{5bcc1979-54d1-4c35-b402-9520c1734766}</Project>
