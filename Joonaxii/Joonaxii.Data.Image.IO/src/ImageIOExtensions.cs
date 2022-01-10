@@ -1,5 +1,6 @@
 ﻿using Joonaxii.IO;
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace Joonaxii.Data.Image.IO
@@ -71,17 +72,155 @@ namespace Joonaxii.Data.Image.IO
             }
         }
 
-        public static void WriteColors(this BinaryWriter bw, FastColor[] colors) => WriteColors(bw, colors, colors.Length, ColorMode.RGBA32);
-        public static void WriteColors(this BinaryWriter bw, FastColor[] colors, int count) => WriteColors(bw, colors, count, ColorMode.RGBA32);
-        public static void WriteColors(this BinaryWriter bw, FastColor[] colors, ColorMode pFmt) => WriteColors(bw, colors, colors.Length, pFmt);
-        public static void WriteColors(this BinaryWriter bw, FastColor[] colors, int count, ColorMode pFmt)
+        public static byte[] ToBytes(this FastColor[] colors, ColorMode mode)
+        {
+            byte bPP = mode.GetBPP();
+            if(bPP < 8)
+            {
+                return null;
+            }
+            bPP >>= 3;
+            byte[] data = new byte[bPP * colors.Length];
+
+            int ii = 0;
+            FastColor c;
+            switch (mode)
+            {
+                default:
+                    for (int i = 0; i < colors.Length; i++)
+                    {
+                        c = colors[i];
+                        data[ii++] = c.r;
+                        data[ii++] = c.g;
+                        data[ii++] = c.b;
+                        data[ii++] = c.a;
+                    }
+                    break;
+                case ColorMode.Indexed8:
+                    for (int i = 0; i < colors.Length; i++)
+                    {
+                        c = colors[i];
+                        data[ii++] = c.r;
+                    }
+                    break;
+                case ColorMode.RGB24:
+                    for (int i = 0; i < colors.Length; i++)
+                    {
+                        c = colors[i];
+                        data[ii++] = c.r;
+                        data[ii++] = c.g;
+                        data[ii++] = c.b;
+                    }
+                    break;
+                case ColorMode.RGB565:
+                    for (int i = 0; i < colors.Length; i++)
+                    {
+                        c = colors[i];
+                        byte r5 = To5Bit(c.r);
+                        byte g6 = To6Bit(c.g);
+                        byte b5 = To5Bit(c.b);
+
+                        byte lo = (byte)((r5 & 0b11111) + ((g6 & 0b111) << 5));
+                        byte hi = (byte)(((g6 & 0b111000) >> 3) + ((b5 & 0b11111) << 3));
+
+                        data[ii++] = lo;
+                        data[ii++] = hi;
+                    }
+                    break;
+                case ColorMode.ARGB555:
+                case ColorMode.RGB555:
+                    for (int i = 0; i < colors.Length; i++)
+                    {
+                        c = colors[i];
+
+                        byte r5 = To5Bit(c.r);
+                        byte g5 = To5Bit(c.g);
+                        byte b5 = To5Bit(c.b);
+                        byte a1 = (byte)(c.a > 127 ? 1 : 0);
+
+                        byte lo = (byte)((r5 & 0b11111) + ((g5 & 0b111) << 5));
+                        byte hi = (byte)(((g5 & 0b11000) >> 3) + ((b5 & 0b11111) << 2) + (a1 << 7));
+
+                        data[ii++] = lo;
+                        data[ii++] = hi;
+                    }
+                    break;
+            }
+            return data;
+        }
+
+        public static FastColor[] ToFastColor(byte[] bytes, ColorMode mode)
+        {
+            byte bPP = mode.GetBPP();
+            if (bPP < 8)
+            {
+                return null;
+            }
+            bPP >>= 3;
+            FastColor[] pix = new FastColor[bytes.Length / bPP];
+
+            int ii = 0;
+            switch (mode)
+            {
+                default:
+                    for (int i = 0; i < bytes.Length; i+=bPP)
+                    {
+                        pix[ii++] = new FastColor(bytes[i], bytes[i + 1], bytes[i + 2], bytes[i + 3]);
+                    }
+                    break;
+                case ColorMode.Indexed8:
+                    for (int i = 0; i < bytes.Length; i++)
+                    {
+                        pix[ii++] = new FastColor(bytes[i]);
+                    }
+                    break;
+                case ColorMode.RGB24:
+                    for (int i = 0; i < bytes.Length; i += bPP)
+                    {
+                        pix[ii++] = new FastColor(bytes[i], bytes[i + 1], bytes[i + 2], 255);
+                    }
+                    break;
+                case ColorMode.RGB565:
+                    for (int i = 0; i < bytes.Length; i += bPP)
+                    {
+                        byte lo = bytes[i];
+                        byte hi = bytes[i + 1];
+
+                        pix[ii++] = new FastColor(
+                            From5Bit((byte)(lo & 0b11111)),
+                            From6Bit((byte)(((lo & 0b11100000) >> 5) + ((hi & 0b111) << 3))), 
+                            From5Bit((byte)((hi & 0b11111000) >> 3)), 255);
+                    }
+                    break;
+                case ColorMode.ARGB555:
+                case ColorMode.RGB555:
+                    for (int i = 0; i < bytes.Length; i += bPP)
+                    {
+                        byte lo = bytes[i];
+                        byte hi = bytes[i + 1];
+
+                        pix[ii++] = new FastColor(
+                            From5Bit((byte)(lo & 0b11111)),
+                            From5Bit((byte)(((lo & 0b1110000) >> 5) + ((hi & 0b11) << 3))),
+                            From5Bit((byte)((hi & 0b1111100) >> 2)), 
+                            (byte)(((hi & 0b10000000) >> 7) != 0 ? 255 : 0));
+                    }
+                    break;
+            }
+            return pix;
+        }
+
+        public static void WriteColors(this BinaryWriter bw, IList<FastColor> colors) => WriteColors(bw, colors, colors.Count, ColorMode.RGBA32);
+        public static void WriteColors(this BinaryWriter bw, IList<FastColor> colors, int count) => WriteColors(bw, colors, count, ColorMode.RGBA32);
+        public static void WriteColors(this BinaryWriter bw, IList<FastColor> colors, ColorMode pFmt) => WriteColors(bw, colors, colors.Count, pFmt);
+        public static void WriteColors(this BinaryWriter bw, IList<FastColor> colors, int count, ColorMode pFmt)
         {
             if(pFmt.RequiresBits() && bw is BitWriter bwI)
             {
                 WriteColors(bwI, colors, count, pFmt);
                 return;
             }
-            count = colors.Length < count ? colors.Length : count;
+            count = colors.Count < count ? colors.Count : count;
             for (int i = 0; i < count; i++)
             {
                 WriteColorInternal(bw, colors[i], pFmt);
@@ -96,13 +235,13 @@ namespace Joonaxii.Data.Image.IO
             return colors;
         }
 
-        public static int ReadColors(this BinaryReader br, FastColor[] colors, bool reverse = false) => ReadColors(br, colors, colors.Length, ColorMode.RGBA32, reverse);
-        public static int ReadColors(this BinaryReader br, FastColor[] colors, ColorMode pFmt, bool reverse = false) => ReadColors(br, colors, colors.Length, pFmt, reverse);
-        public static int ReadColors(this BinaryReader br, FastColor[] colors, int count, bool reverse = false) => ReadColors(br, colors, count, ColorMode.RGBA32, reverse);
-        public static int ReadColors(this BinaryReader br, FastColor[] colors, int count, ColorMode pFmt, bool reverse = false)
+        public static int ReadColors(this BinaryReader br, IList<FastColor> colors, bool reverse = false) => ReadColors(br, colors, colors.Count, ColorMode.RGBA32, reverse);
+        public static int ReadColors(this BinaryReader br, IList<FastColor> colors, ColorMode pFmt, bool reverse = false) => ReadColors(br, colors, colors.Count, pFmt, reverse);
+        public static int ReadColors(this BinaryReader br, IList<FastColor> colors, int count, bool reverse = false) => ReadColors(br, colors, count, ColorMode.RGBA32, reverse);
+        public static int ReadColors(this BinaryReader br, IList<FastColor> colors, int count, ColorMode pFmt, bool reverse = false)
         {
             if (pFmt.RequiresBits() && br is BitReader brI) { return ReadColors(brI, colors, count, pFmt, reverse); }
-            count = colors.Length < count ? colors.Length : count;
+            count = colors.Count < count ? colors.Count : count;
             for (int i = 0; i < count; i++)
             {
                 colors[i] = ReadColorInternal(br, pFmt, reverse);
@@ -130,12 +269,12 @@ namespace Joonaxii.Data.Image.IO
             return colors;
         }
 
-        public static int ReadColors(this BitReader br, FastColor[] colors, int count, bool reverse = false) => ReadColors(br, colors, count, ColorMode.RGBA32, reverse);
-        public static int ReadColors(this BitReader br, FastColor[] colors, ColorMode pFmt, bool reverse = false) => ReadColors(br, colors, colors.Length, pFmt, reverse);
-        public static int ReadColors(this BitReader br, FastColor[] colors, bool reverse = false) => ReadColors(br, colors, colors.Length, ColorMode.RGBA32, reverse);
-        public static int ReadColors(this BitReader br, FastColor[] colors, int count, ColorMode pFmt, bool reverse = false)
+        public static int ReadColors(this BitReader br, IList<FastColor> colors, int count, bool reverse = false) => ReadColors(br, colors, count, ColorMode.RGBA32, reverse);
+        public static int ReadColors(this BitReader br, IList<FastColor> colors, ColorMode pFmt, bool reverse = false) => ReadColors(br, colors, colors.Count, pFmt, reverse);
+        public static int ReadColors(this BitReader br, IList<FastColor> colors, bool reverse = false) => ReadColors(br, colors, colors.Count, ColorMode.RGBA32, reverse);
+        public static int ReadColors(this BitReader br, IList<FastColor> colors, int count, ColorMode pFmt, bool reverse = false)
         {
-            count = colors.Length < count ? colors.Length : count;
+            count = colors.Count < count ? colors.Count : count;
             for (int i = 0; i < count; i++)
             {
                 colors[i] = ReadColor(br, pFmt, reverse);

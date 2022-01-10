@@ -15,6 +15,6 @@
 
         RAW_TEXTURE             = 128,
 
-        IMAGE_FORMAT            = JPEG | PNG | GIF87 | GIF89 | WEBP | BMP,
+        IMAGE_FORMAT            = JPEG | PNG | GIF87 | GIF89 | WEBP | BMP | RAW_TEXTURE,
     }
 }

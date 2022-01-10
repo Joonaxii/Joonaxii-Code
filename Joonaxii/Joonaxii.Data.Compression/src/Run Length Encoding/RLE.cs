@@ -82,6 +82,15 @@ namespace Joonaxii.Data.Compression.RLE
             }
         }
 
+        public static void CompressToStream(BinaryWriter bw, IEnumerable<byte> values)
+        {
+            List<int> data = new List<int>();
+            foreach (var item in values)
+            {
+                data.Add(item);
+            }
+            CompressToStream(bw, data);
+        }
         public static void CompressToStream(BinaryWriter bw, IEnumerable<int> values)
         {
             Dictionary<RLEChunk, int> lut = new Dictionary<RLEChunk, int>();

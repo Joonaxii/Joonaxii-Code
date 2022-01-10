@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Joonaxii.Collections.Queue
+namespace Joonaxii.Collections.ListQueue
 {
     public class ListQueue<T> : IList<T>
     {
@@ -142,6 +142,11 @@ namespace Joonaxii.Collections.Queue
                 return true;
             }
             return false;
+        }
+
+        public void Sort()
+        {
+            Array.Sort(_queue, _startPoint, _count);
         }
 
         public void RemoveAt(int i)

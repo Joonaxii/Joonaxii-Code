@@ -32,7 +32,6 @@ namespace Testing_Grounds
                 switch (res)
                 {
                     case ImageDecodeResult.Success:
-
                         string pngPath = $"{Path.GetDirectoryName(path)}/{Path.GetFileNameWithoutExtension(path)}_PNG.png";
                         using(Bitmap bm = new Bitmap(bmpDec.Width, bmpDec.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
                         {

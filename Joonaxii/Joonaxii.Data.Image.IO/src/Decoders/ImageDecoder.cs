@@ -29,22 +29,24 @@ namespace Joonaxii.Data.Image.IO
         private bool _isReady;
 
         private FileInfo _fileInfoWebpDecoder;
+        private string _hash;
 
         static ImageDecoder()
         {
             _webpTemp = $"{Path.GetTempPath()}/Image Decoder";
         }
 
-        public ImageDecoder(Stream inputStream) : this(inputStream, string.Empty) { }
-        public ImageDecoder(Stream inputStream, string webpDecoderPath) : base(new BitReader(inputStream), true)
+        public ImageDecoder(Stream inputStream) : this(inputStream, string.Empty, (inputStream is FileStream fs) ? Path.GetFileNameWithoutExtension(fs.Name) : "") { }
+        public ImageDecoder(Stream inputStream, string webpDecoderPath, string hash) : base(new BitReader(inputStream), true)
         {
             _reader = _br as BitReader;
             _indices = null;
-            _fileInfoWebpDecoder = string.IsNullOrEmpty(webpDecoderPath) ? null : new FileInfo(webpDecoderPath); 
+            _fileInfoWebpDecoder = string.IsNullOrEmpty(webpDecoderPath) ? null : new FileInfo(webpDecoderPath);
+            _hash = hash;
         }
 
-        public ImageDecoder(byte[] imageData) : this(new MemoryStream(imageData), string.Empty) { }
-        public ImageDecoder(byte[] imageData, string webpDecoderPath) : this(new MemoryStream(imageData), webpDecoderPath) { }
+        public ImageDecoder(byte[] imageData) : this(new MemoryStream(imageData), string.Empty, "") { }
+        public ImageDecoder(byte[] imageData, string webpDecoderPath, string hash) : this(new MemoryStream(imageData), webpDecoderPath, hash) { }
 
         public override ImageDecodeResult Decode(bool skipHeader)
         {
@@ -56,6 +58,27 @@ namespace Joonaxii.Data.Image.IO
 
             switch (type)
             {
+                case HeaderType.RAW_TEXTURE:
+                    using (RawTextureDecoder rawDec = new RawTextureDecoder(_reader, false))
+                    {
+                        ImageDecodeResult res;
+                        switch (res = rawDec.Decode(true))
+                        {
+                            default: return res;
+                            case ImageDecodeResult.Success:
+                                break;
+                        }
+
+                        _bpp = rawDec.BitsPerPixel;
+                        _colorMode = rawDec.ColorMode;
+                        _width = rawDec.Width;
+                        _height = rawDec.Height;
+
+                        _pixels = new FastColor[_width * _height];
+                        rawDec.GetPixels(_pixels);
+                    }
+                    break;
+
                 case HeaderType.GIF87:
                 case HeaderType.GIF89:
                     int gifMode = type == HeaderType.GIF89 ? 2 : 1;
@@ -75,7 +98,7 @@ namespace Joonaxii.Data.Image.IO
                     _reader.BaseStream.Position = posSt;
 
                     byte[] webpData = _reader.ReadToEnd();
-                    webpData = WebpToBmp(_fileInfoWebpDecoder.FullName, webpData);
+                    webpData = WebpToBmp(_hash, _fileInfoWebpDecoder.FullName, webpData);
 
                     if(webpData == null) { return ImageDecodeResult.DecodeFailed; }
 
@@ -153,11 +176,11 @@ namespace Joonaxii.Data.Image.IO
             }
         }
 
-        private static byte[] WebpToBmp(string webpDecoder, byte[] webpData)
+        private static byte[] WebpToBmp(string hash, string webpDecoder, byte[] webpData)
         {
             string path = WEBP_TEMP_PATH;
-            string tempA = Path.Combine(path, "TEMP_WEBP.webp");
-            string tempB = Path.Combine(path, "TEMP_BMP.bmp");
+            string tempA = Path.Combine(path, $"TEMP_{hash}_WEBP.webp");
+            string tempB = Path.Combine(path, $"TEMP_{hash}_BMP.bmp");
 
             File.WriteAllBytes(tempA, webpData);
 
@@ -174,9 +197,23 @@ namespace Joonaxii.Data.Image.IO
             Process cmd = Process.Start(startInfo);
             cmd.WaitForExit();
 
-            if (File.Exists(tempA)) { File.Delete(tempA); }
+            byte[] data;
+            try
+            {
+                if (File.Exists(tempA)) { File.Delete(tempA); }
+            }
+            catch
+            {
+                data = null;
+                if (File.Exists(tempB))
+                {
+                    data = File.ReadAllBytes(tempB);
+                    File.Delete(tempB);
+                }
+                return data;
+            }
 
-            byte[] data = null;
+             data = null;
             if (File.Exists(tempB))
             {
                 data = File.ReadAllBytes(tempB);

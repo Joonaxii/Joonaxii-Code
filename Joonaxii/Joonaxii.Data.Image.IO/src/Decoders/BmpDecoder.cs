@@ -81,7 +81,7 @@ namespace Joonaxii.Data.Image.IO
             int padding = IOExtensions.NextPowerOf(_width * bytesPerP, 4) - (_width * bytesPerP);
             for (int y = 0; y < _height; y++)
             {
-                int yP = topToBot ? y : _height - 1 - y;
+                int yP = topToBot ? _height - 1 - y : y;
                 for (int x = 0; x < _width; x++)
                 {
                     _pixels[yP * _width + x] = br.ReadColor(_colorMode, true);

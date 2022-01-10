@@ -10,6 +10,8 @@ namespace Joonaxii.Data.Image.IO
 {
     public class RawTextureDecoder : ImageDecoderBase
     {
+        public const int PIXEL_COMPRESS_THRESHOLD = 64 * 64;
+
         public RawTextureDecoder(Stream stream) : base(new BitReader(stream), false) { }
         public RawTextureDecoder(BinaryReader br, bool dispose) : base(br, dispose) { }
 
@@ -19,29 +21,11 @@ namespace Joonaxii.Data.Image.IO
             {
                 if(HeaderManager.GetFileType(_br, false) != HeaderType.RAW_TEXTURE) { return ImageDecodeResult.InvalidImageFormat; }
             }
-
-            _colorMode = (ColorMode)_br.ReadByte();
-            _bpp = _colorMode.GetBPP();
-            RawTextureCompressMode compressMode = (RawTextureCompressMode)_br.ReadByte();
-
-            _width = _br.ReadUInt16();
-            _height = _br.ReadUInt16();
-            _pixels = new FastColor[_width * _height];
-
-            TimeStamper stamp = new TimeStamper($"Raw Texture Decode with [{compressMode}]");
-            if (compressMode == RawTextureCompressMode.None)
-            {
-                stamp.Start("Read Raw Pixel Data");
-                _br.ReadColors(_pixels, _colorMode);
-                stamp.Stamp();
-
-                Console.WriteLine(stamp.ToString());
-                return ImageDecodeResult.Success;
-            }
-
+   
             MemoryStream stream = null;
             BitReader _brI = _br as BitReader;
             bool isBitReader = _brI != null;
+            TimeStamper stamp = new TimeStamper($"Raw Texture Decode!");
 
             if (!isBitReader)
             {
@@ -52,6 +36,53 @@ namespace Joonaxii.Data.Image.IO
                 stamp.Stamp();
             }
 
+            _colorMode = (ColorMode)_brI.ReadByte();
+            _bpp = _colorMode.GetBPP();
+            RawTextureIndexCompressMode compressMode = (RawTextureIndexCompressMode)_brI.ReadByte(7);
+            bool compressPixels = _brI.ReadBoolean();
+
+            _width = _br.ReadUInt16();
+            _height = _br.ReadUInt16();
+            int l = _width * _height;
+ 
+            if (compressMode == RawTextureIndexCompressMode.None)
+            {
+                compressPixels &= l >= PIXEL_COMPRESS_THRESHOLD;
+                if (compressPixels)
+                {
+                    stamp.Start("Huffman Decompression of Color bytes");
+                    List<int> ints = new List<int>();
+                    Huffman.DecompressFromStream(_brI, ints);
+                    byte[] bytes = new byte[ints.Count];
+                    for (int i = 0; i < ints.Count; i++)
+                    {
+                        var intT = ints[i];
+                        bytes[i] = (byte)(intT > 255 ? 255 : intT < 0 ? 0 : intT);
+                    }
+                    ints.Clear();
+                    _pixels = ImageIOExtensions.ToFastColor(bytes, _colorMode);
+                    stamp.Stamp();
+                }
+                else
+                {
+                    _pixels = new FastColor[l];
+                    stamp.Start("Read Raw Pixel Data");
+                    _br.ReadColors(_pixels, _colorMode);
+                    stamp.Stamp();
+                }
+
+                Console.WriteLine(stamp.ToString());
+                if (!isBitReader)
+                {
+                    _br.BaseStream.Position = _brI.BaseStream.Position;
+
+                    stream.Dispose();
+                    _brI.Dispose();
+                }
+                return ImageDecodeResult.Success;
+            }
+
+            _pixels = new FastColor[l];
             stamp.Start("Palette Prep");
             int paletteSize = _brI.Read7BitInt();
             FastColor[] palette = new FastColor[paletteSize];
@@ -64,7 +95,7 @@ namespace Joonaxii.Data.Image.IO
             List<int> indices = new List<int>();
             switch (compressMode)
             {
-                case RawTextureCompressMode.Huffman:
+                case RawTextureIndexCompressMode.Huffman:
                     stamp.Start("Decompress Huffman");
                     Huffman.DecompressFromStream(_brI, indices);
                     for (int i = 0; i < _pixels.Length; i++)
@@ -74,7 +105,7 @@ namespace Joonaxii.Data.Image.IO
                     stamp.Stamp();
                     break;
 
-                case RawTextureCompressMode.RLE:
+                case RawTextureIndexCompressMode.RLE:
                     stamp.Start("Decompress RLE");
                     RLE.DecompressFromStream(_brI, indices);
                     for (int i = 0; i < _pixels.Length; i++)
@@ -84,7 +115,7 @@ namespace Joonaxii.Data.Image.IO
                     stamp.Stamp();
                     break;
 
-                case RawTextureCompressMode.RLEHuffman:
+                case RawTextureIndexCompressMode.RLEHuffman:
 
                     stamp.Start("Read RLE Chunk Palette");
                     byte lenBits = (byte)(_brI.ReadByte(3) + 1);

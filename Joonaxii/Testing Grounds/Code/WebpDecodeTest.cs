@@ -53,7 +53,7 @@ namespace Testing_Grounds
             }
 
             using (FileStream stream = new FileStream(path, FileMode.Open))
-            using (ImageDecoder webpDec = new ImageDecoder(stream, webpPath))
+            using (ImageDecoder webpDec = new ImageDecoder(stream, webpPath, "HASH"))
             {
                 var res = webpDec.Decode(false);
                 Console.WriteLine($"Webp Decode! {res}");
@@ -67,10 +67,11 @@ namespace Testing_Grounds
                         {
                             for (int y = 0; y < webpDec.Height; y++)
                             {
+                                int yy = webpDec.Height - y - 1;
                                 for (int x = 0; x < webpDec.Width; x++)
                                 {
                                     var c = webpDec.GetPixel(x, y);
-                                    bm.SetPixel(x, y, Color.FromArgb(c.a, c.r, c.g, c.b));
+                                    bm.SetPixel(x, yy, Color.FromArgb(c.a, c.r, c.g, c.b));
                                 }
                             }
                             bm.Save(pngPath, ImageFormat.Png);
@@ -83,33 +84,33 @@ namespace Testing_Grounds
                             {
                                 $"{relativeName}_NONE.raw",
                                 $"{relativeName}_HUFF.raw",
-                                $"{relativeName}_RLE.raw",
+                                $"{relativeName}_HUFF NONE.raw",
                                 $"{relativeName}_RLEHuff.raw",
                                 $"{relativeName}_Auto.raw",
                             };
                             using (RawTextureEncoder encRaw = new RawTextureEncoder(0, 0, 32))
                             using (FileStream streamRaw = new FileStream(allRaw[0], FileMode.Create))
-                            using (FileStream streamHuff = new FileStream(allRaw[1], FileMode.Create))
+                            //using (FileStream streamHuff = new FileStream(allRaw[1], FileMode.Create))
                             using (FileStream streamRLE = new FileStream(allRaw[2], FileMode.Create))
-                            using (FileStream streamRLEHuff = new FileStream(allRaw[3], FileMode.Create))
-                            using (FileStream streamAuto = new FileStream(allRaw[4], FileMode.Create))
+                           //using (FileStream streamRLEHuff = new FileStream(allRaw[3], FileMode.Create))
+                           //using (FileStream streamAuto = new FileStream(allRaw[4], FileMode.Create))
                             {
                                 encRaw.CopyFrom(webpDec);
 
-                                encRaw.Encode(RawTextureCompressMode.None, streamRaw, true);
-                                Console.WriteLine($"RAW saved with {RawTextureCompressMode.None} to relative dir {relativeName}");
+                                encRaw.Encode(RawTextureIndexCompressMode.None, false, streamRaw, true);
+                                Console.WriteLine($"RAW saved with {RawTextureIndexCompressMode.None} to relative dir {relativeName}");
 
-                                encRaw.Encode(RawTextureCompressMode.RLE, streamRLE, true);
-                                Console.WriteLine($"RAW saved with {RawTextureCompressMode.RLE} to relative dir {relativeName}");
+                                encRaw.Encode(RawTextureIndexCompressMode.None, true, streamRLE, true);
+                                Console.WriteLine($"RAW saved with {RawTextureIndexCompressMode.None} to relative dir {relativeName}");
 
-                                encRaw.Encode(RawTextureCompressMode.RLEHuffman, streamRLEHuff, true);
-                                Console.WriteLine($"RAW saved with {RawTextureCompressMode.RLEHuffman} to relative dir {relativeName}");
+                                //encRaw.Encode(RawTextureIndexCompressMode.RLEHuffman, true, streamRLEHuff, true);
+                                //Console.WriteLine($"RAW saved with {RawTextureIndexCompressMode.RLEHuffman} to relative dir {relativeName}");
 
-                                encRaw.Encode(RawTextureCompressMode.Huffman, streamHuff, true);
-                                Console.WriteLine($"RAW saved with {RawTextureCompressMode.Huffman} to relative dir {relativeName}");
+                                //encRaw.Encode(RawTextureIndexCompressMode.Huffman, true, streamHuff, true);
+                                //Console.WriteLine($"RAW saved with {RawTextureIndexCompressMode.Huffman} to relative dir {relativeName}");
 
-                                encRaw.Encode(RawTextureCompressMode.Auto, streamAuto, true);
-                                Console.WriteLine($"RAW saved with {RawTextureCompressMode.Auto} to relative dir {relativeName}");
+                                //encRaw.Encode(RawTextureIndexCompressMode.Auto, true, streamAuto, true);
+                                //Console.WriteLine($"RAW saved with {RawTextureIndexCompressMode.Auto} to relative dir {relativeName}");
 
                             }
 
@@ -133,10 +134,11 @@ namespace Testing_Grounds
                                             {
                                                 for (int y = 0; y < rawDec.Height; y++)
                                                 {
+                                                    int yy = rawDec.Height - y - 1;
                                                     for (int x = 0; x < rawDec.Width; x++)
                                                     {
                                                         var p = rawDec.GetPixel(x, y);
-                                                        bm.SetPixel(x, y, Color.FromArgb(p.a, p.r, p.g, p.b));
+                                                        bm.SetPixel(x, yy, Color.FromArgb(p.a, p.r, p.g, p.b));
                                                     }
                                                 }
 

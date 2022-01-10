@@ -11,33 +11,40 @@ namespace Joonaxii.Data.Image.IO
 {
     public class RawTextureEncoder : ImageEncoderBase
     {
-        private RawTextureCompressMode _compressMode;
+        private RawTextureIndexCompressMode _compressMode;
+        private bool _compressPixelData;
 
-        public RawTextureEncoder(int width, int height, byte bPP) : this(RawTextureCompressMode.None, width, height, bPP) { }
-        public RawTextureEncoder(RawTextureCompressMode compress, int width, int height, byte bPP) : base(width, height, bPP)
+        public RawTextureEncoder(int width, int height, byte bPP) : this(RawTextureIndexCompressMode.None, false, width, height, bPP) { }
+        public RawTextureEncoder(RawTextureIndexCompressMode compress, bool compressPixelData, int width, int height, byte bPP) : base(width, height, bPP)
         {
             _compressMode = compress;
+            _compressPixelData = compressPixelData;
         }
 
-        public RawTextureEncoder(int width, int height, ColorMode pFmt) : this(RawTextureCompressMode.None, width, height, pFmt) { }
-        public RawTextureEncoder(RawTextureCompressMode compress, int width, int height, ColorMode pFmt) : base(width, height, pFmt)
+        public RawTextureEncoder(int width, int height, ColorMode pFmt) : this(RawTextureIndexCompressMode.None, false, width, height, pFmt) { }
+        public RawTextureEncoder(RawTextureIndexCompressMode compress, bool compressPixelData, int width, int height, ColorMode pFmt) : base(width, height, pFmt)
         {
             _compressMode = compress;
+            _compressPixelData = compressPixelData;
         }
 
-        public void SetCompressionMode(RawTextureCompressMode mode) => _compressMode = mode;
-
-        public ImageEncodeResult Encode(RawTextureCompressMode mode, Stream stream, bool leaveStreamOpen)
+        public void SetCompressionMode(RawTextureIndexCompressMode mode, bool compressPixelData)
         {
-            SetCompressionMode(mode);
+            _compressMode = mode;
+            _compressPixelData = compressPixelData;
+        }
+
+        public ImageEncodeResult Encode(RawTextureIndexCompressMode mode, bool compressPixelData, Stream stream, bool leaveStreamOpen)
+        {
+            SetCompressionMode(mode, compressPixelData);
             return Encode(stream, leaveStreamOpen);
         }
 
-        private RawTextureCompressMode NoiseLevelToCompressMode(float noise)
+        private RawTextureIndexCompressMode NoiseLevelToCompressMode(float noise)
         {
-            if (noise >= 0.40f) { return RawTextureCompressMode.Huffman; }
-            if (noise >= 0.25f) { return RawTextureCompressMode.RLEHuffman; }
-            return RawTextureCompressMode.RLE;
+            if (noise >= 0.40f) { return RawTextureIndexCompressMode.Huffman; }
+            if (noise >= 0.25f) { return RawTextureIndexCompressMode.RLEHuffman; }
+            return RawTextureIndexCompressMode.RLE;
         }
 
         public override ImageEncodeResult Encode(Stream stream, bool leaveStreamOpen)
@@ -52,7 +59,7 @@ namespace Joonaxii.Data.Image.IO
                 TimeStamper stamp = new TimeStamper($"Raw Texture Encode with [{_compressMode}]");
 
                 var res = _compressMode;
-                if (res == RawTextureCompressMode.Auto)
+                if (res == RawTextureIndexCompressMode.Auto)
                 {
                     stamp.Start("Automatic Noisiness Detection");
                     res = NoiseLevelToCompressMode(new ImageNoiseDetector(true).Process(_pixels, _width, _height, _bpp));
@@ -63,19 +70,31 @@ namespace Joonaxii.Data.Image.IO
                 hdr.WriteHeader(bw);
 
                 bw.Write((byte)_colorMode);
-                bw.Write((byte)res);
+                bw.Write((byte)res, 7);
+                bw.Write(_compressPixelData);
 
                 bw.Write((ushort)Math.Min(_width, ushort.MaxValue));
                 bw.Write((ushort)Math.Min(_height, ushort.MaxValue));
                 stamp.Stamp();
 
                 //Write Uncompressed Raw Colors if compression mode is 0
-                if (res == RawTextureCompressMode.None)
+                if (res == RawTextureIndexCompressMode.None)
                 {
-                    stamp.Start("Write Raw Pixel Data");
-                    bw.WriteColors(_pixels, _colorMode);
-                    stamp.Stamp();
-
+                    _compressPixelData &= (_width * _height) >= RawTextureDecoder.PIXEL_COMPRESS_THRESHOLD;
+                    if (_compressPixelData)
+                    {
+                        stamp.Start("Huffman Compress pixel bytes");
+                        byte[] data = _pixels.ToBytes(_colorMode);
+                        Huffman.CompressToStream(bw, data, true, out byte bbb);
+                        stamp.Stamp();
+                    }
+                    else
+                    {
+                        stamp.Start("Write Raw Pixel Data");
+                        bw.WriteColors(_pixels, _colorMode);
+                        stamp.Stamp();
+                    }
+ 
                     Console.WriteLine(stamp.ToString());
                     return ImageEncodeResult.Success;
                 }
@@ -99,7 +118,7 @@ namespace Joonaxii.Data.Image.IO
                 //Compress the indices with RLE, Huffman Coding or both
                 switch (res)
                 {
-                    case RawTextureCompressMode.Huffman:
+                    case RawTextureIndexCompressMode.Huffman:
                         stamp.Start("Huffman Compression");
                         for (int i = 0; i < _pixels.Length; i++)
                         {
@@ -110,7 +129,7 @@ namespace Joonaxii.Data.Image.IO
                         stamp.Stamp();
                         break;
 
-                    case RawTextureCompressMode.RLE:
+                    case RawTextureIndexCompressMode.RLE:
                         stamp.Start("RLE Compression");
                         for (int i = 0; i < _pixels.Length; i++)
                         {
@@ -121,7 +140,7 @@ namespace Joonaxii.Data.Image.IO
                         stamp.Stamp();
                         break;
 
-                    case RawTextureCompressMode.RLEHuffman:
+                    case RawTextureIndexCompressMode.RLEHuffman:
 
                         stamp.Start("RLE Index Gen");
                         List<int> indices = new List<int>();

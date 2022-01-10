@@ -49,7 +49,7 @@
     <Compile Include="src\Decoders\RawTextureDecoder.cs" />
     <Compile Include="src\Encoders\ImageEncoderBase.cs" />
     <Compile Include="src\Encoders\ImageEncodeResult.cs" />
-    <Compile Include="src\Encoders\RawTextureCompressMode.cs" />
+    <Compile Include="src\Encoders\RawTextureIndexCompressMode.cs" />
     <Compile Include="src\Encoders\RawTextureEncoder.cs" />
     <Compile Include="src\ImageIOExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
