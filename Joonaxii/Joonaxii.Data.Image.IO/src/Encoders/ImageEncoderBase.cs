@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace Joonaxii.Data.Image.IO
+namespace Joonaxii.Data.Image.Conversion
 {
     public abstract class ImageEncoderBase : IDisposable
     {
@@ -37,6 +37,8 @@ namespace Joonaxii.Data.Image.IO
             _pixels = new FastColor[width * height];
         }
 
+        public abstract void ValidateFormat();
+
         public virtual ImageEncodeResult Encode(ImageDecoderBase decoder, Stream stream, bool leaveStreamOpen)
         {
             if (!decoder.IsDecoded)
@@ -57,12 +59,14 @@ namespace Joonaxii.Data.Image.IO
         {
             _colorMode = ImageIOExtensions.GetColorMode(bPP, g: 0x7E0);
             _bpp = bPP;
+            ValidateFormat();
         }
 
         public void SetColorMode(ColorMode cmMode)
         {
             _colorMode = cmMode;
             _bpp = cmMode.GetBPP();
+            ValidateFormat();
         }
 
         public void Resize(int width, int height)
@@ -86,6 +90,21 @@ namespace Joonaxii.Data.Image.IO
             Array.Copy(colors, _pixels, len);
         }
 
+        public bool Save(string path)
+        {
+            using(FileStream stream = new FileStream(path, FileMode.Create))
+            {
+                if (Save(stream))
+                {
+                    return true;
+                }
+                if (File.Exists(path)) { File.Delete(path); }
+            }
+            return false;
+        }
+
+        public virtual bool Save(Stream stream) => false;
+
         public void CopyFrom(ImageDecoderBase decoder)
         {
             if (!decoder.IsDecoded) { return; }
@@ -95,6 +114,7 @@ namespace Joonaxii.Data.Image.IO
 
             _bpp = decoder.BitsPerPixel;
             _colorMode = decoder.ColorMode;
+            ValidateFormat();
 
             int reso = _width * _height;
             if (reso == 0) { return; }

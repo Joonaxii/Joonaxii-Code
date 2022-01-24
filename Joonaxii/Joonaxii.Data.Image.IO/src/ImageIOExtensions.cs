@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace Joonaxii.Data.Image.IO
+namespace Joonaxii.Data.Image.Conversion
 {
     public static class ImageIOExtensions
     {
@@ -72,7 +72,7 @@ namespace Joonaxii.Data.Image.IO
             }
         }
 
-        public static byte[] ToBytes(this FastColor[] colors, ColorMode mode)
+        public static byte[] ToBytes(this FastColor[] colors, PixelByteOrder byteOrder, bool invertY, int width, int height, ColorMode mode)
         {
             byte bPP = mode.GetBPP();
             if(bPP < 8)
@@ -83,39 +83,113 @@ namespace Joonaxii.Data.Image.IO
             byte[] data = new byte[bPP * colors.Length];
 
             int ii = 0;
+            int pI = 0;
             FastColor c;
             switch (mode)
             {
                 default:
                     for (int i = 0; i < colors.Length; i++)
                     {
-                        c = colors[i];
-                        data[ii++] = c.r;
-                        data[ii++] = c.g;
-                        data[ii++] = c.b;
-                        data[ii++] = c.a;
+                        pI = i;
+
+                        if (invertY)
+                        {
+                            int x = pI % width;
+                            int y = pI / width;
+                            pI = ((height - 1 - y) * width) + x;
+                        }
+
+                        c = colors[pI];
+
+                        switch (byteOrder)
+                        {
+                            case PixelByteOrder.RGBA:
+                                data[ii++] = c.r;
+                                data[ii++] = c.g;
+                                data[ii++] = c.b;
+                                data[ii++] = c.a;
+                                break;
+
+                            case PixelByteOrder.ARGB:
+                                data[ii++] = c.a;
+                                data[ii++] = c.r;
+                                data[ii++] = c.g;
+                                data[ii++] = c.b;
+                                break;
+
+                            case PixelByteOrder.ABGR:
+                                data[ii++] = c.a;
+                                data[ii++] = c.b;
+                                data[ii++] = c.g;
+                                data[ii++] = c.r;
+                                break;
+                        }
+
                     }
                     break;
                 case ColorMode.Indexed8:
                     for (int i = 0; i < colors.Length; i++)
                     {
-                        c = colors[i];
+                        pI = i;
+                        if (invertY)
+                        {
+                            int x = pI % width;
+                            int y = pI / width;
+                            pI = ((height - 1 - y) * width) + x;
+                        }
+
+                        c = colors[pI];
                         data[ii++] = c.r;
                     }
                     break;
                 case ColorMode.RGB24:
                     for (int i = 0; i < colors.Length; i++)
                     {
-                        c = colors[i];
-                        data[ii++] = c.r;
-                        data[ii++] = c.g;
-                        data[ii++] = c.b;
+                        pI = i;
+                        if (invertY)
+                        {
+                            int x = pI % width;
+                            int y = pI / width;
+                            pI = ((height - 1 - y) * width) + x;
+                        }
+
+                        c = colors[pI];
+
+
+                        switch (byteOrder)
+                        {
+                            case PixelByteOrder.RGBA:
+                                data[ii++] = c.r;
+                                data[ii++] = c.g;
+                                data[ii++] = c.b;
+                                break;
+
+                            case PixelByteOrder.ARGB:
+                                data[ii++] = c.r;
+                                data[ii++] = c.g;
+                                data[ii++] = c.b;
+                                break;
+
+                            case PixelByteOrder.ABGR:
+                                data[ii++] = c.b;
+                                data[ii++] = c.g;
+                                data[ii++] = c.r;
+                                break;
+                        }
                     }
                     break;
                 case ColorMode.RGB565:
                     for (int i = 0; i < colors.Length; i++)
                     {
-                        c = colors[i];
+                        pI = i;
+                        if (invertY)
+                        {
+                            int x = pI % width;
+                            int y = pI / width;
+                            pI = ((height - 1 - y) * width) + x;
+                        }
+
+                        c = colors[pI];
                         byte r5 = To5Bit(c.r);
                         byte g6 = To6Bit(c.g);
                         byte b5 = To5Bit(c.b);
@@ -131,7 +205,15 @@ namespace Joonaxii.Data.Image.IO
                 case ColorMode.RGB555:
                     for (int i = 0; i < colors.Length; i++)
                     {
-                        c = colors[i];
+                        pI = i;
+                              if (invertY)
+                        {
+                            int x = pI % width;
+                            int y = pI / width;
+                            pI = ((height - 1 - y) * width) + x;
+                        }
+
+                        c = colors[pI];
 
                         byte r5 = To5Bit(c.r);
                         byte g5 = To5Bit(c.g);
@@ -210,20 +292,42 @@ namespace Joonaxii.Data.Image.IO
             return pix;
         }
 
-        public static void WriteColors(this BinaryWriter bw, IList<FastColor> colors) => WriteColors(bw, colors, colors.Count, ColorMode.RGBA32);
-        public static void WriteColors(this BinaryWriter bw, IList<FastColor> colors, int count) => WriteColors(bw, colors, count, ColorMode.RGBA32);
-        public static void WriteColors(this BinaryWriter bw, IList<FastColor> colors, ColorMode pFmt) => WriteColors(bw, colors, colors.Count, pFmt);
-        public static void WriteColors(this BinaryWriter bw, IList<FastColor> colors, int count, ColorMode pFmt)
+        public static void WriteColors(this BinaryWriter bw, IList<FastColor> colors) => WriteColors(bw, colors, colors.Count, ColorMode.RGBA32, false);
+        public static void WriteColors(this BinaryWriter bw, IList<FastColor> colors, int count) => WriteColors(bw, colors, count, ColorMode.RGBA32, false);
+        public static void WriteColors(this BinaryWriter bw, IList<FastColor> colors, ColorMode pFmt) => WriteColors(bw, colors, colors.Count, pFmt, false);
+        public static void WriteColors(this BinaryWriter bw, IList<FastColor> colors, int count, ColorMode pFmt, bool reverse)
         {
             if(pFmt.RequiresBits() && bw is BitWriter bwI)
             {
-                WriteColors(bwI, colors, count, pFmt);
+                WriteColors(bwI, colors, count, pFmt, reverse);
                 return;
             }
             count = colors.Count < count ? colors.Count : count;
             for (int i = 0; i < count; i++)
             {
-                WriteColorInternal(bw, colors[i], pFmt);
+                WriteColorInternal(bw, colors[i], pFmt, reverse);
+            }
+        }
+
+        public static void WriteColors(this BinaryWriter bw, IList<FastColor> colors, int width, int height, ColorMode pFmt, bool reverse, int bytePadding = 0)
+        {
+            if(bytePadding < 1) { WriteColors(bw, colors, width * height, pFmt, reverse); return; }
+            if (pFmt.RequiresBits() && bw is BitWriter bwI)
+            {
+                WriteColors(bwI, colors, width, height, pFmt, reverse, bytePadding);
+                return;
+            }
+
+            byte[] temp = new byte[bytePadding];
+            for (int y = 0; y < height; y++)
+            {
+                int yY = y * width;
+                for (int x = 0; x < width; x++)
+                {
+                    int i = yY + x;
+                    WriteColorInternal(bw, colors[i], pFmt, reverse);
+                }
+                bw.Write(temp);
             }
         }
 
@@ -249,15 +353,32 @@ namespace Joonaxii.Data.Image.IO
             return count;
         }
 
-        public static void WriteColors(this BitWriter bw, FastColor[] colors) => WriteColors(bw, colors, colors.Length, ColorMode.RGBA32);
-        public static void WriteColors(this BitWriter bw, FastColor[] colors, int count) => WriteColors(bw, colors, count, ColorMode.RGBA32);
-        public static void WriteColors(this BitWriter bw, FastColor[] colors, ColorMode pFmt) => WriteColors(bw, colors, colors.Length, pFmt);
-        public static void WriteColors(this BitWriter bw, FastColor[] colors, int count, ColorMode pFmt)
+        public static void WriteColors(this BitWriter bw, FastColor[] colors) => WriteColors(bw, colors, colors.Length, ColorMode.RGBA32, false);
+        public static void WriteColors(this BitWriter bw, FastColor[] colors, int count) => WriteColors(bw, colors, count, ColorMode.RGBA32, false);
+        public static void WriteColors(this BitWriter bw, FastColor[] colors, ColorMode pFmt) => WriteColors(bw, colors, colors.Length, pFmt, false);
+        public static void WriteColors(this BitWriter bw, FastColor[] colors, int count, ColorMode pFmt, bool reverse)
         {
             count = colors.Length < count ? colors.Length : count;
             for (int i = 0; i < count; i++)
             {
-                WriteColor(bw, colors[i], pFmt);
+                WriteColor(bw, colors[i], pFmt, reverse);
+            }
+        }
+
+        public static void WriteColors(this BitWriter bw, FastColor[] colors, int width, int height, ColorMode pFmt, bool reverse, int bytePadding)
+        {
+            if (bytePadding < 1) { WriteColors(bw, colors, width * height, pFmt, reverse); return; }
+
+            byte[] temp = new byte[bytePadding];
+            for (int y = 0; y < height; y++)
+            {
+                int yY = y * width;
+                for (int x = 0; x < width; x++)
+                {
+                    int i = yY + x;
+                    WriteColor(bw, colors[i], pFmt, reverse);
+                }
+                bw.Write(temp);
             }
         }
 
@@ -377,7 +498,7 @@ namespace Joonaxii.Data.Image.IO
                 //    (byte)(br.ReadUInt16() * USHORT_TO_BYTE));
             }
         }
-        public static void WriteColor(this BitWriter bw, FastColor color, ColorMode pFmt)
+        public static void WriteColor(this BitWriter bw, FastColor color, ColorMode pFmt, bool reverse = false)
         {
             switch (pFmt)
             {
@@ -389,29 +510,62 @@ namespace Joonaxii.Data.Image.IO
                     bw.Write(color.r);
                     break;
                 case ColorMode.RGB565:
+                    if (reverse)
+                    {
+                        bw.Write(To5Bit(color.b), 5);
+                        bw.Write(To6Bit(color.g), 6);
+                        bw.Write(To5Bit(color.r), 5);
+                        break;
+                    }
+
                     bw.Write(To5Bit(color.r), 5);
                     bw.Write(To6Bit(color.g), 6);
                     bw.Write(To5Bit(color.b), 5);
                     break;
                 case ColorMode.RGB555:
                 case ColorMode.ARGB555:
+                    if (reverse)
+                    {
+                        bw.Write(To5Bit(color.b), 5);
+                        bw.Write(To6Bit(color.g), 5);
+                        bw.Write(To5Bit(color.r), 5);
+                        bw.Write(pFmt != ColorMode.ARGB555 | color.a > 127);
+                        break;
+                    }
                     bw.Write(pFmt != ColorMode.ARGB555 | color.a > 127);
                     bw.Write(To5Bit(color.r), 5);
                     bw.Write(To5Bit(color.g), 5);
                     bw.Write(To5Bit(color.b), 5);
                     break;
                 case ColorMode.RGB24:
+                    if (reverse)
+                    {
+                        bw.Write(color.b);
+                        bw.Write(color.g);
+                        bw.Write(color.r);
+                        break;
+                    }
                     bw.Write(color.r);
                     bw.Write(color.g);
                     bw.Write(color.b);
                     break;
-                case ColorMode.RGBA32: bw.Write(color, 32); break;
-                //case 64:
-                //    bw.Write((ushort)(color.r * BYTE_TO_USHORT));
-                //    bw.Write((ushort)(color.g * BYTE_TO_USHORT));
-                //    bw.Write((ushort)(color.b * BYTE_TO_USHORT));
-                //    bw.Write((ushort)(color.a * BYTE_TO_USHORT));
-                //    break;
+                case ColorMode.RGBA32:
+                    if (reverse)
+                    {
+                        bw.Write(color.b);
+                        bw.Write(color.g);
+                        bw.Write(color.r);
+                        bw.Write(color.a);
+                        break;
+                    }
+                    bw.Write(color, 32); 
+                    break;
+                    //case 64:
+                    //    bw.Write((ushort)(color.r * BYTE_TO_USHORT));
+                    //    bw.Write((ushort)(color.g * BYTE_TO_USHORT));
+                    //    bw.Write((ushort)(color.b * BYTE_TO_USHORT));
+                    //    bw.Write((ushort)(color.a * BYTE_TO_USHORT));
+                    //    break;
             }
         }
 
@@ -477,7 +631,7 @@ namespace Joonaxii.Data.Image.IO
                 //    (byte)(br.ReadUInt16() * USHORT_TO_BYTE));
             }
         }
-        private static void WriteColorInternal(BinaryWriter bw, FastColor color, ColorMode pFmt)
+        private static void WriteColorInternal(BinaryWriter bw, FastColor color, ColorMode pFmt, bool reverse = false)
         {
             switch (pFmt)
             {
@@ -487,15 +641,38 @@ namespace Joonaxii.Data.Image.IO
                     break;
                 case ColorMode.RGB555:
                 case ColorMode.RGB565:
+                    if (reverse)
+                    {
+                        bw.Write(color.g);
+                        bw.Write(color.r);
+                        break;
+                    }
                     bw.Write(color.r);
                     bw.Write(color.g);
                     break;
                 case ColorMode.RGB24:
+                    if (reverse)
+                    {
+                        bw.Write(color.b);
+                        bw.Write(color.g);
+                        bw.Write(color.r);
+                        break;
+                    }
                     bw.Write(color.r);
                     bw.Write(color.g);
                     bw.Write(color.b);
                     break;
-                case ColorMode.RGBA32: WriteColor(bw, color); break;
+                case ColorMode.RGBA32:
+                    if (reverse)
+                    {
+                        bw.Write(color.a);
+                        bw.Write(color.b);
+                        bw.Write(color.g);
+                        bw.Write(color.r);
+                        break;
+                    }
+                    WriteColor(bw, color);
+                    break;
                 //case 64:
                 //    bw.Write((ushort)(color.r * BYTE_TO_USHORT));
                 //    bw.Write((ushort)(color.g * BYTE_TO_USHORT));

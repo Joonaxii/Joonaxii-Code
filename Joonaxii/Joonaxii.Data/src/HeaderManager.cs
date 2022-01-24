@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace Joonaxii.Data.Image.IO
+namespace Joonaxii.Data.Image.Conversion
 {
     public static class HeaderManager
     {
@@ -11,7 +11,8 @@ namespace Joonaxii.Data.Image.IO
             new MagicByte[] { 0x42, 0x4D, } ),
 
         new MagicHeader(HeaderType.PNG,
-            new MagicByte[] { 0x89, 0x50, 0x4E, 0x47 }),
+            new MagicByte[] { 0x89, 0x50, 0x4E, 0x47, 
+                              0xFFF, 0xFFF, 0xFFF, 0xFFF }),
 
         new MagicHeader(HeaderType.RAW_TEXTURE,
             new MagicByte[] { 'R', 'A', 'W' }),

@@ -35,6 +35,42 @@ namespace Joonaxii.MathJX
             return v;
         }
 
+        public static float Remap(float input, float minA, float maxA, float minB, float maxB) => Lerp(minB, maxB, InverseLerp(minA, maxA, input));
+
+        public static float CalculateRMS(byte[] input) => (float)Math.Sqrt(CalcualteSqrRMS(input));
+        public static float CalcualteSqrRMS(byte[] input)
+        {
+            long square = 0;
+            float mean;
+
+            for (int i = 0; i < input.Length; i++)
+            {
+                square += (long)Math.Pow(input[i], 2);
+            }
+
+            mean = (square / (float)input.Length) / 255.0f;
+            return mean;
+        }
+
+        public static float CalculateRMS(byte[] input, int w, int h) => (float)Math.Sqrt(CalcualteSqrRMS(input, w, h));
+        public static float CalcualteSqrRMS(byte[] input, int w, int h)
+        {
+            long square = 0;
+            float mean;
+
+            for (int y = 0; y < h; y++)
+            {
+                int yP = y * w;
+                for (int x = 0; x < w; x++)
+                {
+                    square += (long)Math.Pow(input[yP + x], 2);
+                }
+            }
+
+            mean = (square / (float)input.Length) / 255.0f;
+            return mean;
+        }
+
         public static byte SetRange(this byte val, int start, int length, byte value)
         {
             byte v = val;
@@ -359,6 +395,9 @@ namespace Joonaxii.MathJX
 
         public static float Lerp(float a, float b, float t) => a + (b - a) * t;
         public static int Lerp(int a, int b, float t) => (int)(a + (b - a) * t);
+
+        public static byte Lerp(byte a, byte b, float t) => (byte)(a + (b - a) * t);
+        public static byte Lerp(byte a, byte b, byte t) => (byte)(a + (b - a) * (t * (1.0f / 255.0f)));
 
         public static float EaseIn(float t) => t * t;
         public static float EaseOut(float t) => t * (2f - t);

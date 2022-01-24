@@ -4,7 +4,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 
-namespace Joonaxii.Data.Image.IO
+namespace Joonaxii.Data.Image.Conversion
 {
     public class ImageDecoder : ImageDecoderBase
     {
@@ -227,5 +227,6 @@ namespace Joonaxii.Data.Image.IO
             base.Dispose();
             _indices = null;
         }
+        public override void ValidateFormat() { }
     }
 }

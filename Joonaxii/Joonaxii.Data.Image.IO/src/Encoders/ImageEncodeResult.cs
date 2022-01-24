@@ -1,4 +1,4 @@
-﻿namespace Joonaxii.Data.Image.IO
+﻿namespace Joonaxii.Data.Image.Conversion
 {
     public enum ImageEncodeResult
     {

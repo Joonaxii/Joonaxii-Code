@@ -1,4 +1,4 @@
-﻿namespace Joonaxii.Data.Image.IO
+﻿namespace Joonaxii.Data.Image.Conversion
 {
     public enum ColorMode
     {
@@ -12,5 +12,7 @@
         RGB565,
         RGB555,
         ARGB555,
+
+        Grayscale,
     }
 }

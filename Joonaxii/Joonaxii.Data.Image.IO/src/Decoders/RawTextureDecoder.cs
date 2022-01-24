@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace Joonaxii.Data.Image.IO
+namespace Joonaxii.Data.Image.Conversion
 {
     public class RawTextureDecoder : ImageDecoderBase
     {
@@ -38,14 +38,14 @@ namespace Joonaxii.Data.Image.IO
 
             _colorMode = (ColorMode)_brI.ReadByte();
             _bpp = _colorMode.GetBPP();
-            RawTextureIndexCompressMode compressMode = (RawTextureIndexCompressMode)_brI.ReadByte(7);
+            RawTextureCompressMode compressMode = (RawTextureCompressMode)_brI.ReadByte(7);
             bool compressPixels = _brI.ReadBoolean();
 
             _width = _br.ReadUInt16();
             _height = _br.ReadUInt16();
             int l = _width * _height;
  
-            if (compressMode == RawTextureIndexCompressMode.None)
+            if (compressMode == RawTextureCompressMode.None)
             {
                 compressPixels &= l >= PIXEL_COMPRESS_THRESHOLD;
                 if (compressPixels)
@@ -95,7 +95,7 @@ namespace Joonaxii.Data.Image.IO
             List<int> indices = new List<int>();
             switch (compressMode)
             {
-                case RawTextureIndexCompressMode.Huffman:
+                case RawTextureCompressMode.IdxHuffman:
                     stamp.Start("Decompress Huffman");
                     Huffman.DecompressFromStream(_brI, indices);
                     for (int i = 0; i < _pixels.Length; i++)
@@ -105,7 +105,7 @@ namespace Joonaxii.Data.Image.IO
                     stamp.Stamp();
                     break;
 
-                case RawTextureIndexCompressMode.RLE:
+                case RawTextureCompressMode.IdxRLE:
                     stamp.Start("Decompress RLE");
                     RLE.DecompressFromStream(_brI, indices);
                     for (int i = 0; i < _pixels.Length; i++)
@@ -115,7 +115,7 @@ namespace Joonaxii.Data.Image.IO
                     stamp.Stamp();
                     break;
 
-                case RawTextureIndexCompressMode.RLEHuffman:
+                case RawTextureCompressMode.IdxRLEHuffman:
 
                     stamp.Start("Read RLE Chunk Palette");
                     byte lenBits = (byte)(_brI.ReadByte(3) + 1);
@@ -158,6 +158,31 @@ namespace Joonaxii.Data.Image.IO
             Console.WriteLine(stamp.ToString());
             indices.Clear();
             return ImageDecodeResult.Success;
+        }
+
+        public override void ValidateFormat()
+        {
+            switch (_colorMode)
+            {
+                case ColorMode.ARGB555:
+                    _colorMode = ColorMode.RGBA32;
+                    _bpp = 32;
+                    break;
+
+                case ColorMode.RGB555:
+                case ColorMode.RGB565:
+                    _colorMode = ColorMode.RGB24;
+                    _bpp = 24;
+                    break;
+
+                case ColorMode.OneBit:
+                case ColorMode.Indexed4:
+                case ColorMode.Indexed8:
+                case ColorMode.Grayscale:
+                    _colorMode = ColorMode.RGB24;
+                    _bpp = 24;
+                    break;
+            }
         }
     }
 }

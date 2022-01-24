@@ -16,6 +16,10 @@ namespace Testing_Grounds
         {
             new TTCCompressTest("TTC Compression/Decompression"),
             new TTCCompressDataTest("TTC Data Decompress"),
+            new ImageNoisinessTest("Image Block Noise Test"),
+
+            new PNGDecodeTest("PNG Decode Test"),
+
             new BmpDecodeTest("Bmp Decode Test"),
             new WebpDecodeTest("Webp Decode Test"),
 

@@ -1,4 +1,4 @@
-﻿using Joonaxii.Data.Image.IO.Processing;
+﻿using Joonaxii.Data.Image.Conversion.Processing;
 using Joonaxii.Data.Compression.Huffman;
 using Joonaxii.Data.Compression.RLE;
 using System.Collections.Generic;
@@ -7,44 +7,44 @@ using System.IO;
 using System;
 using Joonaxii.Debugging;
 
-namespace Joonaxii.Data.Image.IO
+namespace Joonaxii.Data.Image.Conversion
 {
     public class RawTextureEncoder : ImageEncoderBase
     {
-        private RawTextureIndexCompressMode _compressMode;
+        private RawTextureCompressMode _compressMode;
         private bool _compressPixelData;
 
-        public RawTextureEncoder(int width, int height, byte bPP) : this(RawTextureIndexCompressMode.None, false, width, height, bPP) { }
-        public RawTextureEncoder(RawTextureIndexCompressMode compress, bool compressPixelData, int width, int height, byte bPP) : base(width, height, bPP)
+        public RawTextureEncoder(int width, int height, byte bPP) : this(RawTextureCompressMode.None, false, width, height, bPP) { }
+        public RawTextureEncoder(RawTextureCompressMode compress, bool compressPixelData, int width, int height, byte bPP) : base(width, height, bPP)
         {
             _compressMode = compress;
             _compressPixelData = compressPixelData;
         }
 
-        public RawTextureEncoder(int width, int height, ColorMode pFmt) : this(RawTextureIndexCompressMode.None, false, width, height, pFmt) { }
-        public RawTextureEncoder(RawTextureIndexCompressMode compress, bool compressPixelData, int width, int height, ColorMode pFmt) : base(width, height, pFmt)
+        public RawTextureEncoder(int width, int height, ColorMode pFmt) : this(RawTextureCompressMode.None, false, width, height, pFmt) { }
+        public RawTextureEncoder(RawTextureCompressMode compress, bool compressPixelData, int width, int height, ColorMode pFmt) : base(width, height, pFmt)
         {
             _compressMode = compress;
             _compressPixelData = compressPixelData;
         }
 
-        public void SetCompressionMode(RawTextureIndexCompressMode mode, bool compressPixelData)
+        public void SetCompressionMode(RawTextureCompressMode mode, bool compressPixelData)
         {
             _compressMode = mode;
             _compressPixelData = compressPixelData;
         }
 
-        public ImageEncodeResult Encode(RawTextureIndexCompressMode mode, bool compressPixelData, Stream stream, bool leaveStreamOpen)
+        public ImageEncodeResult Encode(RawTextureCompressMode mode, bool compressPixelData, Stream stream, bool leaveStreamOpen)
         {
             SetCompressionMode(mode, compressPixelData);
             return Encode(stream, leaveStreamOpen);
         }
 
-        private RawTextureIndexCompressMode NoiseLevelToCompressMode(float noise)
+        private RawTextureCompressMode NoiseLevelToCompressMode(float noise)
         {
-            if (noise >= 0.40f) { return RawTextureIndexCompressMode.Huffman; }
-            if (noise >= 0.25f) { return RawTextureIndexCompressMode.RLEHuffman; }
-            return RawTextureIndexCompressMode.RLE;
+            if (noise >= 0.40f) { return RawTextureCompressMode.IdxHuffman; }
+            if (noise >= 0.25f) { return RawTextureCompressMode.IdxRLEHuffman; }
+            return RawTextureCompressMode.IdxRLE;
         }
 
         public override ImageEncodeResult Encode(Stream stream, bool leaveStreamOpen)
@@ -59,10 +59,10 @@ namespace Joonaxii.Data.Image.IO
                 TimeStamper stamp = new TimeStamper($"Raw Texture Encode with [{_compressMode}]");
 
                 var res = _compressMode;
-                if (res == RawTextureIndexCompressMode.Auto)
+                if (res == RawTextureCompressMode.Auto)
                 {
                     stamp.Start("Automatic Noisiness Detection");
-                    res = NoiseLevelToCompressMode(new ImageNoiseDetector(true).Process(_pixels, _width, _height, _bpp));
+                    res = NoiseLevelToCompressMode(new ImageNoiseDetector().Process(new PixelArray(_pixels), _width, _height, _bpp));
                     stamp.Stamp();
                 }
 
@@ -78,13 +78,13 @@ namespace Joonaxii.Data.Image.IO
                 stamp.Stamp();
 
                 //Write Uncompressed Raw Colors if compression mode is 0
-                if (res == RawTextureIndexCompressMode.None)
+                if (res == RawTextureCompressMode.None)
                 {
                     _compressPixelData &= (_width * _height) >= RawTextureDecoder.PIXEL_COMPRESS_THRESHOLD;
                     if (_compressPixelData)
                     {
                         stamp.Start("Huffman Compress pixel bytes");
-                        byte[] data = _pixels.ToBytes(_colorMode);
+                        byte[] data = _pixels.ToBytes(PixelByteOrder.RGBA, false, _width, _height, _colorMode);
                         Huffman.CompressToStream(bw, data, true, out byte bbb);
                         stamp.Stamp();
                     }
@@ -99,26 +99,52 @@ namespace Joonaxii.Data.Image.IO
                     return ImageEncodeResult.Success;
                 }
 
-                stamp.Start("Palette Gen");
-                //Generate palette and save it to the stream
-                Dictionary<FastColor, int> palette = new Dictionary<FastColor, int>();
-                List<FastColor> paletteL = new List<FastColor>();
-                foreach (var c in _pixels)
-                {
-                    if (palette.ContainsKey(c)) { continue; }
-                    palette.Add(c, palette.Count);
-                    paletteL.Add(c);
-                }
-                bw.Write7BitInt(paletteL.Count);
-                bw.WriteColors(paletteL.ToArray(), _colorMode);
-                stamp.Stamp();
+        
+                bool writePalette = true;
+                var palMode = _colorMode;
 
+                switch (res)
+                {
+                    case RawTextureCompressMode.aRLE:
+                        writePalette = false;
+                        break;
+                    case RawTextureCompressMode.IdxaRLE:
+                        switch (palMode)
+                        {
+                            case ColorMode.RGBA32:
+                                palMode = ColorMode.RGB24;
+                                    break;
+                        }
+                        break;
+                }
+
+                Dictionary<FastColor, int> palette = new Dictionary<FastColor, int>();
+                if (writePalette) 
+                {
+                    stamp.Start("Palette Gen");
+                    //Generate palette and save it to the stream 
+                    List<FastColor> paletteL = new List<FastColor>();
+                    foreach (var c in _pixels)
+                    {
+                        if (palette.ContainsKey(c)) { continue; }
+                        palette.Add(c, palette.Count);
+                        paletteL.Add(c);
+                    }
+                    bw.Write7BitInt(paletteL.Count);
+                    bw.WriteColors(paletteL.ToArray(), palMode);
+                    stamp.Stamp();
+                    paletteL.Clear();
+                }
                 List<int> paletteIndices = new List<int>();
 
                 //Compress the indices with RLE, Huffman Coding or both
                 switch (res)
                 {
-                    case RawTextureIndexCompressMode.Huffman:
+                    case RawTextureCompressMode.aRLE:
+
+                        break;
+
+                    case RawTextureCompressMode.IdxHuffman:
                         stamp.Start("Huffman Compression");
                         for (int i = 0; i < _pixels.Length; i++)
                         {
@@ -129,7 +155,7 @@ namespace Joonaxii.Data.Image.IO
                         stamp.Stamp();
                         break;
 
-                    case RawTextureIndexCompressMode.RLE:
+                    case RawTextureCompressMode.IdxRLE:
                         stamp.Start("RLE Compression");
                         for (int i = 0; i < _pixels.Length; i++)
                         {
@@ -140,7 +166,7 @@ namespace Joonaxii.Data.Image.IO
                         stamp.Stamp();
                         break;
 
-                    case RawTextureIndexCompressMode.RLEHuffman:
+                    case RawTextureCompressMode.IdxRLEHuffman:
 
                         stamp.Start("RLE Index Gen");
                         List<int> indices = new List<int>();
@@ -177,9 +203,33 @@ namespace Joonaxii.Data.Image.IO
                 Console.WriteLine(stamp.ToString());
 
                 palette.Clear();
-                paletteL.Clear();
                 paletteIndices.Clear();
                 return ImageEncodeResult.Success;
+            }
+        }
+
+        public override void ValidateFormat()
+        {
+            switch (_colorMode)
+            {
+                case ColorMode.ARGB555:
+                    _colorMode = ColorMode.RGBA32;
+                    _bpp = 32;
+                    break;
+
+                case ColorMode.RGB555:
+                case ColorMode.RGB565:
+                    _colorMode = ColorMode.RGB24;
+                    _bpp = 24;
+                    break;
+
+                case ColorMode.OneBit:
+                case ColorMode.Indexed4:
+                case ColorMode.Indexed8:
+                case ColorMode.Grayscale:
+                    _colorMode = ColorMode.RGB24;
+                    _bpp = 24;
+                    break;
             }
         }
     }

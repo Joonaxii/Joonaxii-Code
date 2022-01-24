@@ -4,15 +4,14 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{3474A9E6-E0BD-4D39-AAD1-795198DD4692}</ProjectGuid>
+    <ProjectGuid>{D469DFD4-A6BC-45E2-A3BB-D98BD6F09FCF}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Joonaxii.Data.Image</RootNamespace>
-    <AssemblyName>Joonaxii.Data.Image</AssemblyName>
+    <RootNamespace>Joonaxii.Data.Image.Processing.Dithering</RootNamespace>
+    <AssemblyName>Joonaxii.Data.Image.Processing.Dithering</AssemblyName>
     <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
-    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -22,7 +21,6 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -31,7 +29,6 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -44,15 +41,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="src\FloydSteinberg.cs" />
+    <Compile Include="src\IDitherProcess.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="src\ColorContainer.cs" />
-    <Compile Include="src\FastColor.cs" />
   </ItemGroup>
-  <ItemGroup />
   <ItemGroup>
-    <ProjectReference Include="..\Joonaxii.Data\Joonaxii.Data.csproj">
-      <Project>{b74db02e-ed4d-4fd2-9011-8262f560db59}</Project>
-      <Name>Joonaxii.Data</Name>
+    <ProjectReference Include="..\Joonaxii.Data.Image\Joonaxii.Data.Image.csproj">
+      <Project>{3474a9e6-e0bd-4d39-aad1-795198dd4692}</Project>
+      <Name>Joonaxii.Data.Image</Name>
     </ProjectReference>
     <ProjectReference Include="..\Joonaxii.MathJX\Joonaxii.MathJX.csproj">
       <Project>{0a47274a-b72f-4601-b3f1-beab27216bed}</Project>

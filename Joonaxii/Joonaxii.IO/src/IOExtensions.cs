@@ -131,6 +131,47 @@ namespace Joonaxii.IO
             }
         }
 
+        public static uint ReverseBytes(uint value)
+        {
+            return (value & 0x000000FFU) << 24 | (value & 0x0000FF00U) << 8 |
+                (value & 0x00FF0000U) >> 8 | (value & 0xFF000000U) >> 24;
+        }
+
+        public static short ReadInt16BigEndian(this BinaryReader br) => (short)br.ReadIntBigEndian(2);
+        public static ushort ReadUInt16BigEndian(this BinaryReader br) => (ushort)br.ReadUIntBigEndian(2);
+        public static char ReadCharBigEndian(this BinaryReader br) => (char)br.ReadUIntBigEndian(2);
+
+        public static int ReadInt32BigEndian(this BinaryReader br) => (int)br.ReadIntBigEndian(4);
+        public static uint ReadUInt32BigEndian(this BinaryReader br) => (uint)br.ReadUIntBigEndian(4);
+
+        public static long ReadInt64BigEndian(this BinaryReader br) => br.ReadIntBigEndian(8);
+        public static ulong ReadUInt64BigEndian(this BinaryReader br) => br.ReadUIntBigEndian(8);
+
+        public static long ReadIntBigEndian(this BinaryReader br, int count)
+        {
+            count = count > 8 ? 8 : count < 1 ? 1 : count;
+            long val = 0;
+            byte[] bytes = br.ReadBytes(count);
+            count = bytes.Length < count ? bytes.Length : count;
+            for (int i = 0; i < count; i++)
+            {
+                val += (bytes[i] << ((count - 1 - i) << 3));
+            }
+            return val;
+        }
+
+        public static ulong ReadUIntBigEndian(this BinaryReader br, int count)
+        {
+            count = count > 8 ? 8 : count < 1 ? 1 : count;
+            ulong val = 0;
+            byte[] bytes = br.ReadBytes(count);
+            for (int i = 0; i < count; i++)
+            {
+                val += (ulong)(bytes[i] << ((count - 1 - i) << 3));
+            }
+            return val;
+        }
+
         public static byte GetRequired7BitBytes(int value)
         {
             byte b = 0;

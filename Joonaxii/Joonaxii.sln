@@ -29,6 +29,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Joonaxii.Data.Image.IO", "J
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Joonaxii.Data.Image.GIFDecoder", "Joonaxii.Data.Image.GIFDecoder\Joonaxii.Data.Image.GIFDecoder.csproj", "{BC87154A-96A0-46EE-8A09-0E848EBA71BF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Joonaxii.Data.Image.Processing.Dithering", "Joonaxii.Data.Image.Processing.Dithering\Joonaxii.Data.Image.Processing.Dithering.csproj", "{D469DFD4-A6BC-45E2-A3BB-D98BD6F09FCF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -141,6 +143,14 @@ Global
 		{BC87154A-96A0-46EE-8A09-0E848EBA71BF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{BC87154A-96A0-46EE-8A09-0E848EBA71BF}.Release|x86.ActiveCfg = Release|Any CPU
 		{BC87154A-96A0-46EE-8A09-0E848EBA71BF}.Release|x86.Build.0 = Release|Any CPU
+		{D469DFD4-A6BC-45E2-A3BB-D98BD6F09FCF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D469DFD4-A6BC-45E2-A3BB-D98BD6F09FCF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D469DFD4-A6BC-45E2-A3BB-D98BD6F09FCF}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D469DFD4-A6BC-45E2-A3BB-D98BD6F09FCF}.Debug|x86.Build.0 = Debug|Any CPU
+		{D469DFD4-A6BC-45E2-A3BB-D98BD6F09FCF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D469DFD4-A6BC-45E2-A3BB-D98BD6F09FCF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D469DFD4-A6BC-45E2-A3BB-D98BD6F09FCF}.Release|x86.ActiveCfg = Release|Any CPU
+		{D469DFD4-A6BC-45E2-A3BB-D98BD6F09FCF}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

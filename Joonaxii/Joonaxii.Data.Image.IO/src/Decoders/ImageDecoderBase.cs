@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace Joonaxii.Data.Image.IO
+namespace Joonaxii.Data.Image.Conversion
 {
     public abstract class ImageDecoderBase : IDisposable
     {
@@ -18,8 +18,27 @@ namespace Joonaxii.Data.Image.IO
         protected int _width;
         protected int _height;
 
-        protected byte _bpp;
-        protected ColorMode _colorMode;
+        protected byte _bpp
+        {
+            get => _bppPriv;
+            set
+            {
+                _bppPriv = value;
+                ValidateFormat();
+            }
+        }
+        private byte _bppPriv;
+
+        protected ColorMode _colorMode 
+        {
+            get => _colorModePriv;
+            set
+            {
+                _colorModePriv = value;
+                ValidateFormat();
+            }
+        }
+        private ColorMode _colorModePriv;
         protected FastColor[] _pixels;
         
         public ImageDecoderBase(Stream stream)
@@ -37,7 +56,12 @@ namespace Joonaxii.Data.Image.IO
             _pixels = null;
         }
 
+        public abstract void ValidateFormat();
+
         public abstract ImageDecodeResult Decode(bool skipHeader);
+
+        public byte[] GetBytes(PixelByteOrder byteOrder, bool invertY) => _pixels.ToBytes(byteOrder, invertY, _width, _height, _colorMode);
+        public byte[] GetBytes(PixelByteOrder byteOrder, bool invertY, ColorMode mode) => _pixels.ToBytes(byteOrder, invertY, _width, _height, mode);
 
         public FastColor[] GetPixels()
         {

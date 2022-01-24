@@ -1,4 +1,4 @@
-﻿using Joonaxii.Data.Image.IO;
+﻿using Joonaxii.Data.Image.Conversion;
 using System;
 using System.Drawing;
 using System.IO;

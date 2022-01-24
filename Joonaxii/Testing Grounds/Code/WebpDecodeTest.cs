@@ -1,5 +1,5 @@
 ﻿using Joonaxii.Data.Image;
-using Joonaxii.Data.Image.IO;
+using Joonaxii.Data.Image.Conversion;
 using Joonaxii.IO;
 using System;
 using System.Collections.Generic;
@@ -97,11 +97,11 @@ namespace Testing_Grounds
                             {
                                 encRaw.CopyFrom(webpDec);
 
-                                encRaw.Encode(RawTextureIndexCompressMode.None, false, streamRaw, true);
-                                Console.WriteLine($"RAW saved with {RawTextureIndexCompressMode.None} to relative dir {relativeName}");
+                                encRaw.Encode(RawTextureCompressMode.None, false, streamRaw, true);
+                                Console.WriteLine($"RAW saved with {RawTextureCompressMode.None} to relative dir {relativeName}");
 
-                                encRaw.Encode(RawTextureIndexCompressMode.None, true, streamRLE, true);
-                                Console.WriteLine($"RAW saved with {RawTextureIndexCompressMode.None} to relative dir {relativeName}");
+                                encRaw.Encode(RawTextureCompressMode.None, true, streamRLE, true);
+                                Console.WriteLine($"RAW saved with {RawTextureCompressMode.None} to relative dir {relativeName}");
 
                                 //encRaw.Encode(RawTextureIndexCompressMode.RLEHuffman, true, streamRLEHuff, true);
                                 //Console.WriteLine($"RAW saved with {RawTextureIndexCompressMode.RLEHuffman} to relative dir {relativeName}");

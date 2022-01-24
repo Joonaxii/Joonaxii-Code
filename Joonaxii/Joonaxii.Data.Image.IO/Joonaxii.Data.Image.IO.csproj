@@ -43,18 +43,42 @@
   <ItemGroup>
     <Compile Include="src\Decoders\BmpDecoder.cs" />
     <Compile Include="src\ColorMode.cs" />
+    <Compile Include="src\Decoders\gAMAChunk.cs" />
     <Compile Include="src\Decoders\ImageDecoderBase.cs" />
     <Compile Include="src\Decoders\ImageDecodeResult.cs" />
     <Compile Include="src\Decoders\ImageDecoder.cs" />
+    <Compile Include="src\Decoders\PNGDecoder.cs" />
+    <Compile Include="src\Decoders\PNGGammaReadMode.cs" />
     <Compile Include="src\Decoders\RawTextureDecoder.cs" />
+    <Compile Include="src\PixelByteOrder.cs" />
+    <Compile Include="src\PNG\SPLTChunk.cs" />
+    <Compile Include="src\Encoders\BmpEncoder.cs" />
     <Compile Include="src\Encoders\ImageEncoderBase.cs" />
     <Compile Include="src\Encoders\ImageEncodeResult.cs" />
-    <Compile Include="src\Encoders\RawTextureIndexCompressMode.cs" />
+    <Compile Include="src\Encoders\RawTextureCompressMode.cs" />
     <Compile Include="src\Encoders\RawTextureEncoder.cs" />
     <Compile Include="src\ImageIOExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="src\PNG\ICCPChunk.cs" />
+    <Compile Include="src\PNG\IDATChunk.cs" />
+    <Compile Include="src\PNG\IHDRChunk.cs" />
+    <Compile Include="src\PNG\InterlaceMethod.cs" />
+    <Compile Include="src\PNG\PHYSChunk.cs" />
+    <Compile Include="src\PNG\PLTEChunk.cs" />
+    <Compile Include="src\PNG\PNGChunk.cs" />
+    <Compile Include="src\PNG\PNGChunkType.cs" />
+    <Compile Include="src\PNG\PNGColorType.cs" />
+    <Compile Include="src\PNG\PNGCompressionMethod.cs" />
+    <Compile Include="src\PNG\PNGFilterMethod.cs" />
+    <Compile Include="src\PNG\RawChunk.cs" />
+    <Compile Include="src\PNG\UnitSpecifier.cs" />
     <Compile Include="src\Pre-Processing\ImageNoiseDetector.cs" />
+    <Compile Include="src\Pre-Processing\ImageNoisinessDebugger.cs" />
     <Compile Include="src\Pre-Processing\ImageProcessBase.cs" />
+    <Compile Include="src\Pre-Processing\IPixelProvider.cs" />
+    <Compile Include="src\Pre-Processing\PixelArray.cs" />
+    <Compile Include="src\Pre-Processing\PixelView.cs" />
+    <Compile Include="src\Pre-Processing\ReadWirtePixelArray.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Joonaxii.Data.Compression\Joonaxii.Data.Compression.csproj">

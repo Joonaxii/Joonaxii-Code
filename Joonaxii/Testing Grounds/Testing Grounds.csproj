@@ -67,9 +67,11 @@
     <Compile Include="Code\Bit256Test.cs" />
     <Compile Include="Code\BmpDecodeTest.cs" />
     <Compile Include="Code\HuffmanCompressTest.cs" />
+    <Compile Include="Code\ImageNoisinessTest.cs" />
     <Compile Include="Code\LZWTest.cs" />
     <Compile Include="Code\LZWTestBinaryRW.cs" />
     <Compile Include="Code\MenuItem.cs" />
+    <Compile Include="Code\PNGDecodeTest.cs" />
     <Compile Include="Code\Program.cs" />
     <Compile Include="Code\SteganographyTest.cs" />
     <Compile Include="Code\TTCCompressDataTest.cs" />
