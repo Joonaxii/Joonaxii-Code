@@ -23,7 +23,7 @@ namespace Joonaxii.MathJX
 
         public float Magnitude => (float)System.Math.Sqrt(SqrMagnitude);
         public Vector3 Normalized => new Vector3(x, y, z).Normalize();
-        public float SqrMagnitude => x * x + y * y;
+        public float SqrMagnitude => x * x + y * y + z + z;
 
         public Vector3(float _x, float _y)
         {
@@ -82,6 +82,14 @@ namespace Joonaxii.MathJX
             return tgtDiff;
         }
 
+        public static Vector3 Cross(Vector3 lhs, Vector3 rhs)
+        {
+            return new Vector3(
+                lhs.y * rhs.z - lhs.z * rhs.y,
+                lhs.z * rhs.x - lhs.x * rhs.z,
+                lhs.x * rhs.y - lhs.y * rhs.x);
+        }
+
         public bool Equals(Vector3 other) => x == other.x && y == other.y && z == other.z;
 
         public override bool Equals(object obj) => obj is Vector3 && Equals((Vector3)obj);
@@ -94,6 +102,13 @@ namespace Joonaxii.MathJX
             hashCode = hashCode * -1521134295 + y.GetHashCode();
             hashCode = hashCode * -1521134295 + z.GetHashCode();
             return hashCode;
+        }
+
+        public static float InverseLerp(Vector3 from, Vector3 to, Vector3 value)
+        {
+            Vector3 ab = to - from;
+            Vector3 av = value - from;
+            return Vector3.Dot(av, ab) / Vector3.Dot(ab, ab);
         }
 
         public Vector3 Normalize()

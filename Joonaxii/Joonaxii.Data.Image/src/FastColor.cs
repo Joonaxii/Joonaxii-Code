@@ -1,12 +1,15 @@
-﻿using System;
+﻿using Joonaxii.MathJX;
+using System;
 using System.Runtime.InteropServices;
 
 namespace Joonaxii.Data.Image
 {
     [StructLayout(LayoutKind.Explicit, Size = 4), Serializable]
-    public struct FastColor : IEquatable<FastColor>
+    public struct FastColor : IColor
     {
-        public static FastColor clear { get; } = new FastColor(0);
+        public static FastColor clear { get; } = new FastColor(0, 0, 0, 0);
+        public static FastColor black { get; } = new FastColor(0, 0, 0);
+        public static FastColor white { get; } = new FastColor(255, 255, 255);
 
         [FieldOffset(0)] private int _rgba;
 
@@ -97,10 +100,10 @@ namespace Joonaxii.Data.Image
 
         public static FastColor operator -(FastColor c0, FastColor c1)
         {
-            int r = (int)(c0.r + c1.r);
-            int g = (int)(c0.g + c1.g);
-            int b = (int)(c0.b + c1.b);
-            int a = (int)(c0.a + c1.a);
+            int r = (c0.r - c1.r);
+            int g = (c0.g - c1.g);
+            int b = (c0.b - c1.b);
+            int a = (c0.a - c1.a);
 
             return new FastColor(
                 (byte)(r < 0 ? 0 : r > 255 ? 255 : r),
@@ -142,7 +145,28 @@ namespace Joonaxii.Data.Image
             return new FastColor((byte)r, (byte)g, (byte)b, (byte)a);
         }
 
-        public static FastColor Lerp(FastColor c0, FastColor c1, float t) => (c0 + (t * (c1 - c0))); 
+        public static FastColor Lerp(FastColor a, FastColor b, float t) => (FastColor)a.Lerp(b, t);
+        public IColor Lerp(IColor to, float t)
+        {
+            to.GetValues(out float r1, out float g1, out float b1, out float a1);
+            int r = (int)Math.Round(this.r + (t * (r1 - this.r)));
+            int g = (int)Math.Round(this.g + (t * (g1 - this.g)));
+            int b = (int)Math.Round(this.b + (t * (b1 - this.b)));
+            int a = (int)Math.Round(this.a + (t * (a1 - this.a)));
+            return new FastColor((byte)r, (byte)g, (byte)b, (byte)a);
+        }
+
+        public float InverseLerp(IColor to, IColor t)
+        {
+            to.GetValues(out float r1, out float g1, out float b1, out float a1);
+            t.GetValues(out float r2, out float g2, out float b2, out float a2);
+
+            Vector4 c0 = new Vector4(r, g, b, a);
+            Vector4 c1 = new Vector4(r1, g1, b1, a1);
+            Vector4 v = new Vector4(r2, g2, b2, a2);
+
+            return Vector4.InverseLerp(c0, c1, v);
+        }
 
         public byte GetAverageRGB()
         {
@@ -244,5 +268,13 @@ namespace Joonaxii.Data.Image
         public void Set(int rgba) => _rgba = rgba;
 
         public override string ToString() => $"RGBA: ({r}, {g}, {b}, {a})";
+
+        public void GetValues(out float v0, out float v1, out float v2, out float v3)
+        {
+            v0 = r;
+            v1 = g;
+            v2 = b;
+            v3 = a;
+        }
     }
 }

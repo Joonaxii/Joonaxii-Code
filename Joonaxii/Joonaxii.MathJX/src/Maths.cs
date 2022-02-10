@@ -382,7 +382,76 @@ namespace Joonaxii.MathJX
         #endregion
         #endregion
 
+        public static float Max(float a, float b, float c)
+        {
+            if(a > b) { return c > a ? c : a; }
+            return b > c ? b : c;
+        }
+
+        public static float Min(float a, float b, float c)
+        {
+            if (a < b) { return c < a ? c : a; }
+            return b < c ? b : c;
+        }
+
+        public static float Max(out int index, params float[] vals)
+        {
+            index = -1;
+            float max = float.MinValue;
+
+            for (int i = 0; i < vals.Length; i++)
+            {
+                var f = vals[i];
+                if (f > max) { max = f; index = i; }
+            }
+            return max;
+        }
+
+        public static float Min(out int index, params float[] vals)
+        {
+            index = -1;
+            float min = float.MaxValue;
+
+            for (int i = 0; i < vals.Length; i++)
+            {
+                var f = vals[i];
+                if (f < min) { min = f; index = i; }
+            }
+            return min;
+        }
+
+        public static float Mod(float value, float length) => value - (float)Math.Floor(value / length) * length;
+
         #region Interpolation
+
+        public static float InverseLerpAngle(float a, float b, float t)
+        {
+            if(a == b) { return 0; }
+
+            if(t >= 180)
+            {
+                a = a > 360.0f ? a - 360.0f : a;
+                return InverseLerp(a, b, t);
+            }
+
+            if (b > 360.0f)
+            {
+                b -= 360.0f;
+            }
+            return InverseLerp(a, b, t);
+        }
+
+        public static float LerpAngle(float a, float b, float t)
+        {
+            float delta = Repeat((b - a) * t, 360.0f);
+            if(delta > 180.0f)
+            {
+                delta -= 360.0f;
+            }
+
+            float res = a + delta;
+            return res < 0 ? res + 360.0f : res;
+        }
 
         public static float SmoothStep(float from, float to, float t)
         {

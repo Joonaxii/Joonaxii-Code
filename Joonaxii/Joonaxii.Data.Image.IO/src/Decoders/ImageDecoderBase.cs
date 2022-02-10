@@ -1,9 +1,10 @@
-﻿using System;
+﻿using Joonaxii.Data.Coding;
+using System;
 using System.IO;
 
 namespace Joonaxii.Data.Image.Conversion
 {
-    public abstract class ImageDecoderBase : IDisposable
+    public abstract class ImageDecoderBase : CodecBase
     {
         public int Width { get => _width; }
         public int Height { get => _height; }
@@ -70,6 +71,8 @@ namespace Joonaxii.Data.Image.Conversion
             return pix;
         }
 
+        public FastColor[] GetPixelsReference() => _pixels;
+
         public int GetPixels(FastColor[] buffer)
         {
             int min = buffer.Length < _pixels.Length ? _pixels.Length : buffer.Length;
@@ -80,7 +83,7 @@ namespace Joonaxii.Data.Image.Conversion
         public FastColor GetPixel(int i) => _pixels[i];
         public FastColor GetPixel(int x, int y) => _pixels[y * _width + x];
 
-        public virtual void Dispose()
+        public override void Dispose()
         {
             if (!_dispose) { return; }
             _stream.Dispose();

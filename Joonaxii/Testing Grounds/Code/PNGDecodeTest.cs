@@ -43,6 +43,19 @@ namespace Testing_Grounds
                             bmp.Encode(png, fs, true);
                         }
 
+                        using (FileStream fsRLEA = new FileStream($"{pth}/{Path.GetFileNameWithoutExtension(path)}_DECODED RLEa.raw", FileMode.Create))
+                        using (BmpEncoder rawRLEA = new BmpEncoder(png.Width, png.Height, png.ColorMode))
+                        using (FileStream fsRLEAID = new FileStream($"{pth}/{Path.GetFileNameWithoutExtension(path)}_DECODED IDXRLEa.raw", FileMode.Create))
+                        using (RawTextureEncoder rawRLEAA = new RawTextureEncoder(png.Width, png.Height, png.ColorMode))
+                        {
+                            rawRLEAA.CopyFrom(png);
+                            rawRLEAA.SetCompressionMode(RawTextureCompressMode.aRLE, true);
+                            rawRLEAA.Encode(fsRLEA, true);
+                                   
+                            rawRLEAA.SetCompressionMode(RawTextureCompressMode.IdxaRLE, true);
+                            rawRLEAA.Encode(fsRLEAID, true);
+                        }
+
                         break;
                     default:
                         Console.WriteLine($"PNG Decode Failed [{res}]!");

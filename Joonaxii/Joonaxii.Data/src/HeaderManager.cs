@@ -1,12 +1,12 @@
 ﻿using System;
 using System.IO;
 
-namespace Joonaxii.Data.Image.Conversion
+namespace Joonaxii.Data
 {
     public static class HeaderManager
     {
         private static MagicHeader[] _magicHeaders = new MagicHeader[]
-{
+        {
         new MagicHeader(HeaderType.BMP,
             new MagicByte[] { 0x42, 0x4D, } ),
 
@@ -38,11 +38,19 @@ namespace Joonaxii.Data.Image.Conversion
             new MagicByte[] {
                 0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A,
                 0x46, 0x49, 0x46, 0x00, 0x01}),
-           new MagicHeader(HeaderType.JPEG,
+        new MagicHeader(HeaderType.JPEG,
             new MagicByte[] {
                 0xFF, 0xD8, 0xFF, 0xE1, 0xF00, 0xF00, 0x45,
                 0x78, 0x69, 0x66, 0x00, 0x00}),
-};
+
+         new MagicHeader(HeaderType.WAVE,
+            new MagicByte[] { 
+                0x52, 0x49, 0x46, 0x46,
+                0xF00, 0xF00, 0xF00, 0xF00,
+                0x57, 0x41, 0x56, 0x45, 
+            }),
+
+        };
 
         static HeaderManager()
         {

@@ -6,17 +6,21 @@ namespace Joonaxii.Data
     public struct MagicHeader : IComparable<MagicHeader>
     {
         public static MagicHeader none { get; } = new MagicHeader(HeaderType.NONE, new MagicByte[0]);
-  
+
         public int Length { get => _magicBytes.Length; }
         public HeaderType GetHeaderType { get => _headerType; }
-
         private HeaderType _headerType;
 
+        private Action<BinaryWriter, MagicByte[]> _defaultWrite;
+
         private MagicByte[] _magicBytes;
-        public MagicHeader(HeaderType type, MagicByte[] bytes)
+        public MagicHeader(HeaderType type, MagicByte[] bytes) : this(type, bytes, null) { }
+
+        public MagicHeader(HeaderType type, MagicByte[] bytes, Action<BinaryWriter, MagicByte[]> defaultHeaderWrite)
         {
             _headerType = type;
             _magicBytes = bytes;
+            _defaultWrite = defaultHeaderWrite;
         }
 
         public long IndexOf(BinaryReader br, long start)
@@ -29,13 +33,13 @@ namespace Joonaxii.Data
             long startA = start;
             long pos = start;
 
-            while(stream.Position < stream.Length)
+            while (stream.Position < stream.Length)
             {
                 byte b = br.ReadByte();
                 pos++;
                 if (_magicBytes[bytesDone++].IsValid(b))
                 {
-                    if(bytesDone >= Length) { return startA; }
+                    if (bytesDone >= Length) { return startA; }
                     continue;
                 }
                 bytesDone = 0;
@@ -53,7 +57,7 @@ namespace Joonaxii.Data
                 if (!_magicBytes[i].IsValid(b))
                 {
                     br.BaseStream.Seek(originalPos, SeekOrigin.Begin);
-                    return false; 
+                    return false;
                 }
             }
 
@@ -76,23 +80,32 @@ namespace Joonaxii.Data
             return true;
         }
 
-        public void WriteHeader(BinaryWriter bw) => WriteHeader(bw, null);
-        public void WriteHeader(BinaryWriter bw, byte[] unkownBytes)
+        public void WriteHeader(BinaryWriter bw)
+        {
+            if (_defaultWrite != null)
+            {
+                _defaultWrite.Invoke(bw, _magicBytes);
+                return;
+            }
+            WriteHeader(bw, null);
+        }
+        public void WriteHeader(BinaryWriter bw, byte[] unkownBytes, int len = -1)
         {
             int uI = 0;
-            for (int i = 0; i < _magicBytes.Length; i++)
+            len = len < 1 ? _magicBytes.Length : len > _magicBytes.Length ? _magicBytes.Length : len;
+            for (int i = 0; i < len; i++)
             {
                 var byt = _magicBytes[i];
-                if(byt.GetByte(out byte val))
+                if (byt.GetByte(out byte val))
                 {
                     bw.Write(val);
                     continue;
                 }
 
-                if(unkownBytes == null || unkownBytes.Length < uI) 
+                if (unkownBytes == null || unkownBytes.Length < uI)
                 {
                     bw.Write((byte)0);
-                    continue; 
+                    continue;
                 }
                 bw.Write(unkownBytes[uI]);
             }

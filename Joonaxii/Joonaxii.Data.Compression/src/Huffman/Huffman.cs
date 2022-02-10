@@ -1,5 +1,4 @@
 ﻿using Joonaxii.Collections;
-using Joonaxii.Collections.PriorityQueue;
 using Joonaxii.IO;
 using Joonaxii.MathJX;
 using System;

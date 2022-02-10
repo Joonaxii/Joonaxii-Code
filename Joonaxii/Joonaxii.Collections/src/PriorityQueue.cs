@@ -1,11 +1,10 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Joonaxii.Collections.PriorityQueue
+namespace Joonaxii.Collections
 {
-    public class PriorityQueue<T> where T : IPriorityQueueNode
+    public class PriorityQueue<T> where T : IComparable<T>
     {
         public int Count { get => _heapSize; }
 
@@ -74,7 +73,7 @@ namespace Joonaxii.Collections.PriorityQueue
             while (i > 1)
             {
                 int parent = i >> 1;
-                if (_heap[i].Priority < _heap[parent].Priority)
+                if (_heap[i].CompareTo(_heap[parent]) < 0)
                 {
                     Swap(i, parent);
                 }
@@ -87,7 +86,7 @@ namespace Joonaxii.Collections.PriorityQueue
             while (i > 1)
             {
                 int parent = i >> 1;
-                if (_heap[i].Priority > _heap[parent].Priority)
+                if (_heap[i].CompareTo(_heap[parent]) > 0)
                 {
                     Swap(i, parent);
                 }
@@ -101,7 +100,7 @@ namespace Joonaxii.Collections.PriorityQueue
             if(_heapSize < left) { return; }
             if(_heapSize == left)
             {
-                if(_heap[i].Priority < _heap[left].Priority)
+                if(_heap[i].CompareTo(_heap[left]) < 0)
                 {
                     Swap(i, left);
                 }
@@ -109,9 +108,9 @@ namespace Joonaxii.Collections.PriorityQueue
             }
 
             int right = left + 1;
-            int small = _heap[left].Priority > _heap[right].Priority ? left : right;
+            int small = _heap[left].CompareTo(_heap[right]) > 0 ? left : right;
 
-            if(_heap[i].Priority < _heap[small].Priority)
+            if(_heap[i].CompareTo(_heap[small]) < 0)
             {
                 Swap(i, small);
             }
@@ -124,7 +123,7 @@ namespace Joonaxii.Collections.PriorityQueue
 
                 if (_heapSize == left)
                 {
-                    if (_heap[i].Priority < _heap[left].Priority)
+                    if (_heap[i].CompareTo(_heap[left]) < 0)
                     {
                         Swap(i, left);
                     }
@@ -132,9 +131,9 @@ namespace Joonaxii.Collections.PriorityQueue
                 }
 
                 right = left + 1;
-                small = _heap[left].Priority > _heap[right].Priority ? left : right;
+                small = _heap[left].CompareTo(_heap[right]) > 0 ? left : right;
 
-                if (_heap[i].Priority < _heap[small].Priority)
+                if (_heap[i].CompareTo(_heap[small]) < 0)
                 {
                     Swap(i, small);
                 }
@@ -148,7 +147,7 @@ namespace Joonaxii.Collections.PriorityQueue
             if(_heapSize < left) { return; }
             if(_heapSize == left)
             {
-                if(_heap[i].Priority > _heap[left].Priority)
+                if(_heap[i].CompareTo(_heap[left]) > 0)
                 {
                     Swap(i, left);
                 }
@@ -156,9 +155,9 @@ namespace Joonaxii.Collections.PriorityQueue
             }
 
             int right = left + 1;
-            int small = _heap[left].Priority < _heap[right].Priority ? left : right;
+            int small = _heap[left].CompareTo(_heap[right]) < 0 ? left : right;
 
-            if(_heap[i].Priority > _heap[small].Priority)
+            if(_heap[i].CompareTo(_heap[small]) > 0)
             {
                 Swap(i, small);
             }
@@ -171,7 +170,7 @@ namespace Joonaxii.Collections.PriorityQueue
 
                 if (_heapSize == left)
                 {
-                    if (_heap[i].Priority > _heap[left].Priority)
+                    if (_heap[i].CompareTo(_heap[left]) > 0)
                     {
                         Swap(i, left);
                     }
@@ -179,9 +178,9 @@ namespace Joonaxii.Collections.PriorityQueue
                 }
 
                 right = left + 1;
-                small = _heap[left].Priority < _heap[right].Priority ? left : right;
+                small = _heap[left].CompareTo(_heap[right]) < 0 ? left : right;
 
-                if (_heap[i].Priority > _heap[small].Priority)
+                if (_heap[i].CompareTo(_heap[small]) > 0)
                 {
                     Swap(i, small);
                 }

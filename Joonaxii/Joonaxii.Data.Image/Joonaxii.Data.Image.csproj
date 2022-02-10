@@ -46,7 +46,15 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="src\ColorContainer.cs" />
+    <Compile Include="src\ColorConverter.cs" />
+    <Compile Include="src\ColorMode.cs" />
     <Compile Include="src\FastColor.cs" />
+    <Compile Include="src\HSLColor.cs" />
+    <Compile Include="src\HSVColor.cs" />
+    <Compile Include="src\IColor.cs" />
+    <Compile Include="src\ResizeMode.cs" />
+    <Compile Include="src\Texture.cs" />
+    <Compile Include="src\YCrCb.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

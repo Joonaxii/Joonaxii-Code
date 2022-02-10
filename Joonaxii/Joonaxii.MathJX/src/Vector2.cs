@@ -91,6 +91,13 @@ namespace Joonaxii.MathJX
             return vector - (2f * Dot(vector, normal) * normal);
         }
 
+        public static float InverseLerp(Vector2 from, Vector2 to, Vector2 value)
+        {
+            Vector2 ab = to - from;
+            Vector2 av = value - from;
+            return Vector2.Dot(av, ab) / Vector2.Dot(ab, ab);
+        }
+
         public static explicit operator Vector2Int(Vector2 vector) => new Vector2Int(Maths.RoundToInt(vector.x), Maths.RoundToInt(vector.y));
         public static explicit operator Vector3Int(Vector2 vector) => new Vector3Int(Maths.RoundToInt(vector.x), Maths.RoundToInt(vector.y), 0);
 

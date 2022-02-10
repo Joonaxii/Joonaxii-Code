@@ -99,7 +99,6 @@ namespace Joonaxii.Data.Image.Conversion
                     return ImageEncodeResult.Success;
                 }
 
-        
                 bool writePalette = true;
                 var palMode = _colorMode;
 
@@ -107,8 +106,23 @@ namespace Joonaxii.Data.Image.Conversion
                 {
                     case RawTextureCompressMode.aRLE:
                         writePalette = false;
+
+                        switch (_colorMode)
+                        {
+                            case ColorMode.ARGB555:
+                            case ColorMode.RGBA32:break;
+                            default: res = RawTextureCompressMode.None; break;
+                        }
                         break;
                     case RawTextureCompressMode.IdxaRLE:
+                        switch (_colorMode)
+                        {
+                            case ColorMode.ARGB555:
+                            case ColorMode.RGBA32: break;
+                            default: res = RawTextureCompressMode.IdxRLE; break;
+                        }
+
+                        if(res != RawTextureCompressMode.IdxaRLE) { break; }
                         switch (palMode)
                         {
                             case ColorMode.RGBA32:
@@ -136,12 +150,48 @@ namespace Joonaxii.Data.Image.Conversion
                     paletteL.Clear();
                 }
                 List<int> paletteIndices = new List<int>();
+                byte[] alph;
 
                 //Compress the indices with RLE, Huffman Coding or both
                 switch (res)
                 {
                     case RawTextureCompressMode.aRLE:
+                        stamp.Start("Alpha Splitting");
+                        alph = new byte[_pixels.Length];
+                        for (int i = 0; i < _pixels.Length; i++)
+                        {
+                            alph[i] = _pixels[i].a;
+                        }
+                        stamp.Stamp();
 
+                        stamp.Start("Alpha RLE");
+                        RLE.CompressToStream(bw, alph);
+                        stamp.Stamp();
+
+                        bw.WriteColors(_pixels, ColorMode.RGB24);
+                        break;
+
+                    case RawTextureCompressMode.IdxaRLE:
+                        stamp.Start("Alpha Splitting");
+                        alph = new byte[_pixels.Length];
+                        for (int i = 0; i < _pixels.Length; i++)
+                        {
+                            alph[i] = _pixels[i].a;
+                        }
+                        stamp.Stamp();
+
+                        stamp.Start("Alpha RLE");
+                        RLE.CompressToStream(bw, alph);
+                        stamp.Stamp();
+
+                        stamp.Start("RLE Index Compression");
+                        for (int i = 0; i < _pixels.Length; i++)
+                        {
+                            paletteIndices.Add(palette[_pixels[i]]);
+                        }
+
+                        RLE.CompressToStream(bw, paletteIndices);
+                        stamp.Stamp();
                         break;
 
                     case RawTextureCompressMode.IdxHuffman:

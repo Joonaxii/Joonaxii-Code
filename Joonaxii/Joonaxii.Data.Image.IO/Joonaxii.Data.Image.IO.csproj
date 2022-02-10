@@ -42,7 +42,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="src\Decoders\BmpDecoder.cs" />
-    <Compile Include="src\ColorMode.cs" />
     <Compile Include="src\Decoders\gAMAChunk.cs" />
     <Compile Include="src\Decoders\ImageDecoderBase.cs" />
     <Compile Include="src\Decoders\ImageDecodeResult.cs" />
@@ -81,6 +80,10 @@
     <Compile Include="src\Pre-Processing\ReadWirtePixelArray.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Joonaxii.Data.Coding\Joonaxii.Data.Coding.csproj">
+      <Project>{9518E812-F5CE-4A8A-BFDC-1E850FEB6845}</Project>
+      <Name>Joonaxii.Data.Coding</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Joonaxii.Data.Compression\Joonaxii.Data.Compression.csproj">
       <Project>{228b01cc-0f58-424f-af82-06fdf122f401}</Project>
       <Name>Joonaxii.Data.Compression</Name>

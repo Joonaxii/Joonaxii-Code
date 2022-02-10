@@ -1,7 +1,7 @@
 ﻿namespace Joonaxii.Data
 {
     [System.Flags]
-    public enum HeaderType : byte
+    public enum HeaderType : ulong
     {
         NONE                    = 0,
         UNKNOWN                 = 1,
@@ -15,6 +15,9 @@
 
         RAW_TEXTURE             = 128,
 
+        WAVE                    = 256,
+   
         IMAGE_FORMAT            = JPEG | PNG | GIF87 | GIF89 | WEBP | BMP | RAW_TEXTURE,
+        AUDIO_FORMAT            = WAVE,
     }
 }

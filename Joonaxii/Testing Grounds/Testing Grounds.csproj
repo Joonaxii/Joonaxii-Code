@@ -84,9 +84,17 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Joonaxii.Audio\Joonaxii.Audio.csproj">
+      <Project>{de097e2b-9d86-4739-b336-c126b215a755}</Project>
+      <Name>Joonaxii.Audio</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Joonaxii.Collections\Joonaxii.Collections.csproj">
       <Project>{68986e7f-1281-485b-941e-fb1d69cc8427}</Project>
       <Name>Joonaxii.Collections</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.Data.Coding\Joonaxii.Data.Coding.csproj">
+      <Project>{9518E812-F5CE-4A8A-BFDC-1E850FEB6845}</Project>
+      <Name>Joonaxii.Data.Coding</Name>
     </ProjectReference>
     <ProjectReference Include="..\Joonaxii.Data.Compression\Joonaxii.Data.Compression.csproj">
       <Project>{228b01cc-0f58-424f-af82-06fdf122f401}</Project>
@@ -115,6 +123,10 @@
     <ProjectReference Include="..\Joonaxii.Pooling\Joonaxii.Pooling.csproj">
       <Project>{5d936d6e-23ec-4234-beb3-ebba8d7e04e8}</Project>
       <Name>Joonaxii.Pooling</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.Radio\Joonaxii.Radio.csproj">
+      <Project>{7804E00C-F07B-4F36-94F7-DC41A52AC21A}</Project>
+      <Name>Joonaxii.Radio</Name>
     </ProjectReference>
     <ProjectReference Include="..\Joonaxii.Steganography\Joonaxii.Steganography.csproj">
       <Project>{a4c3e950-d79b-4740-8f1b-558d66856c9e}</Project>

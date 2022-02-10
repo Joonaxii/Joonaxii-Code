@@ -1,4 +1,4 @@
-﻿using Joonaxii.Collections.ListQueue;
+﻿using Joonaxii.Collections;
 using System.Collections.Generic;
 using System;
 

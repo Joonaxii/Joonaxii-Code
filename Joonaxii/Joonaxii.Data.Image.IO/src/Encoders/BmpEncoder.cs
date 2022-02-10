@@ -109,7 +109,7 @@ namespace Joonaxii.Data.Image.Conversion.Encoders
                 bw.Write(bmpSize);
 
                 bw.Write(pxPerMX);
-                bw.Write(pxPerMY);
+                bw.Write(-pxPerMY);
 
                 bw.Write(0);
                 bw.Write(0);

@@ -1,7 +1,12 @@
-﻿using Joonaxii.Data.Image;
+﻿using Joonaxii.Audio;
+using Joonaxii.Data.Image;
+using Joonaxii.Data.Image.Conversion.Encoders;
+using Joonaxii.Data.Image.Conversion.PNG;
 using Joonaxii.Debugging;
 using Joonaxii.IO;
 using Joonaxii.MathJX;
+using Joonaxii.Radio;
+using Joonaxii.Radio.RTTY;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -34,14 +39,85 @@ namespace Testing_Grounds
 
             new QuitItem(),
         };
-
-        private static int _selectedItem = 0;
+        private static int _selectedItem;
 
         public static void Main(string[] args)
         {
             Console.InputEncoding = Encoding.UTF8;
             Console.OutputEncoding = Encoding.UTF8;
+          
+            start:
+            Console.Clear();
+            Console.WriteLine("Enter the full path of the 320x256 png to be converted to SSTV");
+            string path = Console.ReadLine().Replace("\"", "");
 
+            if (!File.Exists(path)) { goto start; }
+
+            FastColor[] pixels = null;
+
+            int w = 320;
+            int h = 256;
+
+            using (FileStream fsB = new FileStream(path, FileMode.Open))
+            using (PNGDecoder png = new PNGDecoder(fsB))
+            {
+                png.Decode(false);
+                w = png.Width;
+                h = png.Height;
+                pixels = new FastColor[w * h];
+
+                png.GetPixels(pixels);
+            }
+
+            string dir = Path.GetDirectoryName(path);
+            string name = Path.GetFileNameWithoutExtension(path);
+
+            SSTVProtocol[] protocols = new SSTVProtocol[]
+            {
+                SSTVProtocol.Martin1,
+                SSTVProtocol.Martin2,
+
+                //SSTVProtocol.Scottie1,
+                //SSTVProtocol.Scottie2,
+                //SSTVProtocol.Scottie3,
+                //SSTVProtocol.Scottie4,
+                //
+                //SSTVProtocol.ScottieDX,
+                //SSTVProtocol.ScottieDX2,
+
+                //SSTVProtocol.Robot12,
+                //SSTVProtocol.Robot24,
+                //SSTVProtocol.Robot36,
+                //SSTVProtocol.Robot72,
+
+                //SSTVProtocol.Scottie1,
+                //SSTVProtocol.Scottie2,
+                //SSTVProtocol.Scottie3,
+                //SSTVProtocol.Scottie4,
+            };
+
+            for (int i = 0; i < protocols.Length; i++)
+            {
+                using (FileStream fs = new FileStream($"{dir}/{name} SSTV ({protocols[i]}) 24.wav", FileMode.Create))
+                using (WavEncoder wav = new WavEncoder(fs))
+                {
+                    wav.Setup(1, 44100 >> 2, 24);
+                    wav.WriteStaticData();
+                    using (SSTVEncoder sstv = new SSTVEncoder(wav, false, protocols[i], SSTVFlags.CenterX, SSTVEncoder.MegalovaniaVOX))
+                    {
+                        sstv.VOXToneDurationScale = 0.5;
+                        var res = sstv.Encode(pixels, w, h);
+                        Console.WriteLine($"SSTV Encode Done ({sstv.Protocol})! [{res}]");
+                    }
+
+                    System.Diagnostics.Debug.Print($"Samples [{wav.BitsPerSample}/{wav.Samples.BytesPerValue}]: {wav.SampleDataWritten} bytes");
+                }
+            }
+
+            Console.WriteLine("Done!");
+            Console.ReadKey();
+            Console.ReadKey();
+            Console.ReadKey();
             //FastColor[] pixels = new FastColor[100];
             //FastColor[] pixelsOut = new FastColor[100];
             //for (int i = 0; i < pixels.Length; i++)

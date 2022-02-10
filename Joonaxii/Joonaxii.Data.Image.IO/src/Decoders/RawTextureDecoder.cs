@@ -82,19 +82,70 @@ namespace Joonaxii.Data.Image.Conversion
                 return ImageDecodeResult.Success;
             }
 
-            _pixels = new FastColor[l];
-            stamp.Start("Palette Prep");
-            int paletteSize = _brI.Read7BitInt();
-            FastColor[] palette = new FastColor[paletteSize];
-            stamp.Stamp();
+            bool readPalette = false;
+            //ColorMode palMode = _colorMode;
+            switch (compressMode)
+            {
+                case RawTextureCompressMode.IdxHuffman:
+                case RawTextureCompressMode.IdxRLE:
+                case RawTextureCompressMode.IdxRLEHuffman:
+                    readPalette = true;
+                    break;
+                case RawTextureCompressMode.IdxaRLE:
+                    readPalette = true;
+                    break;
+            }
 
-            stamp.Start("Palette Read");
-            _brI.ReadColors(palette, _colorMode);
-            stamp.Stamp();
+            _pixels = new FastColor[l];
+            FastColor[] palette = null;
+            int paletteSize = 0;
+
+            if (readPalette)
+            {
+                stamp.Start("Palette Prep");
+                paletteSize = _brI.Read7BitInt();
+                palette = new FastColor[paletteSize];
+                stamp.Stamp();
+
+                stamp.Start("Palette Read");
+                _brI.ReadColors(palette, _colorMode);
+                stamp.Stamp();
+            }
 
             List<int> indices = new List<int>();
             switch (compressMode)
             {
+                case RawTextureCompressMode.aRLE:
+                    stamp.Start("Decompress Alpha RLE");
+                    RLE.DecompressFromStream(_brI, indices);
+                    stamp.Stamp();
+
+                    _brI.ReadColors(_pixels, ColorMode.RGB24);
+                    for (int i = 0; i < _pixels.Length; i++)
+                    {
+                        _pixels[i].a = (byte)indices[i];
+                    }
+                    break;
+
+                case RawTextureCompressMode.IdxaRLE:
+                    List<int> alphaInd = new List<int>(); 
+                    stamp.Start("Decompress Alpha RLE");
+                    RLE.DecompressFromStream(_brI, alphaInd);
+                    stamp.Stamp();
+
+                    stamp.Start("Decompress Idx RLE");
+                    RLE.DecompressFromStream(_brI, indices);
+                    stamp.Stamp();
+
+                    for (int i = 0; i < _pixels.Length; i++)
+                    {
+                        var ind = indices[i];
+                        var color = palette[ind];
+                        color.a = (byte)alphaInd[ind];
+                        _pixels[i] = color;
+                    }
+                    break;
+
                 case RawTextureCompressMode.IdxHuffman:
                     stamp.Start("Decompress Huffman");
                     Huffman.DecompressFromStream(_brI, indices);

@@ -1,9 +1,10 @@
-﻿using System;
+﻿using Joonaxii.Data.Coding;
+using System;
 using System.IO;
 
 namespace Joonaxii.Data.Image.Conversion
 {
-    public abstract class ImageEncoderBase : IDisposable
+    public abstract class ImageEncoderBase : CodecBase
     {
         public int Width { get => _width; }
         public int Height { get => _height; }
@@ -90,6 +91,12 @@ namespace Joonaxii.Data.Image.Conversion
             Array.Copy(colors, _pixels, len);
         }
 
+        public void SetPixelsRef(ref FastColor[] colors)
+        {
+            if (colors == null) { return; }
+            _pixels = colors;
+        }
+
         public bool Save(string path)
         {
             using(FileStream stream = new FileStream(path, FileMode.Create))
@@ -125,7 +132,7 @@ namespace Joonaxii.Data.Image.Conversion
         public void SetPixel(int i, FastColor c) => _pixels[i] = c;
         public void SetPixel(int x, int y, FastColor c) => _pixels[y * _width + x] = c;
 
-        public virtual void Dispose()
+        public override void Dispose()
         {
             _pixels = null;
         }

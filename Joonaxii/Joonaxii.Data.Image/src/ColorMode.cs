@@ -1,4 +1,4 @@
-﻿namespace Joonaxii.Data.Image.Conversion
+﻿namespace Joonaxii.Data.Image
 {
     public enum ColorMode
     {

@@ -226,7 +226,7 @@ namespace Joonaxii.Data.Image.Conversion.PNG
                                             _pixels[pixI + x] = new FastColor(buffer[1], buffer[1], buffer[1], buffer[0]);
                                             break;
                                         case 3:
-                                            _pixels[pixI + x] = new FastColor(gammaTable[buffer[2]], gammaTable[buffer[1]], gammaTable[buffer[0]]);
+                                            _pixels[pixI + x] = new FastColor(gammaTable[buffer[0]], gammaTable[buffer[1]], gammaTable[buffer[2]]);
                                             break;
 
                                         case 4:
@@ -269,18 +269,6 @@ namespace Joonaxii.Data.Image.Conversion.PNG
             }
             System.Diagnostics.Debug.Print(new string('=', 32));
             System.Diagnostics.Debug.Print("");
-
-
-            HashSet<FastColor> pal = new HashSet<FastColor>();
-            foreach (var item in _pixels)
-            {
-                var c = item.a < 1 ? FastColor.clear : item;
-                //if(c.a > 0) { c.a = 255; }
-                if (pal.Add(c))
-                {
-                    System.Diagnostics.Debug.Print($"Color #{pal.Count - 1} ({c})");
-                }
-            }
 #endif
             return ImageDecodeResult.Success;
         }

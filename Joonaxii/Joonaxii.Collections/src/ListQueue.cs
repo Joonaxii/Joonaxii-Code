@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Joonaxii.Collections.ListQueue
+namespace Joonaxii.Collections
 {
     public class ListQueue<T> : IList<T>
     {
