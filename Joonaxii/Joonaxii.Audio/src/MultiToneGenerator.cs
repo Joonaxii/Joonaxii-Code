@@ -1,4 +1,5 @@
-﻿using Joonaxii.Data.Image;
+﻿using Joonaxii.Collections;
+using Joonaxii.Data.Image;
 using Joonaxii.MathJX;
 using System;
 using System.Collections.Generic;
@@ -10,7 +11,7 @@ namespace Joonaxii.Audio
 {
     public class MultiToneGenerator
     {
-        private WavSampleList _samples;
+        private BufferList _samples;
         private bool _stereo;
         private double _rateS;
         private double _rateOPI;
@@ -21,7 +22,7 @@ namespace Joonaxii.Audio
         private double[] _tOffset;
         private int _trackCount;
 
-        public MultiToneGenerator(WavSampleList samples, bool stereo, int sampleRate, int trackCount)
+        public MultiToneGenerator(BufferList samples, bool stereo, int sampleRate, int trackCount)
         {
             _samples = samples;
             _stereo = stereo;
@@ -186,10 +187,10 @@ namespace Joonaxii.Audio
 
             for (int i = 0; i < tones.Length; i += _stereo ? 2 : 1)
             {
-                _samples.Add((tones[i] / maxL * maxVolume + 1.0) * 0.5);
+                _samples.Add((tones[i] / maxL * maxVolume + 1.0) * 0.5, false);
                 if (_stereo)
                 {
-                    _samples.Add((tones[i + 1] / maxR * maxVolume + 1.0) * 0.5);
+                    _samples.Add((tones[i + 1] / maxR * maxVolume + 1.0) * 0.5, false);
                 }
             }
         }

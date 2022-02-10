@@ -74,8 +74,16 @@ namespace Testing_Grounds
 
             SSTVProtocol[] protocols = new SSTVProtocol[]
             {
-                SSTVProtocol.Martin1,
-                SSTVProtocol.Martin2,
+                //SSTVProtocol.Martin1,
+                //SSTVProtocol.Martin2,
+
+                SSTVProtocol.PD50,
+                SSTVProtocol.PD90,
+                SSTVProtocol.PD120,
+                SSTVProtocol.PD160,
+                SSTVProtocol.PD180,
+                SSTVProtocol.PD240,
+                SSTVProtocol.PD290,
 
                 //SSTVProtocol.Scottie1,
                 //SSTVProtocol.Scottie2,

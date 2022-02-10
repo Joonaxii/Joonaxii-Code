@@ -48,7 +48,6 @@
     <Compile Include="src\MultiToneGenerator.cs" />
     <Compile Include="src\ToneGenerator.cs" />
     <Compile Include="src\WavEncoder.cs" />
-    <Compile Include="src\WavSampleList.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Joonaxii.Collections\Joonaxii.Collections.csproj">

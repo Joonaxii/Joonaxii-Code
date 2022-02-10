@@ -304,6 +304,35 @@ namespace Joonaxii.Radio
                 case SSTVProtocol.Robot24:
                     GenerateRobotYU42(0.2815, 0.140625, pixels, w, width, height);
                     break;
+
+
+                case SSTVProtocol.PD50:
+                    GeneratePD(0.286, pixels, w, width, height);
+                    break;
+
+                case SSTVProtocol.PD90:
+                    GeneratePD(0.532, pixels, w, width, height);
+                    break;
+
+                case SSTVProtocol.PD120:
+                    GeneratePD(0.190, pixels, w, width, height);
+                    break;
+
+                case SSTVProtocol.PD160:
+                    GeneratePD(0.190, pixels, w, width, height);
+                    break;
+
+                case SSTVProtocol.PD180:
+                    GeneratePD(0.286, pixels, w, width, height);
+                    break;
+
+                case SSTVProtocol.PD240:
+                    GeneratePD(0.3282, pixels, w, width, height);
+                    break;
+
+                case SSTVProtocol.PD290:
+                    GeneratePD(0.286, pixels, w, width, height);
+                    break;
             }
 
             //VIS Trailer
@@ -481,6 +510,60 @@ namespace Joonaxii.Radio
         private void GeneratePD(double pixelInterval, FastColor[] pixels, int scanW, int width, int height)
         {
             //TODO: Write PD generation, https://www.sstv-handbook.com/download/sstv-handbook.pdf
+            //Pages 46 -> 47
+
+            Vector4[] scanVals = new Vector4[scanW];
+            if (height % 2 != 0) { height--; }
+            for (int y = 0; y < height; y += 2)
+            {
+                for (int x = 0; x < scanW; x++)
+                {
+                    FastColor a = pixels[y * width + x];
+                    FastColor b = pixels[(y + 1) * width + x];
+
+                    FastColor avg = new FastColor(
+                        (byte)((a.r + b.r) >> 1),
+                        (byte)((a.g + b.g) >> 1),
+                        (byte)((a.b + b.b) >> 1));
+
+                    scanVals[x] = new Vector4(
+                        16.0f + (0.003906f * ((65.738f * a.r) + (129.057f * a.g) + (25.064f * a.b))),
+                        16.0f + (0.003906f * ((65.738f * b.r) + (129.057f * b.g) + (25.064f * b.b))),
+                        128.0f + (0.003906f * ((112.439f * avg.r) + (-94.154f * avg.g) + (-18.285f * avg.b))),
+                        128.0f + (0.003906f * ((-37.945f * avg.r) + (-74.494f * avg.g) + (112.439f * avg.b)))
+                        );
+                }
+
+                _toneGen.Generate(1200, _volume, 20);
+                _toneGen.Generate(1500, _volume, 2.080);
+
+                //Y1
+                for (int x = 0; x < scanW; x++)
+                {
+                    _toneGen.Generate(ValueToTone(scanVals[x].x), _volume, pixelInterval);
+                }
+
+                //Cr
+                for (int x = 0; x < scanW; x++)
+                {
+                    _toneGen.Generate(ValueToTone(scanVals[x].y), _volume, pixelInterval);
+                }
+
+                //Cb
+                for (int x = 0; x < scanW; x++)
+                {
+                    _toneGen.Generate(ValueToTone(scanVals[x].z), _volume, pixelInterval);
+                }
+
+                _toneGen.Generate(1200, _volume, 20);
+                // _toneGen.Generate(1500, _volume, 2.080);
+
+                //Y2
+                for (int x = 0; x < scanW; x++)
+                {
+                    _toneGen.Generate(ValueToTone(scanVals[x].w), _volume, pixelInterval);
+                }
+            }
         }
 
         private void GenerateScottie(double pixelInterval, FastColor[] pixels, int scanW, int width, int height)
