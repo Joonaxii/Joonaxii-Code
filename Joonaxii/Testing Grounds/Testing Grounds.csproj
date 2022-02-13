@@ -100,13 +100,33 @@
       <Project>{228b01cc-0f58-424f-af82-06fdf122f401}</Project>
       <Name>Joonaxii.Data.Compression</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Joonaxii.Data.Image.IO\Joonaxii.Data.Image.IO.csproj">
-      <Project>{78FF0EC7-E583-4778-9D38-ABD7D4607BDC}</Project>
-      <Name>Joonaxii.Data.Image.IO</Name>
+    <ProjectReference Include="..\Joonaxii.Image.Codecs.BMP\Joonaxii.Image.Codecs.BMP.csproj">
+      <Project>{54727EC0-FD00-4C9F-9C2A-4E65A02BE211}</Project>
+      <Name>Joonaxii.Image.Codecs.BMP</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Joonaxii.Data.Image\Joonaxii.Data.Image.csproj">
+    <ProjectReference Include="..\Joonaxii.Image.Codecs.Default\Joonaxii.Image.Codecs.Default.csproj">
+      <Project>{822FDFE8-E6DC-4CFD-BB19-C5688E3CB953}</Project>
+      <Name>Joonaxii.Image.Codecs.Default</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.Image.Codecs.PNG\Joonaxii.Image.Codecs.PNG.csproj">
+      <Project>{E274AB19-D9BF-4819-AAF3-0999533CAB1B}</Project>
+      <Name>Joonaxii.Image.Codecs.PNG</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.Image.Codecs.Raw\Joonaxii.Image.Codecs.Raw.csproj">
+      <Project>{C692A977-3C93-4F62-BF7F-4D9DCFCCA578}</Project>
+      <Name>Joonaxii.Image.Codecs.Raw</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.Image.Codecs\Joonaxii.Image.Codecs.csproj">
+      <Project>{AEBFEDB7-0836-4E95-B9C9-13E9DFED9507}</Project>
+      <Name>Joonaxii.Image.Codecs</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.Image.Processing\Joonaxii.Image.Processing.csproj">
+      <Project>{5C45FEF5-470C-4696-B328-F884DACE518E}</Project>
+      <Name>Joonaxii.Image.Processing</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.Image\Joonaxii.Image.csproj">
       <Project>{3474a9e6-e0bd-4d39-aad1-795198dd4692}</Project>
-      <Name>Joonaxii.Data.Image</Name>
+      <Name>Joonaxii.Image</Name>
     </ProjectReference>
     <ProjectReference Include="..\Joonaxii.Debugging\Joonaxii.Debugging.csproj">
       <Project>{17ad5d61-4e53-4f6b-81ca-6c206631afd0}</Project>

@@ -1,7 +1,7 @@
-﻿using Joonaxii.Data.Image;
-using Joonaxii.Data.Image.Conversion;
-using Joonaxii.Data.Image.Conversion.Encoders;
-using Joonaxii.Data.Image.Conversion.Processing;
+﻿using Joonaxii.Image;
+using Joonaxii.Image.Codecs;
+using Joonaxii.Image.Codecs.BMP;
+using Joonaxii.Image.Processing;
 using System;
 using System.Drawing;
 using System.IO;
@@ -65,7 +65,7 @@ namespace Testing_Grounds
                 Console.WriteLine($"{name} Debug Statistics: ");
                 Console.WriteLine($"    -Bits Per RMS: {deb.GetBitsPerRMS}");
 
-                using(BmpEncoder bmp = new BmpEncoder(bm.Width, bm.Height, (byte)(hasAlpha ? 32 : 24)))
+                using(BMPEncoder bmp = new BMPEncoder(bm.Width, bm.Height, (byte)(hasAlpha ? 32 : 24)))
                 {
                     bmp.SetPixels(temp);
                     using(MemoryStream ms = new MemoryStream())

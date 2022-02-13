@@ -1,7 +1,7 @@
 ﻿using Joonaxii.Audio;
-using Joonaxii.Data.Image;
-using Joonaxii.Data.Image.Conversion.Encoders;
-using Joonaxii.Data.Image.Conversion.PNG;
+using Joonaxii.Image;
+using Joonaxii.Image.Codecs;
+using Joonaxii.Image.Codecs.PNG;
 using Joonaxii.Debugging;
 using Joonaxii.IO;
 using Joonaxii.MathJX;

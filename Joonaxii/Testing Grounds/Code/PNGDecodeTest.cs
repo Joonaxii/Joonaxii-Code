@@ -1,6 +1,7 @@
-﻿using Joonaxii.Data.Image.Conversion;
-using Joonaxii.Data.Image.Conversion.Encoders;
-using Joonaxii.Data.Image.Conversion.PNG;
+﻿using Joonaxii.Image.Codecs;
+using Joonaxii.Image.Codecs.BMP;
+using Joonaxii.Image.Codecs.PNG;
+using Joonaxii.Image.Codecs.Raw;
 using System;
 using System.IO;
 
@@ -38,13 +39,13 @@ namespace Testing_Grounds
                         string file = $"{Path.GetFileNameWithoutExtension(path)}_DECODED.bmp";
 
                         using(FileStream fs = new FileStream($"{pth}/{file}", FileMode.Create))
-                        using(BmpEncoder bmp = new BmpEncoder(png.Width, png.Height, png.ColorMode))
+                        using(BMPEncoder bmp = new BMPEncoder(png.Width, png.Height, png.ColorMode))
                         {
                             bmp.Encode(png, fs, true);
                         }
 
                         using (FileStream fsRLEA = new FileStream($"{pth}/{Path.GetFileNameWithoutExtension(path)}_DECODED RLEa.raw", FileMode.Create))
-                        using (BmpEncoder rawRLEA = new BmpEncoder(png.Width, png.Height, png.ColorMode))
+                        using (BMPEncoder rawRLEA = new BMPEncoder(png.Width, png.Height, png.ColorMode))
                         using (FileStream fsRLEAID = new FileStream($"{pth}/{Path.GetFileNameWithoutExtension(path)}_DECODED IDXRLEa.raw", FileMode.Create))
                         using (RawTextureEncoder rawRLEAA = new RawTextureEncoder(png.Width, png.Height, png.ColorMode))
                         {

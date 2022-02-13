@@ -1,5 +1,7 @@
-﻿using Joonaxii.Data.Image;
-using Joonaxii.Data.Image.Conversion;
+﻿using Joonaxii.Image;
+using Joonaxii.Image.Codecs;
+using Joonaxii.Image.Codecs.Auto;
+using Joonaxii.Image.Codecs.Raw;
 using Joonaxii.IO;
 using System;
 using System.Collections.Generic;
@@ -53,7 +55,7 @@ namespace Testing_Grounds
             }
 
             using (FileStream stream = new FileStream(path, FileMode.Open))
-            using (ImageDecoder webpDec = new ImageDecoder(stream, webpPath, "HASH"))
+            using (AutomaticDecoder webpDec = new AutomaticDecoder(stream, webpPath, "HASH"))
             {
                 var res = webpDec.Decode(false);
                 Console.WriteLine($"Webp Decode! {res}");

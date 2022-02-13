@@ -58,9 +58,9 @@
       <Project>{9518E812-F5CE-4A8A-BFDC-1E850FEB6845}</Project>
       <Name>Joonaxii.Data.Coding</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Joonaxii.Data.Image\Joonaxii.Data.Image.csproj">
+    <ProjectReference Include="..\Joonaxii.Image\Joonaxii.Image.csproj">
       <Project>{3474A9E6-E0BD-4D39-AAD1-795198DD4692}</Project>
-      <Name>Joonaxii.Data.Image</Name>
+      <Name>Joonaxii.Image</Name>
     </ProjectReference>
     <ProjectReference Include="..\Joonaxii.Data\Joonaxii.Data.csproj">
       <Project>{b74db02e-ed4d-4fd2-9011-8262f560db59}</Project>

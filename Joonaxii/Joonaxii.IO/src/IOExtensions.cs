@@ -172,6 +172,28 @@ namespace Joonaxii.IO
             return val;
         }
 
+        public static void WriteBigEndian(this BinaryWriter bw, short value) => bw.WriteBigEndian(value, 2);
+        public static void WriteBigEndian(this BinaryWriter bw, ushort value) => bw.WriteBigEndian(value, 2);
+        public static void WriteBigEndian(this BinaryWriter bw, char value) => bw.WriteBigEndian(value, 2);
+
+        public static void WriteBigEndian(this BinaryWriter bw, int value) => bw.WriteBigEndian(value, 4);
+        public static void WriteBigEndian(this BinaryWriter bw, uint value) => bw.WriteBigEndian(value, 4);
+
+        public static void WriteBigEndian(this BinaryWriter bw, long value) => bw.WriteBigEndian(value, 8);
+        public static void WriteBigEndian(this BinaryWriter bw, ulong value) => bw.WriteBigEndian(value, 8);
+
+        public static void WriteBigEndian(this BinaryWriter bw, long value, int count) => WriteBigEndian(bw, (ulong)value, count);
+
+        public static void WriteBigEndian(this BinaryWriter bw, ulong value, int count)
+        {
+            count = count > 8 ? 8 : count < 1 ? 1 : count;
+            int offset = 8 - count;
+            for (int i = 0; i < count; i++)
+            {
+                bw.Write((byte)((value << ((count - 1 - i - offset) << 3)) & 0xFF));
+            }
+        }
+
         public static byte GetRequired7BitBytes(int value)
         {
             byte b = 0;

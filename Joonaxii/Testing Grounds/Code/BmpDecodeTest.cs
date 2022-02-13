@@ -1,4 +1,5 @@
-﻿using Joonaxii.Data.Image.Conversion;
+﻿using Joonaxii.Image.Codecs;
+using Joonaxii.Image.Codecs.BMP;
 using System;
 using System.Drawing;
 using System.IO;
@@ -25,7 +26,7 @@ namespace Testing_Grounds
             }
 
             using(FileStream stream = new FileStream(path, FileMode.Open))
-            using(BmpDecoder bmpDec = new BmpDecoder(stream))
+            using(BMPDecoder bmpDec = new BMPDecoder(stream))
             {
                 var res = bmpDec.Decode(false);
                 Console.WriteLine($"Bmp Decode! {res}");

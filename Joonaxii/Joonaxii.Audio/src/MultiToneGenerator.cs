@@ -1,5 +1,4 @@
 ﻿using Joonaxii.Collections;
-using Joonaxii.Data.Image;
 using Joonaxii.MathJX;
 using System;
 using System.Collections.Generic;

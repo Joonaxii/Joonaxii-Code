@@ -1,7 +1,7 @@
 ﻿using Joonaxii.Audio;
 using Joonaxii.Data.Coding;
-using Joonaxii.Data.Image;
-using Joonaxii.Data.Image.Conversion;
+using Joonaxii.Image;
+using Joonaxii.Image.Codecs;
 using Joonaxii.MathJX;
 using System;
 using System.Collections.Generic;
@@ -546,22 +546,19 @@ namespace Joonaxii.Radio
                 //Cr
                 for (int x = 0; x < scanW; x++)
                 {
-                    _toneGen.Generate(ValueToTone(scanVals[x].y), _volume, pixelInterval);
+                    _toneGen.Generate(ValueToTone(scanVals[x].z), _volume, pixelInterval);
                 }
 
                 //Cb
                 for (int x = 0; x < scanW; x++)
                 {
-                    _toneGen.Generate(ValueToTone(scanVals[x].z), _volume, pixelInterval);
+                    _toneGen.Generate(ValueToTone(scanVals[x].w), _volume, pixelInterval);
                 }
-
-                _toneGen.Generate(1200, _volume, 20);
-                // _toneGen.Generate(1500, _volume, 2.080);
 
                 //Y2
                 for (int x = 0; x < scanW; x++)
                 {
-                    _toneGen.Generate(ValueToTone(scanVals[x].w), _volume, pixelInterval);
+                    _toneGen.Generate(ValueToTone(scanVals[x].y), _volume, pixelInterval);
                 }
             }
         }

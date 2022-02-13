@@ -66,13 +66,13 @@
       <Project>{9518E812-F5CE-4A8A-BFDC-1E850FEB6845}</Project>
       <Name>Joonaxii.Data.Coding</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Joonaxii.Data.Image.IO\Joonaxii.Data.Image.IO.csproj">
-      <Project>{78FF0EC7-E583-4778-9D38-ABD7D4607BDC}</Project>
-      <Name>Joonaxii.Data.Image.IO</Name>
+    <ProjectReference Include="..\Joonaxii.Image.Codecs\Joonaxii.Image.Codecs.csproj">
+      <Project>{AEBFEDB7-0836-4E95-B9C9-13E9DFED9507}</Project>
+      <Name>Joonaxii.Image.Codecs</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Joonaxii.Data.Image\Joonaxii.Data.Image.csproj">
+    <ProjectReference Include="..\Joonaxii.Image\Joonaxii.Image.csproj">
       <Project>{3474A9E6-E0BD-4D39-AAD1-795198DD4692}</Project>
-      <Name>Joonaxii.Data.Image</Name>
+      <Name>Joonaxii.Image</Name>
     </ProjectReference>
     <ProjectReference Include="..\Joonaxii.MathJX\Joonaxii.MathJX.csproj">
       <Project>{0A47274A-B72F-4601-B3F1-BEAB27216BED}</Project>
