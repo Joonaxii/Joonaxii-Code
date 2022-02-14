@@ -63,7 +63,7 @@ namespace Joonaxii.Image.Codecs.BMP
             }
 
             int bytesPerP = _bpp / 8;
-            int padding = IOExtensions.NextPowerOf(_width * bytesPerP, 4) - (_width * bytesPerP);
+            int padding = IOExtensions.NextDivBy(_width * bytesPerP, 4) - (_width * bytesPerP);
             switch (_colorMode) //Calculate Data Size
             {
                 case ColorMode.RGB24:
@@ -142,6 +142,10 @@ namespace Joonaxii.Image.Codecs.BMP
                 case ColorMode.Grayscale:
                     _colorMode = ColorMode.RGB24;
                     _bpp = 24;
+                    break;
+                case ColorMode.GrayscaleAlpha:
+                    _colorMode = ColorMode.RGBA32;
+                    _bpp = 32;
                     break;
             }
         }

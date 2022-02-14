@@ -17,6 +17,39 @@ namespace Joonaxii.Image.Codecs.PNG
 
         public InterlaceMethod interlaceMethod;
 
+        public IHDRChunk(int width, int height, byte bitDepth, PNGColorType colorType) : base(0, PNGChunkType.IHDR, null, 0)
+        {
+            this.width = width;
+            this.height = height;
+
+            this.bitDepth = bitDepth;
+            this.colorType = colorType;
+            compressionMethod = 0;
+            filterMethod = 0;
+            interlaceMethod = 0;
+
+            using(MemoryStream ms = new MemoryStream())
+            using(BinaryWriter bw = new BinaryWriter(ms))
+            {
+                bw.WriteBigEndian(width);
+                bw.WriteBigEndian(height);
+                bw.Write(bitDepth);
+                bw.Write((byte)colorType);
+
+                bw.Write((byte)compressionMethod);
+                bw.Write((byte)filterMethod);
+                bw.Write((byte)interlaceMethod);
+
+                ms.Flush();
+                bw.Flush();
+
+                data = ms.ToArray();
+            }
+
+            length = data.Length;
+            crc = GetCrc();
+        }
+
         public IHDRChunk(int len, byte[] data, uint crc) : base(len, PNGChunkType.IHDR, data, crc)
         {
             using(var stream = GetStream())

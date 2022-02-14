@@ -10,9 +10,9 @@ namespace Joonaxii.Image.Codecs.PNG
         {
         }
 
-        public void SetData(byte[] data)
+        public void SetData(byte[] data, int len)
         {
-            length = data.Length;
+            length = len;
             this.data = data;
             crc = GetCrc();
         }

@@ -211,6 +211,16 @@ namespace Joonaxii.MathJX
             return input &= (sbyte)~(1 << bitIndex);
         }
 
+        public static int NextPowerOf2(int value)
+        {
+            int power = 1;
+            while(power < value)
+            {
+                power <<= 1;
+            }
+            return power;
+        }
+
         #region Math Logic
 
         public static bool InRange(this int input, int min, int max) => input >= min & input <= max;

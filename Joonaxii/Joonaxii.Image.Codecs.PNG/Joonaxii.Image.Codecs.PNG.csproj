@@ -46,6 +46,7 @@
     <Compile Include="src\Chunks\ICCPChunk.cs" />
     <Compile Include="src\Chunks\IDATChunk.cs" />
     <Compile Include="src\Chunks\IHDRChunk.cs" />
+    <Compile Include="src\Chunks\tRNSChunk.cs" />
     <Compile Include="src\InterlaceMethod.cs" />
     <Compile Include="src\Chunks\PHYSChunk.cs" />
     <Compile Include="src\Chunks\PLTEChunk.cs" />
@@ -56,6 +57,7 @@
     <Compile Include="src\PNGDecoder.cs" />
     <Compile Include="src\PNGEncoder.cs" />
     <Compile Include="src\PNGFilterMethod.cs" />
+    <Compile Include="src\PNGFlags.cs" />
     <Compile Include="src\PNGGammaReadMode.cs" />
     <Compile Include="src\Chunks\RawChunk.cs" />
     <Compile Include="src\Chunks\SPLTChunk.cs" />
@@ -81,6 +83,10 @@
     <ProjectReference Include="..\Joonaxii.IO\Joonaxii.IO.csproj">
       <Project>{5bcc1979-54d1-4c35-b402-9520c1734766}</Project>
       <Name>Joonaxii.IO</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.MathJX\Joonaxii.MathJX.csproj">
+      <Project>{0A47274A-B72F-4601-B3F1-BEAB27216BED}</Project>
+      <Name>Joonaxii.MathJX</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

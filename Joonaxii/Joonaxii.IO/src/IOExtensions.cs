@@ -85,7 +85,7 @@ namespace Joonaxii.IO
             return 1;
         }
 
-        public static int NextPowerOf(int value, int power)
+        public static int NextDivBy(int value, int power)
         {
             while (value % power != 0)
             {
@@ -95,13 +95,22 @@ namespace Joonaxii.IO
         }
 
 
-        public static long NextPowerOf(long value, int power)
+        public static long NextDivBy(long value, int power)
         {
             while (value % power != 0)
             {
                 value++;
             }
             return value;
+        }
+
+        public static void WriteToByteArray(byte[] buf, int start, long value, int bytes, bool bigEndian)
+        {
+            for (int i = 0; i < bytes; i++)
+            {
+                int bI = start + i;
+                buf[bI] = (byte)(bigEndian ? (value >> (bytes - (i << 3))) & 0xFF : (value >> (i << 3)) & 0xFF);
+            }
         }
 
         public static void CopyToWithPos(this Stream stream, Stream other)
@@ -187,10 +196,9 @@ namespace Joonaxii.IO
         public static void WriteBigEndian(this BinaryWriter bw, ulong value, int count)
         {
             count = count > 8 ? 8 : count < 1 ? 1 : count;
-            int offset = 8 - count;
             for (int i = 0; i < count; i++)
             {
-                bw.Write((byte)((value << ((count - 1 - i - offset) << 3)) & 0xFF));
+                bw.Write((byte)((value >> ((count - 1 - i) << 3)) & 0xFF));
             }
         }
 

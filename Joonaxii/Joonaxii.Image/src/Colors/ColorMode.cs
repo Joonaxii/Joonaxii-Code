@@ -5,6 +5,7 @@
         OneBit,
         Indexed4,
         Indexed8,
+        Indexed,
 
         RGB24,
         RGBA32,
@@ -14,5 +15,6 @@
         ARGB555,
 
         Grayscale,
+        GrayscaleAlpha,
     }
 }

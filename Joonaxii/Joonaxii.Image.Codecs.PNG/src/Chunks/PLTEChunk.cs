@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Joonaxii.IO;
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -7,6 +9,30 @@ namespace Joonaxii.Image.Codecs.PNG
     public class PLTEChunk : PNGChunk
     {
         public FastColor[] pixels;
+
+        public PLTEChunk(IList<ColorContainer> palette) : base(0, PNGChunkType.PLTE, null, 0)
+        {
+            using (var stream = new MemoryStream())
+            using (BinaryWriter bw = new BinaryWriter(stream))
+            {
+                int palLen = palette.Count * 3;
+                pixels = new FastColor[palette.Count];
+                for (int i = 0; i < palette.Count; i++)
+                {
+                    var c = palette[i].color;
+                    bw.Write(c.r);
+                    bw.Write(c.g);
+                    bw.Write(c.b);
+                    pixels[i] = c;
+                }
+
+                stream.Flush();
+                bw.Flush();
+                data = stream.ToArray();
+                length = palLen;
+                crc = GetCrc();
+            }
+        }
 
         public PLTEChunk(int len, byte[] data, uint crc) : base(len, PNGChunkType.PLTE, data, crc)
         {

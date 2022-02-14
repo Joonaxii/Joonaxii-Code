@@ -45,11 +45,52 @@ namespace Testing_Grounds
         {
             Console.InputEncoding = Encoding.UTF8;
             Console.OutputEncoding = Encoding.UTF8;
-          
+            string path = "";
+
+            startPNG:
+            Console.Clear();
+            Console.WriteLine("Enter the full path of the testable PNG");
+            path = Console.ReadLine().Replace("\"", "");
+
+            if (!File.Exists(path)) { goto startPNG; }
+
+            string dirP = Path.GetDirectoryName(path);
+            string namP = Path.GetFileNameWithoutExtension(path);
+
+            using (FileStream fs = new FileStream(path, FileMode.Open))
+            using (PNGDecoder decPNG = new PNGDecoder(fs))
+            {
+                var res = decPNG.Decode(false);
+                switch (res)
+                {
+                    default: Console.WriteLine($"PNG Decode Failed: [{decPNG}]"); break;
+                    case ImageDecodeResult.Success:
+                        Console.WriteLine($"PNG Decode {decPNG}!");
+                        using (FileStream fsEnc = new FileStream($"{dirP}/{namP}_PAL.png", FileMode.Create))
+                        using (PNGEncoder encPNG = new PNGEncoder(decPNG.Width, decPNG.Height, decPNG.ColorMode))
+                        {
+                            var pix = decPNG.GetPixelsRef();
+                            encPNG.SetPixelsRef(ref pix);
+                            encPNG.SetFlags(PNGFlags.AllowBigIndices | PNGFlags.ForcePalette);
+                            var resEnc = encPNG.Encode(fsEnc, false);
+                            switch (resEnc)
+                            {
+                                default: Console.WriteLine($"PNG Encode Failed: [{resEnc}]"); break;
+                                case ImageEncodeResult.Success:
+                                    Console.WriteLine($"PNG Encode {resEnc}!");
+                            
+                                    break;
+                            }
+                        }
+                        break;
+                }
+            }
+
+            Console.ReadKey();
             start:
             Console.Clear();
             Console.WriteLine("Enter the full path of the 320x256 png to be converted to SSTV");
-            string path = Console.ReadLine().Replace("\"", "");
+            path = Console.ReadLine().Replace("\"", "");
 
             if (!File.Exists(path)) { goto start; }
 

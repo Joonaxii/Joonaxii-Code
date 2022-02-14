@@ -39,7 +39,7 @@ namespace Joonaxii.Image.Codecs.PNG
         {
             bw.WriteBigEndian(length);
             bw.WriteBigEndian((int)chunkType);
-            bw.Write(data);
+            bw.Write(data, 0, length);
             bw.WriteBigEndian(crc);
             return this;
         }
@@ -57,6 +57,7 @@ namespace Joonaxii.Image.Codecs.PNG
                 case PNGChunkType.sPLT: return new SPLTChunk(length, data, crc);
                 case PNGChunkType.PLTE: return new PLTEChunk(length, data, crc);
                 case PNGChunkType.gAMA: return new gAMAChunk(length, data, crc);
+                case PNGChunkType.tRNS: return new tRNSChunk(length, data, crc);
             }
         }
 

@@ -12,7 +12,7 @@ namespace Joonaxii.Data
 
         new MagicHeader(HeaderType.PNG,
             new MagicByte[] { 0x89, 0x50, 0x4E, 0x47, 
-                              0xFFF, 0xFFF, 0xFFF, 0xFFF }),
+                              0x0D, 0x0A, 0x1A, 0x0A }),
 
         new MagicHeader(HeaderType.RAW_TEXTURE,
             new MagicByte[] { 'R', 'A', 'W' }),

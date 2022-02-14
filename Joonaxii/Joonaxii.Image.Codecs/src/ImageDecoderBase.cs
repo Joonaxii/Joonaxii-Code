@@ -71,7 +71,7 @@ namespace Joonaxii.Image.Codecs
             return pix;
         }
 
-        public FastColor[] GetPixelsReference() => _pixels;
+        public FastColor[] GetPixelsRef() => _pixels;
 
         public int GetPixels(FastColor[] buffer)
         {
