@@ -1,5 +1,6 @@
 ﻿namespace Joonaxii.Image.Codecs.PNG
 {
+    [System.Flags]
     public enum PNGFlags
     {
         None                     = 0,
@@ -10,5 +11,8 @@
         ForceRGB                 = 4,
 
         AllowBigIndices         = 16,
+
+        OverrideFilter          = 32,
+        ForceFilter             = 64,
     }
 }

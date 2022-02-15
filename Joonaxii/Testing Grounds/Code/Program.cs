@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using Joonaxii.Image.Codecs.BMP;
 
 namespace Testing_Grounds
 {
@@ -63,15 +64,23 @@ namespace Testing_Grounds
                 var res = decPNG.Decode(false);
                 switch (res)
                 {
-                    default: Console.WriteLine($"PNG Decode Failed: [{decPNG}]"); break;
+                    default: Console.WriteLine($"PNG Decode Failed: [{res}]"); break;
                     case ImageDecodeResult.Success:
                         Console.WriteLine($"PNG Decode {decPNG}!");
+                        using (FileStream fsBEnc = new FileStream($"{dirP}/{namP}_PAL BMP.bmp", FileMode.Create))
+                        using (BMPEncoder bmpEnc = new BMPEncoder(decPNG.Width, decPNG.Height, decPNG.ColorMode))
                         using (FileStream fsEnc = new FileStream($"{dirP}/{namP}_PAL.png", FileMode.Create))
                         using (PNGEncoder encPNG = new PNGEncoder(decPNG.Width, decPNG.Height, decPNG.ColorMode))
                         {
                             var pix = decPNG.GetPixelsRef();
                             encPNG.SetPixelsRef(ref pix);
-                            encPNG.SetFlags(PNGFlags.AllowBigIndices | PNGFlags.ForcePalette);
+                            bmpEnc.SetPixelsRef(ref pix);
+
+                            //encPNG.SetFlags(PNGFlags.AllowBigIndices | PNGFlags.ForceRGB /*| PNGFlags.OverrideFilter*/);
+                            //encPNG.SetOverrideFilter(PNGFilterMethod.Paeth);
+
+                            bmpEnc.SetColorMode(ColorMode.RGB24);
+                            bmpEnc.Encode(fsBEnc, false);
                             var resEnc = encPNG.Encode(fsEnc, false);
                             switch (resEnc)
                             {
@@ -150,7 +159,7 @@ namespace Testing_Grounds
                 using (FileStream fs = new FileStream($"{dir}/{name} SSTV ({protocols[i]}) 24.wav", FileMode.Create))
                 using (WavEncoder wav = new WavEncoder(fs))
                 {
-                    wav.Setup(1, 44100 >> 2, 24);
+                    wav.Setup(1, 44100 >> 2, 16);
                     wav.WriteStaticData();
                     using (SSTVEncoder sstv = new SSTVEncoder(wav, false, protocols[i], SSTVFlags.CenterX, SSTVEncoder.MegalovaniaVOX))
                     {

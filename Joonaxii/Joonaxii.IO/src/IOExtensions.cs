@@ -106,10 +106,19 @@ namespace Joonaxii.IO
 
         public static void WriteToByteArray(byte[] buf, int start, long value, int bytes, bool bigEndian)
         {
+            if (bigEndian)
+            {
+                for (int i = 0; i < bytes; i++)
+                {
+                    int bI = start + i;
+                    buf[bytes - 1 - bI] = (byte)((value >> (i << 3)) & 0xFF);
+                }
+                return;
+            }
             for (int i = 0; i < bytes; i++)
             {
                 int bI = start + i;
-                buf[bI] = (byte)(bigEndian ? (value >> (bytes - (i << 3))) & 0xFF : (value >> (i << 3)) & 0xFF);
+                buf[bI] = (byte)((value >> (i << 3)) & 0xFF);
             }
         }
 
@@ -244,6 +253,20 @@ namespace Joonaxii.IO
                 shift += 7;
             }
             return count;
+        }
+
+        public static byte BytesNeeded(long value) => BytesNeeded((ulong)value);
+        public static byte BytesNeeded(ulong value)
+        {
+            if(value == 0) { return 1; }
+
+            byte c = 0;
+            while(value != 0)
+            {
+                value >>= 8;
+                c++;
+            }
+            return c;
         }
 
         public static byte BitsNeeded(sbyte value) { unsafe { return BitsNeeded(*(byte*)&value); }; }

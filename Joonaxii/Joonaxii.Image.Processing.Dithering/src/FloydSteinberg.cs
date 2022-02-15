@@ -57,7 +57,7 @@ namespace Joonaxii.Image.Processing.Dithering
                         container.count++;
                         continue;
                     }
-                    container = new ColorContainer(px, 1);
+                    container = new ColorContainer(px, 1, paletteLut.Count);
                     paletteLut.Add(px, container);
                     containers.Add(container);
                 }

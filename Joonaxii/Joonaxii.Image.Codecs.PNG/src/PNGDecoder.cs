@@ -1,4 +1,5 @@
 ﻿using Joonaxii.Data;
+using Joonaxii.MathJX;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -75,7 +76,7 @@ namespace Joonaxii.Image.Codecs.PNG
                             break;
 
                         case PNGChunkType.tRNS:
-                            if(paletteChnk != null)
+                            if (paletteChnk != null)
                             {
                                 paletteChnk.ApplyTransparency(chnk.data);
                             }
@@ -130,7 +131,7 @@ namespace Joonaxii.Image.Codecs.PNG
                         }
                         gamma = DEFAULT_GAMMA;
                         break;
-                    case PNGGammaReadMode.IgnoreIfMissing:  
+                    case PNGGammaReadMode.IgnoreIfMissing:
                         if (gammaChnk != null)
                         {
                             applyGamma = true;
@@ -149,11 +150,14 @@ namespace Joonaxii.Image.Codecs.PNG
                 }
                 paletteChnk?.ApplyGamma(gammaTable);
 
+                ms.Seek(0, SeekOrigin.Begin);
+                byte flagA = (byte)ms.ReadByte();
+                byte flagB = (byte)ms.ReadByte();
                 ms.Seek(2, SeekOrigin.Begin);
-             
+
                 _width = hdrChnk.width;
                 _height = hdrChnk.height;
-                _bpp = 0;
+                _bpp = hdrChnk.bitDepth;
 
                 switch (hdrChnk.colorType)
                 {
@@ -162,8 +166,8 @@ namespace Joonaxii.Image.Codecs.PNG
                         _colorMode = ColorMode.Grayscale;
                         break;
                     case PNGColorType.PALETTE_IDX:
-                        _bpp = 8;
-                        _colorMode = ColorMode.Indexed8;
+                        _colorMode = ColorMode.Indexed;
+                        _bpp = hdrChnk.bitDepth;
                         break;
 
                     case PNGColorType.RGB:
@@ -177,7 +181,7 @@ namespace Joonaxii.Image.Codecs.PNG
                         _colorMode = ImageCodecExtensions.GetColorMode(_bpp);
                         break;
                 }
-          
+
                 _pixels = new FastColor[_width * _height];
                 var bytesPerPix = (byte)(hdrChnk.GetBytesPerPixel() * ((hdrChnk.bitDepth + 7) >> 3));
                 System.Diagnostics.Debug.Print($"{_colorMode} => {_bpp}, {bytesPerPix}");
@@ -190,7 +194,9 @@ namespace Joonaxii.Image.Codecs.PNG
 
                     byte[] buffer = new byte[8];
 
-                    var data = msIn.ToArray();
+                    var data = new byte[msIn.Length];
+                    msIn.Read(data, 0, data.Length);
+                    int posGottenTo = 0;
                     switch (hdrChnk.interlaceMethod)
                     {
                         case InterlaceMethod.None:
@@ -211,15 +217,34 @@ namespace Joonaxii.Image.Codecs.PNG
                                 {
                                     ReverseFilter(data, filterMode, bytesPerPix, i, bytesPerLine);
                                 }
-
                                 int x = 0;
-                                for (int j = index; j < end; j+=bytesPerPix)
+
+                                if (paletteChnk != null && hdrChnk.colorType == PNGColorType.PALETTE_IDX)
+                                {
+                                    posGottenTo = index;
+                                    for (int j = 0; j < _width; j++)
+                                    {
+                                        Buffer.BlockCopy(data, index + j * bytesPerPix, buffer, 0, bytesPerPix);
+
+                                        int indexP = 0;
+                                        for (int p = 0; p < bytesPerPix; p++)
+                                        {
+                                            indexP |= (buffer[p] << (p << 3));
+                                        }
+                                        _pixels[pixI + j] = indexP >= paletteChnk.pixels.Length ? FastColor.clear : paletteChnk.pixels[indexP];
+                                        posGottenTo += bytesPerPix;
+                                    }
+                                    continue;
+                                }
+
+                                posGottenTo = end;
+                                for (int j = index; j < end; j += bytesPerPix)
                                 {
                                     Buffer.BlockCopy(data, j, buffer, 0, bytesPerPix);
                                     switch (bytesPerPix)
                                     {
                                         case 1:
-                                            _pixels[pixI + x] = paletteChnk != null ? paletteChnk.pixels[buffer[0]] : new FastColor(buffer[0]);
+                                            _pixels[pixI + x] = new FastColor(buffer[0]);
                                             break;
                                         case 2:
                                             _pixels[pixI + x] = new FastColor(buffer[1], buffer[1], buffer[1], buffer[0]);
@@ -233,10 +258,10 @@ namespace Joonaxii.Image.Codecs.PNG
                                             break;
                                         case 8:
                                             const float SHORT_TO_BYTE = (1.0f / ushort.MaxValue) * 255;
-                                            ushort r = (ushort)(buffer[7] + (buffer[6] << 8));
-                                            ushort g = (ushort)(buffer[5] + (buffer[4] << 8));
-                                            ushort b = (ushort)(buffer[3] + (buffer[2] << 8));
-                                            ushort a = (ushort)(buffer[1] + (buffer[0] << 8));
+                                            ushort r = (ushort)(buffer[1] + (buffer[0] << 8));
+                                            ushort g = (ushort)(buffer[3] + (buffer[2] << 8));
+                                            ushort b = (ushort)(buffer[5] + (buffer[4] << 8));
+                                            ushort a = (ushort)(buffer[7] + (buffer[6] << 8));
 
                                             _pixels[pixI + x] = new FastColor(
                                                 gammaTable[(byte)(r * SHORT_TO_BYTE)],
@@ -251,6 +276,9 @@ namespace Joonaxii.Image.Codecs.PNG
                             break;
                         default: return ImageDecodeResult.NotSupported;
                     }
+
+
+                    System.Diagnostics.Debug.Print($"ZLIB Flags [0x{Convert.ToString(flagA, 16).PadLeft(2, '0')}, 0x{Convert.ToString(flagB, 16).PadLeft(2, '0')}]\nFinal Read Pos: {posGottenTo}, {data.Length - posGottenTo} diff to length");
                 }
 
             }
@@ -292,7 +320,7 @@ namespace Joonaxii.Image.Codecs.PNG
                         data[j] += Prior(x);
                         break;
 
-                    default: System.Diagnostics.Debug.Print($"Filter: {filterMode} not implemented! [{x}]"); break;
+                    default: System.Diagnostics.Debug.Print($"Filter: {filterMode} not implemented! [{x}, {scanLine / bytesPerLine}]"); break;
                     case PNGFilterMethod.Average:
                         data[j] += (byte)((Raw(x - bytesPerPixel) + Prior(x)) >> 1);
                         break;
@@ -315,7 +343,7 @@ namespace Joonaxii.Image.Codecs.PNG
 
             byte Raw(int i)
             {
-                if(i < 1) { return 0; }
+                if (i < 1) { return 0; }
 
                 int v = scanLine + i;
                 return data[v];

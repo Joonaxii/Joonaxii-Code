@@ -74,7 +74,7 @@ namespace Joonaxii.Image.Codecs.PNG
             {
                 default:                        return 0;
 
-                case PNGColorType.GRAYSCALE: 
+                case PNGColorType.GRAYSCALE:    
                 case PNGColorType.PALETTE_IDX:  return 1;
 
                 case PNGColorType.RGB:          return 3;
@@ -88,13 +88,13 @@ namespace Joonaxii.Image.Codecs.PNG
         {
             switch (bitDepth)
             {
-                default: return 0;
+                default: return width * GetBytesPerPixel() * ((bitDepth + 7) >> 3);
                 case 1:  return (width + 7) >> 3;
                 case 2:  return (width + 3) >> 2;
                 case 4:  return (width + 1) >> 1;
 
-                case 8:
-                case 16: return width * GetBytesPerPixel() * ((bitDepth + 7) >> 3);
+                //case 8:
+                //case 16: return width * GetBytesPerPixel() * ((bitDepth + 7) >> 3);
             }
         }
 

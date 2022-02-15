@@ -40,16 +40,18 @@ namespace Joonaxii.Image.Codecs
                 default: return 32;
 
                 case ColorMode.Indexed4: return 4;
+
+                case ColorMode.Indexed: 
                 case ColorMode.Indexed8: return 8;
 
-                case ColorMode.OneBit: return 1;
+                case ColorMode.OneBit:   return 1;
 
                 case ColorMode.RGB555:
                 case ColorMode.ARGB555:
-                case ColorMode.RGB565: return 16;
+                case ColorMode.RGB565:   return 16;
 
-                case ColorMode.RGB24: return 24;
-                case ColorMode.RGBA32: return 32;
+                case ColorMode.RGB24:    return 24;
+                case ColorMode.RGBA32:   return 32;
             }
         }
 
@@ -83,7 +85,7 @@ namespace Joonaxii.Image.Codecs
             byte[] data = new byte[bPP * colors.Length];
 
             int ii = 0;
-            int pI = 0;
+            int pI;
             FastColor c;
             switch (mode)
             {
@@ -154,16 +156,9 @@ namespace Joonaxii.Image.Codecs
                         }
 
                         c = colors[pI];
-
-
                         switch (byteOrder)
                         {
                             case PixelByteOrder.RGBA:
-                                data[ii++] = c.r;
-                                data[ii++] = c.g;
-                                data[ii++] = c.b;
-                                break;
-
                             case PixelByteOrder.ARGB:
                                 data[ii++] = c.r;
                                 data[ii++] = c.g;

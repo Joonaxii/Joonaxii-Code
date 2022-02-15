@@ -12,25 +12,27 @@ namespace Joonaxii.Image.Codecs.PNG
 
         public PLTEChunk(IList<ColorContainer> palette) : base(0, PNGChunkType.PLTE, null, 0)
         {
-            using (var stream = new MemoryStream())
-            using (BinaryWriter bw = new BinaryWriter(stream))
+            int palLen = palette.Count * 3;
+           // using (var stream = new MemoryStream(new byte[palLen], true))
+            //using (BinaryWriter bw = new BinaryWriter(stream))
             {
-                int palLen = palette.Count * 3;
+                data = new byte[palLen];
                 pixels = new FastColor[palette.Count];
+                int pos = 0;
                 for (int i = 0; i < palette.Count; i++)
                 {
                     var c = palette[i].color;
-                    bw.Write(c.r);
-                    bw.Write(c.g);
-                    bw.Write(c.b);
+                    IOExtensions.WriteToByteArray(data, pos, c.r, 1, false);
+                    IOExtensions.WriteToByteArray(data, pos + 1, c.g, 1, false);
+                    IOExtensions.WriteToByteArray(data, pos + 2, c.b, 1, false);
+      
+                    pos += 3;
                     pixels[i] = c;
                 }
-
-                stream.Flush();
-                bw.Flush();
-                data = stream.ToArray();
                 length = palLen;
                 crc = GetCrc();
+
+                System.Diagnostics.Debug.Print($"Palette should be {palLen + 12} bytes long");
             }
         }
 

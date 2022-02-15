@@ -17,6 +17,7 @@ namespace Joonaxii.Image.Codecs
         protected byte _bpp;
         protected ColorMode _colorMode;
         protected FastColor[] _pixels;
+        protected bool _hasAlpha;
 
         public ImageEncoderBase(int width, int height, byte bPP)
         {
@@ -89,12 +90,46 @@ namespace Joonaxii.Image.Codecs
 
             int len = Math.Min(_pixels.Length, colors.Length);
             Array.Copy(colors, _pixels, len);
+
+            _hasAlpha = false;
+            foreach (var item in _pixels)
+            {
+                if (item.a < 255) { _hasAlpha = true; break; }
+            }
         }
 
         public void SetPixelsRef(ref FastColor[] colors)
         {
             if (colors == null) { return; }
             _pixels = colors;
+
+            _hasAlpha = false;
+            foreach (var item in _pixels)
+            {
+                if(item.a < 255) { _hasAlpha = true; break; }
+            }
+
+            ValidateAlpha(_hasAlpha);
+        }
+
+        protected void ValidateAlpha(bool hasAlpha)
+        {
+            _hasAlpha = hasAlpha;
+            switch (_colorMode)
+            {
+                case ColorMode.ARGB555:
+                case ColorMode.RGBA32:
+                    SetColorMode(hasAlpha ? _colorMode : ColorMode.RGB24);
+                    ValidateFormat();
+                    break;
+
+                case ColorMode.RGB24:
+                case ColorMode.RGB555:
+                case ColorMode.RGB565:
+                    SetColorMode(!hasAlpha ? _colorMode : ColorMode.RGBA32);
+                    ValidateFormat();
+                    break;
+            }
         }
 
         public bool Save(string path)

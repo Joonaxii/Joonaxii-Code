@@ -13,6 +13,7 @@ namespace Joonaxii.Image.Codecs.BMP
 
         public override ImageEncodeResult Encode(Stream stream, bool leaveStreamOpen)
         {
+            ValidateFormat();
             switch (_colorMode)
             {
                 case ColorMode.Indexed4:
@@ -136,14 +137,28 @@ namespace Joonaxii.Image.Codecs.BMP
         {
             switch (_colorMode)
             {
+                case ColorMode.ARGB555:
+                    _colorMode = _hasAlpha ? _colorMode : ColorMode.RGB555;
+                    break;
+
+                case ColorMode.RGBA32:
+                    if (_hasAlpha)
+                    {
+                        break;
+                    }
+                    _colorMode =  ColorMode.RGB24;
+                    _bpp = 24;
+                    break;
+
                 case ColorMode.OneBit:
-                case ColorMode.Indexed4:
-                case ColorMode.Indexed8:
                 case ColorMode.Grayscale:
                     _colorMode = ColorMode.RGB24;
                     _bpp = 24;
                     break;
                 case ColorMode.GrayscaleAlpha:
+                case ColorMode.Indexed4:
+                case ColorMode.Indexed8:
+                case ColorMode.Indexed:
                     _colorMode = ColorMode.RGBA32;
                     _bpp = 32;
                     break;
