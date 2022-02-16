@@ -13,6 +13,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using Joonaxii.Image.Codecs.BMP;
+using Joonaxii.Image.Codecs.JPEG;
 
 namespace Testing_Grounds
 {
@@ -48,6 +49,21 @@ namespace Testing_Grounds
             Console.OutputEncoding = Encoding.UTF8;
             string path = "";
 
+            startJPG:
+            Console.Clear();
+            Console.WriteLine("Enter the full path of the testable JPG");
+            path = Console.ReadLine().Replace("\"", "");
+
+            if (!File.Exists(path)) { goto startJPG; }
+
+            using (FileStream fs = new FileStream(path, FileMode.Open))
+            using (JPEGDecoder jpeg = new JPEGDecoder(fs))
+            {
+                var res = jpeg.Decode(false);
+                Console.WriteLine($"Done [{res}]");
+                Console.ReadKey();
+            }
+
             startPNG:
             Console.Clear();
             Console.WriteLine("Enter the full path of the testable PNG");
@@ -66,7 +82,7 @@ namespace Testing_Grounds
                 {
                     default: Console.WriteLine($"PNG Decode Failed: [{res}]"); break;
                     case ImageDecodeResult.Success:
-                        Console.WriteLine($"PNG Decode {decPNG}!");
+                        Console.WriteLine($"PNG Decode {res}!");
                         using (FileStream fsBEnc = new FileStream($"{dirP}/{namP}_PAL BMP.bmp", FileMode.Create))
                         using (BMPEncoder bmpEnc = new BMPEncoder(decPNG.Width, decPNG.Height, decPNG.ColorMode))
                         using (FileStream fsEnc = new FileStream($"{dirP}/{namP}_PAL.png", FileMode.Create))

@@ -108,6 +108,10 @@
       <Project>{822FDFE8-E6DC-4CFD-BB19-C5688E3CB953}</Project>
       <Name>Joonaxii.Image.Codecs.Default</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.Image.Codecs.JPEG\Joonaxii.Image.Codecs.JPEG.csproj">
+      <Project>{5E6106D9-9E94-4AEC-87B5-75BCB770C3CC}</Project>
+      <Name>Joonaxii.Image.Codecs.JPEG</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Joonaxii.Image.Codecs.PNG\Joonaxii.Image.Codecs.PNG.csproj">
       <Project>{E274AB19-D9BF-4819-AAF3-0999533CAB1B}</Project>
       <Name>Joonaxii.Image.Codecs.PNG</Name>
