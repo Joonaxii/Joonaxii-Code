@@ -4,15 +4,10 @@
     public enum PNGFlags
     {
         None                     = 0,
-                                 
-        ForcePalette             = 1,
-        ForceAlpha               = 2,
-        ForceNoAlpha             = 4,
-        ForceRGB                 = 4,
+ 
+        OverrideFilter          = 1,
+        ForceFilter             = 2,
 
-        AllowBigIndices         = 16,
-
-        OverrideFilter          = 32,
-        ForceFilter             = 64,
+        UseBrokenSubFilter      = 4,
     }
 }

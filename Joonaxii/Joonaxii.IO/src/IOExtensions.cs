@@ -255,20 +255,6 @@ namespace Joonaxii.IO
             return count;
         }
 
-        public static byte BytesNeeded(long value) => BytesNeeded((ulong)value);
-        public static byte BytesNeeded(ulong value)
-        {
-            if(value == 0) { return 1; }
-
-            byte c = 0;
-            while(value != 0)
-            {
-                value >>= 8;
-                c++;
-            }
-            return c;
-        }
-
         public static byte BitsNeeded(sbyte value) { unsafe { return BitsNeeded(*(byte*)&value); }; }
         public static byte BitsNeeded(byte value) => value < 1 ? (byte)1 : (byte)((Math.Log(value) / Math.Log(2)) + 1.0);
 

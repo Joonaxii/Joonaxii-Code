@@ -1,4 +1,4 @@
-﻿namespace Joonaxii.Image
+﻿namespace Joonaxii.Image.Texturing
 {
     public enum ResizeMode
     {

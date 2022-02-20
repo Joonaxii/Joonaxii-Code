@@ -135,6 +135,7 @@ namespace Joonaxii.Image.Codecs.BMP
 
         public override void ValidateFormat()
         {
+            base.ValidateFormat();
             switch (_colorMode)
             {
                 case ColorMode.ARGB555:

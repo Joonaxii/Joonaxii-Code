@@ -1,11 +1,14 @@
 ﻿using Joonaxii.Data.Coding;
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace Joonaxii.Image.Codecs
 {
     public abstract class ImageEncoderBase : CodecBase
     {
+        public bool HasPalette { get => _palette != null && _palette.Count > 0; }
+
         public int Width { get => _width; }
         public int Height { get => _height; }
         public byte BitsPerPixel { get => _bpp; }
@@ -19,27 +22,163 @@ namespace Joonaxii.Image.Codecs
         protected FastColor[] _pixels;
         protected bool _hasAlpha;
 
+        public ImageDecoderFlags Flags { get => _flags; set => _flags = value; }
+        protected ImageDecoderFlags _flags;
+
+        protected Dictionary<FastColor, ColorContainer> _paletteLut = null;
+        protected List<ColorContainer> _palette = null;
+
         public ImageEncoderBase(int width, int height, byte bPP)
         {
+            Flags = ImageDecoderFlags.None;
             _width = Math.Abs(width);
             _height = Math.Abs(height);
 
             SetBitsPerPixel(bPP);
-
-            _pixels = new FastColor[width * height];
+            _pixels = new FastColor[0];
         }
 
         public ImageEncoderBase(int width, int height, ColorMode mode)
         {
+            Flags = ImageDecoderFlags.None;
             _width = Math.Abs(width);
             _height = Math.Abs(height);
 
             SetColorMode(mode);
-
-            _pixels = new FastColor[width * height];
+            _pixels = new FastColor[0];
         }
 
-        public abstract void ValidateFormat();
+        public void SetPalette(IList<FastColor> palette, bool? hasAlpha = null)
+        {
+            if(palette == null)
+            {
+                _paletteLut = null;
+                _palette = null;
+                return;
+            }
+
+            _paletteLut = new Dictionary<FastColor, ColorContainer>();
+            _palette = new List<ColorContainer>();
+            _hasAlpha = hasAlpha != null && hasAlpha.GetValueOrDefault();
+            for (int i = 0; i < palette.Count; i++)
+            {
+                var c = palette[i];
+                if (_paletteLut.TryGetValue(c, out ColorContainer val))
+                {
+                    val.count++;
+                    continue;
+                }
+                val = new ColorContainer(c, 1, _palette.Count);
+                _paletteLut.Add(c, val);
+                _palette.Add(val);
+
+                if (hasAlpha == null && c.a < 255) { _hasAlpha = true; }
+            }
+
+            _palette.Sort();
+            for (int i = 0; i < _palette.Count; i++)
+            {
+                _palette[i].index = i;
+            }
+
+            ValidateAlpha(_hasAlpha);
+        }
+        public void SetPalette(IList<ColorContainer> palette, bool? hasAlpha = null)
+        {
+            if (palette == null)
+            {
+                _paletteLut = null;
+                _palette = null;
+                return;
+            }
+
+            _paletteLut = new Dictionary<FastColor, ColorContainer>();
+            _palette = new List<ColorContainer>();
+            _hasAlpha = hasAlpha != null && hasAlpha.GetValueOrDefault();
+            for (int i = 0; i < palette.Count; i++)
+            {
+                var c = palette[i];
+                if (_paletteLut.TryGetValue(c.color, out ColorContainer val)) { continue; }
+
+                val = new ColorContainer(c.color, 1, _palette.Count);
+                _paletteLut.Add(c.color, c);
+                _palette.Add(val);
+
+                if (hasAlpha == null && c.color.a < 255) { _hasAlpha = true; }
+            }
+
+            _palette.Sort();
+            for (int i = 0; i < _palette.Count; i++)
+            {
+                _palette[i].index = i;
+            }
+
+            ValidateAlpha(_hasAlpha);
+        }
+
+        protected void GeneratePalette(bool force)
+        {
+            if (_flags.HasFlag(ImageDecoderFlags.ForceNoPalette))
+            {
+                if (HasPalette)
+                {
+                    _paletteLut = null;
+                    _palette = null;
+                }
+                return;
+            }
+
+            if(!force & HasPalette) { return; }
+
+            _hasAlpha = false;
+            _paletteLut = new Dictionary<FastColor, ColorContainer>();
+            _palette = new List<ColorContainer>();
+            for (int i = 0; i < _pixels.Length; i++)
+            {
+                var c = _pixels[i];
+                if (_paletteLut.TryGetValue(c, out ColorContainer val))
+                {
+                    val.count++;
+                    continue;
+                }
+                val = new ColorContainer(c, 1, _palette.Count);
+                _paletteLut.Add(c, val);
+                _palette.Add(val);
+
+                if (c.a < 255) { _hasAlpha = true; }
+            }
+
+            _palette.Sort();
+            for (int i = 0; i < _palette.Count; i++)
+            {
+                _palette[i].index = i;
+            }
+
+            ValidateAlpha(_hasAlpha);
+        }
+
+        public virtual void ValidateFormat()
+        {
+            switch (_colorMode)
+            {
+                case ColorMode.Indexed4:
+                case ColorMode.Indexed8:
+                case ColorMode.Indexed:
+                    if (_flags.HasFlag(ImageDecoderFlags.ForceNoPalette))
+                    {
+                        SetColorMode(ColorMode.RGBA32);
+
+                        if (HasPalette)
+                        {
+                            _palette = null;
+                            _paletteLut = null;
+                        }
+                        return;
+                    }
+                    break;
+            }
+        }
+        public abstract ImageEncodeResult Encode(Stream stream, bool leaveStreamOpen);
 
         public virtual ImageEncodeResult Encode(ImageDecoderBase decoder, Stream stream, bool leaveStreamOpen)
         {
@@ -55,7 +194,6 @@ namespace Joonaxii.Image.Codecs
             CopyFrom(decoder);
             return Encode(stream, leaveStreamOpen);
         }
-        public abstract ImageEncodeResult Encode(Stream stream, bool leaveStreamOpen);
 
         public void SetBitsPerPixel(byte bPP)
         {
@@ -112,7 +250,7 @@ namespace Joonaxii.Image.Codecs
             ValidateAlpha(_hasAlpha);
         }
 
-        protected void ValidateAlpha(bool hasAlpha)
+        protected virtual void ValidateAlpha(bool hasAlpha)
         {
             _hasAlpha = hasAlpha;
             switch (_colorMode)

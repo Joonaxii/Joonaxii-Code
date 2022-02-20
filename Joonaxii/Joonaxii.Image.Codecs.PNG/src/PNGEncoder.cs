@@ -11,26 +11,32 @@ namespace Joonaxii.Image.Codecs.PNG
 {
     public class PNGEncoder : ImageEncoderBase
     {
-        private PNGFlags _flags;
+        public PNGFlags PNGFlags 
+        { 
+            get => _pngFlags;
+            set
+            {
+                _pngFlags = value;
+                _useBrokenSubFilter = _pngFlags.HasFlag(PNGFlags.UseBrokenSubFilter);
+            }
+        }
+
+        private PNGFlags _pngFlags;
         private PNGFilterMethod _overrideFilter;
 
         public PNGEncoder(int width, int height, byte bPP) : base(width, height, bPP)
         {
-            _flags = PNGFlags.None;
+            PNGFlags = PNGFlags.None;
         }
 
         public PNGEncoder(int width, int height, ColorMode mode) : base(width, height, mode)
         {
-            _flags = PNGFlags.None;
+            PNGFlags = PNGFlags.None;
         }
 
         public void SetOverrideFilter(PNGFilterMethod filter) => _overrideFilter = filter;
 
-        public void SetFlags(PNGFlags flags)
-        {
-            _flags = flags;
-        }
-
+        private bool _useBrokenSubFilter;
         public override ImageEncodeResult Encode(Stream stream, bool leaveStreamOpen)
         {
             using (BinaryWriter bw = new BinaryWriter(stream, Encoding.UTF8, leaveStreamOpen))
@@ -38,14 +44,14 @@ namespace Joonaxii.Image.Codecs.PNG
                 bw.Write(0x474E5089);
                 bw.Write(0x0A1A0A0D);
 
-                GeneratePalette();
+                GeneratePalette(_flags.HasFlag(ImageDecoderFlags.ForceRegenPalette));
 
                 bool hasPalette =
-                    _flags.HasFlag(PNGFlags.ForcePalette) & (_flags.HasFlag(PNGFlags.AllowBigIndices) | _palette.Count <= 256) |
-                    (!_flags.HasFlag(PNGFlags.ForceRGB) & _palette.Count <= 256);
+                    _flags.HasFlag(ImageDecoderFlags.ForcePalette) & (_flags.HasFlag(ImageDecoderFlags.AllowBigIndices) | _palette.Count <= 256) |
+                    (!_flags.HasFlag(ImageDecoderFlags.ForceRGB) & _palette.Count <= 256);
                 PNGColorType pngType = hasPalette ? PNGColorType.PALETTE_IDX : _hasAlpha ? PNGColorType.RGB_ALPHA : PNGColorType.RGB;
 
-                System.Diagnostics.Debug.Print($"{_colorMode}, {hasPalette}, {_flags}, {_bpp}");
+                System.Diagnostics.Debug.Print($"{_colorMode}, {hasPalette}, {_pngFlags}, {_bpp}");
                 byte bps = (byte)(_bpp / (_hasAlpha ? 4 : 3));
                 if (!hasPalette)
                 {
@@ -72,7 +78,7 @@ namespace Joonaxii.Image.Codecs.PNG
                         case ColorMode.Indexed4:
                         case ColorMode.Indexed8:
                         case ColorMode.Indexed:
-                            if (_flags.HasFlag(PNGFlags.ForceRGB))
+                            if (_flags.HasFlag(ImageDecoderFlags.ForceRGB))
                             {
                                 pngType = _hasAlpha ? PNGColorType.RGB_ALPHA : PNGColorType.RGB;
                                 SetColorMode(_hasAlpha ?  ColorMode.RGBA32 : ColorMode.RGB24);
@@ -88,8 +94,8 @@ namespace Joonaxii.Image.Codecs.PNG
                 }
                 else
                 {
-                    int requiredBits = IOExtensions.BytesNeeded(_palette.Count) << 3;
-                    int max = (_flags.HasFlag(PNGFlags.AllowBigIndices) ? 32 : 8);
+                    int requiredBits = Maths.BytesNeeded(_palette.Count) << 3;
+                    int max = (_flags.HasFlag(ImageDecoderFlags.AllowBigIndices) ? 32 : 8);
                     requiredBits = requiredBits < 8 ? 8 : requiredBits > max ? max : requiredBits;
 
                     _bpp = (byte)requiredBits;
@@ -104,6 +110,9 @@ namespace Joonaxii.Image.Codecs.PNG
 
                 int posInBuf = 0;
                 byte[] finalBuf = null;
+
+                byte[] dataBuf = null;
+                bool forceFilter = _pngFlags.HasFlag(PNGFlags.ForceFilter);
                 if (hasPalette)
                 {
                     PLTEChunk plt = new PLTEChunk(_palette);
@@ -118,33 +127,50 @@ namespace Joonaxii.Image.Codecs.PNG
                         System.Diagnostics.Debug.Print(alph.ToMinString());
                     }
 
-                    int bytesPP = _bpp >> 3;
-                    finalBuf = new byte[_height + (_width * _height * bytesPP)];
-                    System.Diagnostics.Debug.Print($"Bytes Per Pixel: {bytesPP} // {finalBuf.Length}");
-                    for (int y = 0; y < _height; y++)
+                    if (!forceFilter)
                     {
-                        int yP = y * _width;
+                        int bytesPP = _bpp >> 3;
+                        finalBuf = new byte[_height + (_width * _height * bytesPP)];
+                        System.Diagnostics.Debug.Print($"Bytes Per Pixel: {bytesPP} // {finalBuf.Length}");
 
-                        finalBuf[posInBuf++] = 0;
-                        for (int x = 0; x < _width; x++)
+                        for (int y = 0; y < _height; y++)
                         {
-                            int i = yP + x;
-                            int index = _paletteLut[_pixels[i]].index;
+                            int yP = y * _width;
+                            finalBuf[posInBuf++] = 0;
+                            for (int x = 0; x < _width; x++)
+                            {
+                                int i = yP + x;
+                                int index = _paletteLut[_pixels[i]].index;
 
-                            IOExtensions.WriteToByteArray(finalBuf, posInBuf, index, bytesPP, false);
-                            posInBuf += bytesPP;
+                                IOExtensions.WriteToByteArray(finalBuf, posInBuf, index, bytesPP, false);
+                                posInBuf += bytesPP;
+                            }
                         }
                     }
+                    else
+                    {
+                        int bytesPP = _bpp >> 3;
+                        dataBuf = new byte[(_width * _height * bytesPP)];
+
+                        posInBuf = 0;
+                        for (int i = 0; i < _pixels.Length; i++)
+                        {
+                            int index = _paletteLut[_pixels[i]].index;
+                            IOExtensions.WriteToByteArray(dataBuf, posInBuf, index, bytesPP, false);
+                            posInBuf += bytesPP;
+                        }
+                    }        
                 }
-                else
-                {                    // return ImageEncodeResult.NotSupported;
+                
+                if(!hasPalette | forceFilter)
+                {
 #if DEBUG
                     Dictionary<PNGFilterMethod, int> filterCounts = new Dictionary<PNGFilterMethod, int>();
                     int totalFilters = 0;
 #endif
 
                     posInBuf = 0;
-                    byte[] dataBuf = _pixels.ToBytes(PixelByteOrder.RGBA, false, _width, _height, _colorMode);
+                    dataBuf = dataBuf == null ? _pixels.ToBytes(PixelByteOrder.RGBA, false, _width, _height, _colorMode) : dataBuf;
 
                     int bytesPerPix = (_bpp >> 3);
                     int wW = _width * bytesPerPix;
@@ -162,10 +188,10 @@ namespace Joonaxii.Image.Codecs.PNG
                     for (int y = 0; y < _height; y++)
                     {
                         int scanline = y * wW;
-                        lowFilter = _flags.HasFlag(PNGFlags.OverrideFilter) ? _overrideFilter : PNGFilterMethod.None;
+                        lowFilter = _pngFlags.HasFlag(PNGFlags.OverrideFilter) ? _overrideFilter : PNGFilterMethod.None;
                         ApplyFilter(lowFilter, y, scanline, bytesPerPix, dataBuf, lowestSoFar, wW);
 
-                        if (!_flags.HasFlag(PNGFlags.OverrideFilter)) 
+                        if (!_pngFlags.HasFlag(PNGFlags.OverrideFilter)) 
                         {
                             lowestVariation = GetByteVariation(lowestSoFar, 0, lowestSoFar.Length);
                             ApplyFilter(ref lowestVariation, ref lowFilter, PNGFilterMethod.Sub,     y, scanline,bytesPerPix, dataBuf, writeBuf, lowestSoFar, wW);
@@ -177,16 +203,6 @@ namespace Joonaxii.Image.Codecs.PNG
                         finalBuf[posInBuf++] = (byte)lowFilter;
                         Buffer.BlockCopy(lowestSoFar, 0, finalBuf, posInBuf, wW);
                         posInBuf += wW;
-
-                        if(y == _height -1)
-                        {
-                            string str = "";
-                            for (int i = 0; i < wW; i++)
-                            {
-                                str += $"0x{Convert.ToString(finalBuf[posInBuf - wW + i], 16).PadLeft(2, '0')} ";
-                            }
-                            System.Diagnostics.Debug.Print(str);
-                        }
 #if DEBUG
                         totalFilters++;
                         if (filterCounts.ContainsKey(lowFilter))
@@ -324,42 +340,32 @@ namespace Joonaxii.Image.Codecs.PNG
             }
         }
 
-        private Dictionary<FastColor, ColorContainer> _paletteLut = null;
-        private List<ColorContainer> _palette = null;
-        private void GeneratePalette()
+        protected override void ValidateAlpha(bool hasAlpha)
         {
-            _hasAlpha = _flags.HasFlag(PNGFlags.ForceAlpha);
-            _paletteLut = new Dictionary<FastColor, ColorContainer>();
-            _palette = new List<ColorContainer>();
-            for (int i = 0; i < _pixels.Length; i++)
-            {
-                var c = _pixels[i];
-                if (_paletteLut.TryGetValue(c, out ColorContainer val))
-                {
-                    val.count++;
-                    continue;
-                }
-                val = new ColorContainer(c, 1, _palette.Count);
-                _paletteLut.Add(c, val);
-                _palette.Add(val);
-
-                if (c.a < 255) { _hasAlpha = true; }
-            }
-            _palette.Sort();
-
-            for (int i = 0; i < _palette.Count; i++)
-            {
-                _palette[i].index = i;
-            }
-
-            ValidateAlpha(_hasAlpha);
+            hasAlpha = _flags.HasFlag(ImageDecoderFlags.ForceAlpha) || (hasAlpha & !_flags.HasFlag(ImageDecoderFlags.ForceNoAlpha));
+            base.ValidateAlpha(hasAlpha);
         }
 
         public override void ValidateFormat()
         {
+            base.ValidateFormat();
             switch (_colorMode)
             {
+                case ColorMode.RGBA32:
+                    if (_flags.HasFlag(ImageDecoderFlags.ForceNoAlpha))
+                    {
+                        _colorMode = ColorMode.RGB24;
+                        _bpp = 24;
+                        break;
+                    }
+                    break;
                 case ColorMode.ARGB555:
+                    if (_flags.HasFlag(ImageDecoderFlags.ForceNoAlpha))
+                    {
+                        _colorMode = ColorMode.RGB24;
+                        _bpp = 24;
+                        break;
+                    }
                     _colorMode = ColorMode.RGBA32;
                     _bpp = 32;
                     break;
@@ -383,10 +389,6 @@ namespace Joonaxii.Image.Codecs.PNG
             }
         }
 
-        //The data array is the original bytes, targetData is the current scanline to write
-        //so it's length is the width of the image in bytes
-        //The scanline parameter is current Y pos times the width of the image in bytes.
-
         private byte Sub(int x, int scanline, int bytesPerPix, byte[] data)   =>      x < bytesPerPix ? (byte)0 : data[scanline - bytesPerPix];
         private byte Prior(int x, int y, int w, byte[] data) => (x < 0 | y < 1) ? (byte)0 : data[(y - 1)  * w + x];
 
@@ -394,7 +396,7 @@ namespace Joonaxii.Image.Codecs.PNG
         {
             int i = scanline + x;
             byte valA = data[i];
-            byte valB = Sub(x, i, bytesPerPix, data);
+            byte valB = Sub(x, i, _useBrokenSubFilter ? 1 : bytesPerPix, data);
 
             targetData[x] = (byte)((valA - valB) % 256);
         }
@@ -412,7 +414,7 @@ namespace Joonaxii.Image.Codecs.PNG
         {
             int i = y * targetData.Length + x;
             byte valA = data[i];
-            byte valB = Sub(x, i,bytesPerPix, data);
+            byte valB = Sub(x, i, _useBrokenSubFilter ? 1 : bytesPerPix, data);
             byte valC = Prior(x, y, targetData.Length, data);
 
             targetData[x] = (byte)((valA - ((valB + valC) >> 1)) % 256);
@@ -423,9 +425,9 @@ namespace Joonaxii.Image.Codecs.PNG
             int i = y * targetData.Length + x;
 
             byte o = data[i];
-            byte a = Sub(x, i, bytesPerPix, data);
+            byte a = Sub(x, i, _useBrokenSubFilter ? 1 : bytesPerPix, data);
             byte b = Prior(x, y, targetData.Length, data);
-            byte c = Prior(x - bytesPerPix, y, targetData.Length, data);
+            byte c = Prior(_useBrokenSubFilter ? x - 1 : x - bytesPerPix, y, targetData.Length, data);
 
             int p = a + b - c;
 

@@ -47,6 +47,7 @@
     <Compile Include="src\ImageEncoderBase.cs" />
     <Compile Include="src\ImageEncodeResult.cs" />
     <Compile Include="src\ImageCodecExtensions.cs" />
+    <Compile Include="src\ImageDecoderFlags.cs" />
     <Compile Include="src\PixelByteOrder.cs" />
   </ItemGroup>
   <ItemGroup>

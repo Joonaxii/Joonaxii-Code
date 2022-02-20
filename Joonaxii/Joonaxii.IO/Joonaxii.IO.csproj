@@ -65,6 +65,7 @@
   <ItemGroup>
     <Compile Include="src\Bit256.cs" />
     <Compile Include="src\BitReader.cs" />
+    <Compile Include="src\BitReaderFlags.cs" />
     <Compile Include="src\BitWriter.cs" />
     <Compile Include="src\IBinaryIO.cs" />
     <Compile Include="src\IBitIO.cs" />

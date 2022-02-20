@@ -31,6 +31,65 @@ namespace Joonaxii.Radio
             new VOXTone(1500, 100),
         };
 
+
+        public static VOXTone[] TheRollVOX
+        { get; } = new VOXTone[]
+        {
+
+            //Give you up
+            new VOXTone(440.00, 130, 25.0, 25),
+            new VOXTone(0, 70),
+
+            new VOXTone(493.88, 130, 25.0, 25),
+            new VOXTone(0, 70),
+
+            new VOXTone(587.33, 130, 25.0, 25),
+            new VOXTone(0, 70),
+
+            new VOXTone(493.88, 130, 25.0, 25),
+            new VOXTone(0, 70),
+
+
+            new VOXTone(739.99, 130, 25.0, 25),
+            new VOXTone(0, 70 * 5),
+
+            new VOXTone(739.99, 130, 25.0, 25),
+            new VOXTone(0, 70 * 5),
+
+            new VOXTone(659.25, 130, 25.0, 25),
+            new VOXTone(0, 70 * 10),
+
+            //Let you down
+            new VOXTone(440.00, 130, 25.0, 25),
+            new VOXTone(0, 70),
+
+            new VOXTone(493.88, 130, 25.0, 25),
+            new VOXTone(0, 70),
+
+            new VOXTone(587.33, 130, 25.0, 25),
+            new VOXTone(0, 70),
+
+            new VOXTone(493.88, 130, 25.0, 25),
+            new VOXTone(0, 70),
+
+
+            new VOXTone(659.25, 130, 25.0, 25),
+            new VOXTone(0, 70 * 5),
+
+            new VOXTone(659.25, 130, 25.0, 25),
+            new VOXTone(0, 70 * 5),
+
+            new VOXTone(587.33, 130, 25.0, 25),
+            new VOXTone(0, 70 * 5),
+
+            new VOXTone(554.37, 130, 25.0, 25),
+            new VOXTone(0, 70),
+
+            new VOXTone(493.88, 130, 25.0, 25),
+            new VOXTone(0, 70),
+        };
+
+
         public static VOXTone[] MegalovaniaVOX
         { get; } = new VOXTone[]
         {

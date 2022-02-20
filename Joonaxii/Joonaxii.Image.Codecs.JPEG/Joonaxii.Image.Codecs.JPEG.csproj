@@ -42,8 +42,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="src\BitStream.cs" />
+    <Compile Include="src\IDCT.cs" />
     <Compile Include="src\JPEGDecoder.cs" />
+    <Compile Include="src\JPEGHuffmanNode.cs" />
     <Compile Include="src\JPEGMarker.cs" />
+    <Compile Include="src\JPEGMode.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Joonaxii.Data.Coding\Joonaxii.Data.Coding.csproj">
@@ -69,6 +73,10 @@
     <ProjectReference Include="..\Joonaxii.MathJX\Joonaxii.MathJX.csproj">
       <Project>{0a47274a-b72f-4601-b3f1-beab27216bed}</Project>
       <Name>Joonaxii.MathJX</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.Pooling\Joonaxii.Pooling.csproj">
+      <Project>{5D936D6E-23EC-4234-BEB3-EBBA8D7E04E8}</Project>
+      <Name>Joonaxii.Pooling</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

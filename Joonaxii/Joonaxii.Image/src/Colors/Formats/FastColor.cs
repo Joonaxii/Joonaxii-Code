@@ -11,6 +11,33 @@ namespace Joonaxii.Image
         public static FastColor black { get; } = new FastColor(0, 0, 0);
         public static FastColor white { get; } = new FastColor(255, 255, 255);
 
+        public byte this[int i]
+        {
+            get
+            {
+                switch (i)
+                {
+                    default: throw new IndexOutOfRangeException($"Index outside of the range 0 - 3");
+                    case 0: return r;
+                    case 1: return g;
+                    case 2: return b;
+                    case 3: return a;
+                }
+            }
+
+            set
+            {
+                switch (i)
+                {
+                    default: throw new IndexOutOfRangeException($"Index outside of the range 0 - 3");
+                    case 0: r = value; break;
+                    case 1: g = value; break;
+                    case 2: b = value; break;
+                    case 3: a = value; break;
+                }
+            }
+        }
+
         [FieldOffset(0)] private int _rgba;
 
         [FieldOffset(0)] public byte r;
@@ -43,18 +70,35 @@ namespace Joonaxii.Image
             this.b = v;
             a = 255;
         }
+
+        public FastColor(byte v, byte a)
+        {
+            _rgba = 0;
+            this.r = v;
+            this.g = v;
+            this.b = v;
+            this.a = a;
+        }
+
         public FastColor(int rgba) : this()
         {
             _rgba = rgba;
         }
 
-        public static implicit operator int(FastColor c) => c._rgba;
+        public static explicit operator int(FastColor c) => c._rgba;
+        public static explicit operator uint(FastColor c) => (uint)c._rgba;
 
         public override bool Equals(object obj) => obj is FastColor color && Equals(color);
         public bool Equals(FastColor other) => _rgba == other._rgba;
         public override int GetHashCode() => _rgba;
 
         public float GetScalar() => r + b + g + a;
+
+        public static bool operator <(FastColor cA, FastColor cB) => (cA.r < cB.r) & (cA.g < cB.g) & (cA.b < cB.b) & (cA.a < cB.a);
+        public static bool operator >(FastColor cA, FastColor cB) => (cA.r > cB.r) & (cA.g > cB.g) & (cA.b > cB.b) & (cA.a > cB.a);
+
+        public static bool operator <=(FastColor cA, FastColor cB) => (cA.r <= cB.r) & (cA.g <= cB.g) & (cA.b <= cB.b) & (cA.a <= cB.a);
+        public static bool operator >=(FastColor cA, FastColor cB) => (cA.r >= cB.r) & (cA.g >= cB.g) & (cA.b >= cB.b) & (cA.a >= cB.a);
 
         public static FastColor operator *(FastColor c0, FastColor c1)
         {

@@ -59,10 +59,13 @@ namespace Joonaxii.Image.Codecs.PNG
                         case PNGChunkType.IEND: break;
 
                         default:
-                            if (chunkLut.ContainsKey(chnk.chunkType)) { return ImageDecodeResult.DuplicateChunkFound; }
+                            if (chunkLut.ContainsKey(chnk.chunkType)) 
+                            {
+                                System.Diagnostics.Debug.Print($"Found a duplicate of '{chnk.chunkType}'");
+                                return ImageDecodeResult.DuplicateChunkFound; 
+                            }
 
                             chunkLut.Add(chnk.chunkType, chnk);
-
                             switch (chnk.chunkType)
                             {
                                 case PNGChunkType.IHDR:
@@ -98,6 +101,7 @@ namespace Joonaxii.Image.Codecs.PNG
                             gammaChnk = chnk as gAMAChunk;
                             break;
 
+                        case PNGChunkType.tEXt:
                         case PNGChunkType.iTXt:
                         case PNGChunkType.zTXt:
                             break;

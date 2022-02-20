@@ -25,14 +25,34 @@ namespace Joonaxii.MathJX
 
         public static byte GetRange(this byte val, int start, int length)
         {
-            byte v = 0;
+            byte v = (byte)(val >> start);
+            return (byte)(v & ((1 << length) - 1));
+        }
 
-            int ii = 0;
-            for (int i = start; i < start + length; i++)
+        public static byte GetRangeReverse(this byte val, int start, int length)
+        {
+            int tgt = start + length - 1;
+            int mask = ((1 << tgt) - 1);
+            if (start != 0)
             {
-                v = v.SetBit(ii++, val.IsBitSet(i));
+                mask &= ~((1 << start) - 1);
             }
-            return v;
+            byte v = (byte)(val & mask);
+            return v.Reverse();
+        }
+
+        public static byte Reverse(this byte val)
+        {
+            int v= 0;
+            v += ((val & 0x80) >> 7) << 0;
+            v += ((val & 0x40) >> 6) << 1;
+            v += ((val & 0x20) >> 5) << 2;
+            v += ((val & 0x10) >> 4) << 3;
+            v += ((val & 0x08) >> 3) << 4;
+            v += ((val & 0x04) >> 2) << 5;
+            v += ((val & 0x02) >> 1) << 6;
+            v += ((val & 0x01) >> 0) << 7;
+            return (byte)v;
         }
 
         public static float Remap(float input, float minA, float maxA, float minB, float maxB) => Lerp(minB, maxB, InverseLerp(minA, maxA, input));
@@ -132,6 +152,20 @@ namespace Joonaxii.MathJX
                 shift += 7;
             }
             return count;
+        }
+
+        public static byte BytesNeeded(long value) => BytesNeeded((ulong)value);
+        public static byte BytesNeeded(ulong value)
+        {
+            if (value == 0) { return 1; }
+
+            byte c = 0;
+            while (value != 0)
+            {
+                value >>= 8;
+                c++;
+            }
+            return c;
         }
 
         public static bool IsBitSet(this long val, int bit) => (val & (1L << bit)) != 0;

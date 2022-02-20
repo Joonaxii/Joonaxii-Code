@@ -68,8 +68,6 @@ namespace Joonaxii.Image.Codecs
                 default: return false;
                 case ColorMode.Indexed4:
                 case ColorMode.Indexed8:
-                case ColorMode.RGB555:
-                case ColorMode.RGB565:
                     return true;
             }
         }
@@ -348,12 +346,12 @@ namespace Joonaxii.Image.Codecs
             return count;
         }
 
-        public static void WriteColors(this BitWriter bw, FastColor[] colors) => WriteColors(bw, colors, colors.Length, ColorMode.RGBA32, false);
-        public static void WriteColors(this BitWriter bw, FastColor[] colors, int count) => WriteColors(bw, colors, count, ColorMode.RGBA32, false);
-        public static void WriteColors(this BitWriter bw, FastColor[] colors, ColorMode pFmt) => WriteColors(bw, colors, colors.Length, pFmt, false);
-        public static void WriteColors(this BitWriter bw, FastColor[] colors, int count, ColorMode pFmt, bool reverse)
+        public static void WriteColors(this BitWriter bw, IList<FastColor> colors) => WriteColors(bw, colors, colors.Count, ColorMode.RGBA32, false);
+        public static void WriteColors(this BitWriter bw, IList<FastColor> colors, int count) => WriteColors(bw, colors, count, ColorMode.RGBA32, false);
+        public static void WriteColors(this BitWriter bw, IList<FastColor> colors, ColorMode pFmt) => WriteColors(bw, colors, colors.Count, pFmt, false);
+        public static void WriteColors(this BitWriter bw, IList<FastColor> colors, int count, ColorMode pFmt, bool reverse)
         {
-            count = colors.Length < count ? colors.Length : count;
+            count = colors.Count < count ? colors.Count : count;
             for (int i = 0; i < count; i++)
             {
                 WriteColor(bw, colors[i], pFmt, reverse);
@@ -418,7 +416,7 @@ namespace Joonaxii.Image.Codecs
                     return new FastColor(r, g, b, a);
             }
         }
-        public static void WriteColor(this BinaryWriter bw, FastColor color) => bw.Write(color);
+        public static void WriteColor(this BinaryWriter bw, FastColor color) => bw.Write((uint)color);
 
         public static FastColor ReadColor(this BinaryReader br, ColorMode pFmt, bool reverse)
         {
@@ -497,7 +495,7 @@ namespace Joonaxii.Image.Codecs
         {
             switch (pFmt)
             {
-                default: bw.Write(color, 32); break;
+                default: bw.Write((uint)color, 32); break;
                 case ColorMode.Indexed4:
                     bw.Write(color.r, 4);
                     break;
@@ -553,7 +551,7 @@ namespace Joonaxii.Image.Codecs
                         bw.Write(color.a);
                         break;
                     }
-                    bw.Write(color, 32); 
+                    bw.Write((uint)color, 32); 
                     break;
                     //case 64:
                     //    bw.Write((ushort)(color.r * BYTE_TO_USHORT));
@@ -599,8 +597,8 @@ namespace Joonaxii.Image.Codecs
                     if (reverse)
                     {
                         return new FastColor(
-                            From5Bit((byte)((val & 0xF800) >> 11)),
-                            From6Bit((byte)((val & 0x7E0) >> 6)),
+                            From5Bit((byte)((val >> 11) & 0x1F)),
+                            From6Bit((byte)(((val >> 5) & 0x3F))),
                             From5Bit((byte)((val & 0x1F))), 255);
                     }
                     return new FastColor(

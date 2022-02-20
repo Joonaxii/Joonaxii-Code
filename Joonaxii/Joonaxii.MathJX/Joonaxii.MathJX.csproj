@@ -63,6 +63,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="src\BufferUtils.cs" />
     <Compile Include="src\ComparisonType.cs" />
     <Compile Include="src\Maths.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

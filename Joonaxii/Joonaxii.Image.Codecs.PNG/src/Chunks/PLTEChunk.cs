@@ -31,8 +31,6 @@ namespace Joonaxii.Image.Codecs.PNG
                 }
                 length = palLen;
                 crc = GetCrc();
-
-                System.Diagnostics.Debug.Print($"Palette should be {palLen + 12} bytes long");
             }
         }
 

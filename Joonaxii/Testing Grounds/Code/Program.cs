@@ -13,7 +13,11 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using Joonaxii.Image.Codecs.BMP;
-using Joonaxii.Image.Codecs.JPEG;
+using Joonaxii.Collections;
+using New.JPEG;
+using Joonaxii.Image.Codecs.VTF;
+using Joonaxii.Image.Codecs.Raw;
+using Joonaxii.Image.Texturing;
 
 namespace Testing_Grounds
 {
@@ -47,22 +51,123 @@ namespace Testing_Grounds
         {
             Console.InputEncoding = Encoding.UTF8;
             Console.OutputEncoding = Encoding.UTF8;
+
             string path = "";
 
-            startJPG:
+            startTEXTURE:
             Console.Clear();
-            Console.WriteLine("Enter the full path of the testable JPG");
+            Console.WriteLine("Enter the full path of the PNG");
             path = Console.ReadLine().Replace("\"", "");
 
-            if (!File.Exists(path)) { goto startJPG; }
+            if (!File.Exists(path)) { goto startTEXTURE; }
 
             using (FileStream fs = new FileStream(path, FileMode.Open))
-            using (JPEGDecoder jpeg = new JPEGDecoder(fs))
+            using (PNGDecoder png = new PNGDecoder(fs))
             {
-                var res = jpeg.Decode(false);
-                Console.WriteLine($"Done [{res}]");
+                var res = png.Decode(false);
+                Console.WriteLine($"PNG Done [{res}]");
+
+                if (res == ImageDecodeResult.Success)
+                {
+                    using (Texture tex = new Texture(png.Width, png.Height, ColorMode.RGB24))
+                    using (FileStream fsP = new FileStream($"{Path.GetDirectoryName(path)}/{Path.GetFileNameWithoutExtension(path)}_PNG.png", FileMode.Create))
+                    using (FileStream fsPGR = new FileStream($"{Path.GetDirectoryName(path)}/{Path.GetFileNameWithoutExtension(path)}_PNG GR.png", FileMode.Create))
+                    using (PNGEncoder pngEnc = new PNGEncoder(png.Width, png.Height, ColorMode.RGB24))
+                    {
+                        pngEnc.Flags = ImageDecoderFlags.ForceRGB;
+                        var pix = png.GetPixelsRef();
+                        tex.SetPixels(pix);
+                        pix = tex.GetPixels();
+                        pngEnc.SetPixelsRef(ref pix);
+
+                        var pngRes = pngEnc.Encode(fsP, true);
+                        Console.WriteLine($"PNG Done [{pngRes}]");
+
+                        tex.SetPixels(pix);
+                        tex.Format = ColorMode.Grayscale;
+                        pix = tex.GetPixels();
+                        pngEnc.SetPixelsRef(ref pix);
+
+                        pngRes = pngEnc.Encode(fsPGR, true);
+                        Console.WriteLine($"PNG Gray Done [{pngRes}]");
+                    }
+                }
                 Console.ReadKey();
             }
+
+            //startVTF:
+            //Console.Clear();
+            //Console.WriteLine("Enter the full path of the VTF file");
+            //path = Console.ReadLine().Replace("\"", "");
+
+            //if (!File.Exists(path)) { goto startVTF; }
+
+            //using (FileStream fs = new FileStream(path, FileMode.Open))
+            //using (VTFDecoder vtf = new VTFDecoder(fs))
+            //{
+            //    var res = vtf.Decode(false);
+            //    Console.WriteLine($"VTF Done [{res}]");
+
+            //    if (res == ImageDecodeResult.Success)
+            //    {
+            //        if (vtf.HasThumbnail)
+            //        {
+            //            using (FileStream fsP = new FileStream($"{Path.GetDirectoryName(path)}/{Path.GetFileNameWithoutExtension(path)}_Thumb_PNG.png", FileMode.Create))
+            //            using (PNGEncoder pngEnc = new PNGEncoder(vtf.ThumbnailHeight, vtf.ThumbnailWidth, ColorMode.RGB24))
+            //            {
+            //                pngEnc.SetFlags(PNGFlags.ForceRGB | PNGFlags.ForceNoAlpha);
+            //                var pix = vtf.GetThumbnailRef();
+            //                pngEnc.SetPixelsRef(ref pix);
+            //                var pngRes = pngEnc.Encode(fsP, true);
+            //                Console.WriteLine($"PNG Thumb Done [{pngRes}]");
+            //            }
+            //        }
+
+            //        using (FileStream fsP = new FileStream($"{Path.GetDirectoryName(path)}/{Path.GetFileNameWithoutExtension(path)}_PNG.png", FileMode.Create))
+            //        using (PNGEncoder pngEnc = new PNGEncoder(vtf.Width, vtf.Height, ColorMode.RGB24))
+            //        {
+            //            pngEnc.SetFlags(PNGFlags.ForceRGB | PNGFlags.ForceNoAlpha);
+            //            var pix = vtf.GetPixelsRef();
+            //            pngEnc.SetPixelsRef(ref pix);
+            //            var pngRes = pngEnc.Encode(fsP, true);
+            //            Console.WriteLine($"PNG Done [{pngRes}]");
+            //        }
+
+            //    }
+
+            //    Console.ReadKey();
+            //}
+
+
+            //startJPG:
+            //Console.Clear();
+            //Console.WriteLine("Enter the full path of the testable JPG");
+            //path = Console.ReadLine().Replace("\"", "");
+
+            //if (!File.Exists(path)) { goto startJPG; }
+
+            //using (FileStream fs = new FileStream(path, FileMode.Open))
+            //using (JPEGDecoder jpeg = new JPEGDecoder(fs))
+            //{
+            //    var res = jpeg.Decode(false);
+            //    Console.WriteLine($"JPEG Done [{res}]");
+
+            //    if (res == ImageDecodeResult.Success)
+            //    {
+            //        using (FileStream fsP = new FileStream($"{Path.GetDirectoryName(path)}/{Path.GetFileNameWithoutExtension(path)}_PNG.png", FileMode.Create))
+            //        using (PNGEncoder pngEnc = new PNGEncoder(jpeg.Width, jpeg.Height, ColorMode.RGB24))
+            //        {
+            //            pngEnc.SetFlags(PNGFlags.ForceRGB);
+            //            var pix = jpeg.GetPixelsRef();
+            //            pngEnc.SetPixelsRef(ref pix);
+            //            var pngRes = pngEnc.Encode(fsP, true);
+            //            Console.WriteLine($"PNG Done [{pngRes}]");
+            //        }
+
+            //    }
+
+            //    Console.ReadKey();
+            //}
 
             startPNG:
             Console.Clear();
@@ -83,27 +188,64 @@ namespace Testing_Grounds
                     default: Console.WriteLine($"PNG Decode Failed: [{res}]"); break;
                     case ImageDecodeResult.Success:
                         Console.WriteLine($"PNG Decode {res}!");
-                        using (FileStream fsBEnc = new FileStream($"{dirP}/{namP}_PAL BMP.bmp", FileMode.Create))
-                        using (BMPEncoder bmpEnc = new BMPEncoder(decPNG.Width, decPNG.Height, decPNG.ColorMode))
                         using (FileStream fsEnc = new FileStream($"{dirP}/{namP}_PAL.png", FileMode.Create))
+                        using (FileStream fsEncFilt = new FileStream($"{dirP}/{namP}_PAL_Filter.png", FileMode.Create))
+                        using (FileStream fsEncFiltF = new FileStream($"{dirP}/{namP}_PAL_Forced_Filter.png", FileMode.Create))
+                        using (FileStream fsEncBroken = new FileStream($"{dirP}/{namP}_PAL_Broken.png", FileMode.Create))
                         using (PNGEncoder encPNG = new PNGEncoder(decPNG.Width, decPNG.Height, decPNG.ColorMode))
                         {
                             var pix = decPNG.GetPixelsRef();
                             encPNG.SetPixelsRef(ref pix);
-                            bmpEnc.SetPixelsRef(ref pix);
+                       
+                            encPNG.Flags = ImageDecoderFlags.AllowBigIndices | ImageDecoderFlags.ForceRGB;
+                            encPNG.PNGFlags = PNGFlags.UseBrokenSubFilter | PNGFlags.OverrideFilter;
+                            encPNG.SetOverrideFilter(PNGFilterMethod.Average);
 
-                            //encPNG.SetFlags(PNGFlags.AllowBigIndices | PNGFlags.ForceRGB /*| PNGFlags.OverrideFilter*/);
-                            //encPNG.SetOverrideFilter(PNGFilterMethod.Paeth);
-
-                            bmpEnc.SetColorMode(ColorMode.RGB24);
-                            bmpEnc.Encode(fsBEnc, false);
                             var resEnc = encPNG.Encode(fsEnc, false);
                             switch (resEnc)
                             {
-                                default: Console.WriteLine($"PNG Encode Failed: [{resEnc}]"); break;
+                                default: Console.WriteLine($"PNG Encode Failed: [{resEnc}, {encPNG.Flags}]"); break;
                                 case ImageEncodeResult.Success:
-                                    Console.WriteLine($"PNG Encode {resEnc}!");
-                            
+                                    Console.WriteLine($"PNG Encode [{resEnc}, {encPNG.Flags}]!");
+                                    break;
+                            }
+
+                            encPNG.Flags = (ImageDecoderFlags.AllowBigIndices | ImageDecoderFlags.ForcePalette  /*| PNGFlags.OverrideFilter*/);
+                            encPNG.PNGFlags = PNGFlags.ForceFilter;
+                            //encPNG.SetOverrideFilter(PNGFilterMethod.Paeth);
+
+                            resEnc = encPNG.Encode(fsEncFilt, false);
+                            switch (resEnc)
+                            {
+                                default: Console.WriteLine($"PNG Encode Failed: [{resEnc}, {encPNG.Flags}]"); break;
+                                case ImageEncodeResult.Success:
+                                    Console.WriteLine($"PNG Encode [{resEnc}, {encPNG.Flags}]!");
+                                    break;
+                            }
+
+                            encPNG.Flags = (ImageDecoderFlags.AllowBigIndices | ImageDecoderFlags.ForcePalette /*| PNGFlags.OverrideFilter*/);
+                            encPNG.PNGFlags = PNGFlags.ForceFilter | PNGFlags.OverrideFilter;
+                            encPNG.SetOverrideFilter(PNGFilterMethod.Paeth);
+
+                            resEnc = encPNG.Encode(fsEncFiltF, false);
+                            switch (resEnc)
+                            {
+                                default: Console.WriteLine($"PNG Encode Failed: [{resEnc}, {encPNG.Flags}]"); break;
+                                case ImageEncodeResult.Success:
+                                    Console.WriteLine($"PNG Encode [{resEnc}, {encPNG.Flags}]!");
+                                    break;
+                            }
+
+                            encPNG.Flags = (ImageDecoderFlags.AllowBigIndices | ImageDecoderFlags.ForcePalette/*| PNGFlags.OverrideFilter*/);
+                            encPNG.PNGFlags = PNGFlags.None;
+                           //encPNG.SetOverrideFilter(PNGFilterMethod.Paeth);
+
+                           resEnc = encPNG.Encode(fsEncBroken, false);
+                            switch (resEnc)
+                            {
+                                default: Console.WriteLine($"PNG Encode Failed: [{resEnc}, {encPNG.Flags}]"); break;
+                                case ImageEncodeResult.Success:
+                                    Console.WriteLine($"PNG Encode [{resEnc}, {encPNG.Flags}]!");
                                     break;
                             }
                         }
@@ -127,7 +269,14 @@ namespace Testing_Grounds
             using (FileStream fsB = new FileStream(path, FileMode.Open))
             using (PNGDecoder png = new PNGDecoder(fsB))
             {
-                png.Decode(false);
+                var res = png.Decode(false);
+
+                if (res != ImageDecodeResult.Success)
+                {
+                    Console.WriteLine($"PNG decode failed! [{res}]");
+                    Console.ReadKey();
+                    goto start;
+                }
                 w = png.Width;
                 h = png.Height;
                 pixels = new FastColor[w * h];
@@ -143,13 +292,13 @@ namespace Testing_Grounds
                 //SSTVProtocol.Martin1,
                 //SSTVProtocol.Martin2,
 
-                SSTVProtocol.PD50,
-                SSTVProtocol.PD90,
-                SSTVProtocol.PD120,
-                SSTVProtocol.PD160,
-                SSTVProtocol.PD180,
-                SSTVProtocol.PD240,
-                SSTVProtocol.PD290,
+                //SSTVProtocol.PD50,
+                //SSTVProtocol.PD90,
+                //SSTVProtocol.PD120,
+                //SSTVProtocol.PD160,
+                //SSTVProtocol.PD180,
+                //SSTVProtocol.PD240,
+                //SSTVProtocol.PD290,
 
                 //SSTVProtocol.Scottie1,
                 //SSTVProtocol.Scottie2,
@@ -159,10 +308,10 @@ namespace Testing_Grounds
                 //SSTVProtocol.ScottieDX,
                 //SSTVProtocol.ScottieDX2,
 
-                //SSTVProtocol.Robot12,
-                //SSTVProtocol.Robot24,
-                //SSTVProtocol.Robot36,
-                //SSTVProtocol.Robot72,
+                SSTVProtocol.Robot12,
+                SSTVProtocol.Robot24,
+                SSTVProtocol.Robot36,
+                SSTVProtocol.Robot72,
 
                 //SSTVProtocol.Scottie1,
                 //SSTVProtocol.Scottie2,
@@ -177,7 +326,7 @@ namespace Testing_Grounds
                 {
                     wav.Setup(1, 44100 >> 2, 16);
                     wav.WriteStaticData();
-                    using (SSTVEncoder sstv = new SSTVEncoder(wav, false, protocols[i], SSTVFlags.CenterX, SSTVEncoder.MegalovaniaVOX))
+                    using (SSTVEncoder sstv = new SSTVEncoder(wav, false, protocols[i], SSTVFlags.CenterX, SSTVEncoder.TheRollVOX))
                     {
                         sstv.VOXToneDurationScale = 0.5;
                         var res = sstv.Encode(pixels, w, h);

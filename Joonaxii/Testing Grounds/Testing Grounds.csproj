@@ -21,7 +21,7 @@
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+    <WarningLevel>0</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -124,6 +124,10 @@
       <Project>{AEBFEDB7-0836-4E95-B9C9-13E9DFED9507}</Project>
       <Name>Joonaxii.Image.Codecs</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.Image.Misc.VTF\Joonaxii.Image.Misc.VTF.csproj">
+      <Project>{33ABEA83-B324-44DD-9BAF-306624EA880C}</Project>
+      <Name>Joonaxii.Image.Misc.VTF</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Joonaxii.Image.Processing\Joonaxii.Image.Processing.csproj">
       <Project>{5C45FEF5-470C-4696-B328-F884DACE518E}</Project>
       <Name>Joonaxii.Image.Processing</Name>
@@ -159,6 +163,10 @@
     <ProjectReference Include="..\Joonaxii.Text.Compression\Joonaxii.Text.Compression.csproj">
       <Project>{afe98590-27f0-4467-80cb-f00c87dc239a}</Project>
       <Name>Joonaxii.Text.Compression</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\New.JPEG\New.JPEG.csproj">
+      <Project>{819032E2-7186-46D4-8EAF-9CE987F5AE7F}</Project>
+      <Name>New.JPEG</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

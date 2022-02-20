@@ -58,7 +58,6 @@ namespace Joonaxii.Image.Codecs
         }
 
         public abstract void ValidateFormat();
-
         public abstract ImageDecodeResult Decode(bool skipHeader);
 
         public byte[] GetBytes(PixelByteOrder byteOrder, bool invertY) => _pixels.ToBytes(byteOrder, invertY, _width, _height, _colorMode);
@@ -91,6 +90,5 @@ namespace Joonaxii.Image.Codecs
 
             _pixels = null;
         }
-
     }
 }

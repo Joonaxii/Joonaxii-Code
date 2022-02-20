@@ -7,6 +7,7 @@ using System.IO;
 using System;
 using Joonaxii.Debugging;
 using Joonaxii.Data;
+using Joonaxii.MathJX;
 
 namespace Joonaxii.Image.Codecs.Raw
 {
@@ -67,6 +68,40 @@ namespace Joonaxii.Image.Codecs.Raw
                     stamp.Stamp();
                 }
 
+                bool writePalette = true;
+                var palMode = _colorMode;
+                switch (res)
+                {
+                    case RawTextureCompressMode.aRLE:
+                        writePalette = false;
+
+                        switch (_colorMode)
+                        {
+                            case ColorMode.ARGB555:
+                            case ColorMode.RGBA32: break;
+                            default: res = RawTextureCompressMode.None; break;
+                        }
+                        break;
+                    case RawTextureCompressMode.IdxaRLE:
+                        switch (_colorMode)
+                        {
+                            case ColorMode.ARGB555:
+                            case ColorMode.RGBA32: break;
+                            default: res = RawTextureCompressMode.IdxRLE; break;
+                        }
+
+                        if (res != RawTextureCompressMode.IdxaRLE) { break; }
+                        switch (palMode)
+                        {
+                            case ColorMode.RGBA32:
+                            case ColorMode.ARGB555:
+                                palMode = ColorMode.RGB24;
+                                break;
+                        }
+                        break;
+                }
+
+
                 stamp.Start("Header Writing");
                 hdr.WriteHeader(bw);
 
@@ -99,40 +134,7 @@ namespace Joonaxii.Image.Codecs.Raw
                     Console.WriteLine(stamp.ToString());
                     return ImageEncodeResult.Success;
                 }
-
-                bool writePalette = true;
-                var palMode = _colorMode;
-
-                switch (res)
-                {
-                    case RawTextureCompressMode.aRLE:
-                        writePalette = false;
-
-                        switch (_colorMode)
-                        {
-                            case ColorMode.ARGB555:
-                            case ColorMode.RGBA32:break;
-                            default: res = RawTextureCompressMode.None; break;
-                        }
-                        break;
-                    case RawTextureCompressMode.IdxaRLE:
-                        switch (_colorMode)
-                        {
-                            case ColorMode.ARGB555:
-                            case ColorMode.RGBA32: break;
-                            default: res = RawTextureCompressMode.IdxRLE; break;
-                        }
-
-                        if(res != RawTextureCompressMode.IdxaRLE) { break; }
-                        switch (palMode)
-                        {
-                            case ColorMode.RGBA32:
-                                palMode = ColorMode.RGB24;
-                                    break;
-                        }
-                        break;
-                }
-
+          
                 Dictionary<FastColor, int> palette = new Dictionary<FastColor, int>();
                 if (writePalette) 
                 {
@@ -145,8 +147,14 @@ namespace Joonaxii.Image.Codecs.Raw
                         palette.Add(c, palette.Count);
                         paletteL.Add(c);
                     }
+
+                    int enc = Maths.Encode7Bit(paletteL.Count);
+                    int dec = Maths.Decode7Bit(enc);
+
+                    System.Diagnostics.Debug.Print($"TEST: {paletteL.Count} => {enc} => {dec}");
+
                     bw.Write7BitInt(paletteL.Count);
-                    bw.WriteColors(paletteL.ToArray(), palMode);
+                    bw.WriteColors(paletteL, palMode);
                     stamp.Stamp();
                     paletteL.Clear();
                 }
@@ -261,6 +269,7 @@ namespace Joonaxii.Image.Codecs.Raw
 
         public override void ValidateFormat()
         {
+            base.ValidateFormat();
             switch (_colorMode)
             {
                 case ColorMode.ARGB555:
