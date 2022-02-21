@@ -120,17 +120,21 @@
       <Project>{C692A977-3C93-4F62-BF7F-4D9DCFCCA578}</Project>
       <Name>Joonaxii.Image.Codecs.Raw</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.Image.Codecs.VTF\Joonaxii.Image.Codecs.VTF.csproj">
+      <Project>{e7eb5d06-0258-4598-8c01-f75b83f864f9}</Project>
+      <Name>Joonaxii.Image.Codecs.VTF</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Joonaxii.Image.Codecs\Joonaxii.Image.Codecs.csproj">
       <Project>{AEBFEDB7-0836-4E95-B9C9-13E9DFED9507}</Project>
       <Name>Joonaxii.Image.Codecs</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Joonaxii.Image.Misc.VTF\Joonaxii.Image.Misc.VTF.csproj">
-      <Project>{33ABEA83-B324-44DD-9BAF-306624EA880C}</Project>
-      <Name>Joonaxii.Image.Misc.VTF</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Joonaxii.Image.Processing\Joonaxii.Image.Processing.csproj">
       <Project>{5C45FEF5-470C-4696-B328-F884DACE518E}</Project>
       <Name>Joonaxii.Image.Processing</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.Image.Texturing\Joonaxii.Image.Texturing.csproj">
+      <Project>{8AA57CC5-4A7A-4789-8DB7-A73B98E76B71}</Project>
+      <Name>Joonaxii.Image.Texturing</Name>
     </ProjectReference>
     <ProjectReference Include="..\Joonaxii.Image\Joonaxii.Image.csproj">
       <Project>{3474a9e6-e0bd-4d39-aad1-795198dd4692}</Project>

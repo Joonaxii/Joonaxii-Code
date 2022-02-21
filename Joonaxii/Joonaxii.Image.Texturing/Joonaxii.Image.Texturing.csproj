@@ -44,9 +44,24 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="src\ResizeMode.cs" />
+    <Compile Include="src\Texture.cs" />
+    <Compile Include="src\TextureModification.cs" />
   </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
-    <Folder Include="src\" />
+    <ProjectReference Include="..\Joonaxii.Image.Codecs\Joonaxii.Image.Codecs.csproj">
+      <Project>{aebfedb7-0836-4e95-b9c9-13e9dfed9507}</Project>
+      <Name>Joonaxii.Image.Codecs</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.Image\Joonaxii.Image.csproj">
+      <Project>{3474a9e6-e0bd-4d39-aad1-795198dd4692}</Project>
+      <Name>Joonaxii.Image</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.MathJX\Joonaxii.MathJX.csproj">
+      <Project>{0a47274a-b72f-4601-b3f1-beab27216bed}</Project>
+      <Name>Joonaxii.MathJX</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

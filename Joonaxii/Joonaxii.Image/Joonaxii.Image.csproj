@@ -52,11 +52,8 @@
     <Compile Include="src\Colors\Formats\HSLColor.cs" />
     <Compile Include="src\Colors\Formats\HSVColor.cs" />
     <Compile Include="src\Colors\Formats\IColor.cs" />
-    <Compile Include="src\Texture\ColorExtensions.cs" />
-    <Compile Include="src\Texture\ResizeMode.cs" />
-    <Compile Include="src\Texture\Texture.cs" />
+    <Compile Include="src\Colors\ColorExtensions.cs" />
     <Compile Include="src\Colors\Formats\YCrCb.cs" />
-    <Compile Include="src\Texture\TextureModification.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

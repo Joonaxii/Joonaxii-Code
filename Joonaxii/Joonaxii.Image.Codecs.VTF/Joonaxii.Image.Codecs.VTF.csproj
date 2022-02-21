@@ -1,10 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>e7eb5d06-0258-4598-8c01-f75b83f864f9</ProjectGuid>
+    <ProjectGuid>{E7EB5D06-0258-4598-8C01-F75B83F864F9}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Joonaxii.Image.Codecs.VTF</RootNamespace>
@@ -31,24 +31,48 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System"/>
-    
-    <Reference Include="System.Core"/>
-    <Reference Include="System.Xml.Linq"/>
-    <Reference Include="System.Data.DataSetExtensions"/>
-    
-    
-    <Reference Include="Microsoft.CSharp"/>
-    
-    <Reference Include="System.Data"/>
-    
-    <Reference Include="System.Net.Http"/>
-    
-    <Reference Include="System.Xml"/>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Class1.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="src\VTFDecoder.cs" />
+    <Compile Include="src\VTFFlags.cs" />
+    <Compile Include="src\VTFFormat.cs" />
+    <Compile Include="src\VTFResource.cs" />
+    <Compile Include="src\VTFTag.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Joonaxii.Data.Coding\Joonaxii.Data.Coding.csproj">
+      <Project>{9518e812-f5ce-4a8a-bfdc-1e850feb6845}</Project>
+      <Name>Joonaxii.Data.Coding</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.Image.Codecs.DXT\Joonaxii.Image.Codecs.DXT.csproj">
+      <Project>{045c6af8-1408-456d-beb5-3c35e8e3740c}</Project>
+      <Name>Joonaxii.Image.Codecs.DXT</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.Image.Codecs\Joonaxii.Image.Codecs.csproj">
+      <Project>{aebfedb7-0836-4e95-b9c9-13e9dfed9507}</Project>
+      <Name>Joonaxii.Image.Codecs</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.Image.Texturing\Joonaxii.Image.Texturing.csproj">
+      <Project>{8aa57cc5-4a7a-4789-8db7-a73b98e76b71}</Project>
+      <Name>Joonaxii.Image.Texturing</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.Image\Joonaxii.Image.csproj">
+      <Project>{3474a9e6-e0bd-4d39-aad1-795198dd4692}</Project>
+      <Name>Joonaxii.Image</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.MathJX\Joonaxii.MathJX.csproj">
+      <Project>{0a47274a-b72f-4601-b3f1-beab27216bed}</Project>
+      <Name>Joonaxii.MathJX</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
- </Project>
+</Project>
