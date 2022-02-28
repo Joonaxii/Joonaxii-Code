@@ -16,7 +16,7 @@ namespace Joonaxii.Image.Codecs.BMP
             if (!skipHeader)
             {
                 var hdr = HeaderManager.GetFileType(_br, false);
-                if(hdr != HeaderType.BMP) { return ImageDecodeResult.InvalidImageFormat; }
+                if (hdr != HeaderType.BMP) { return ImageDecodeResult.InvalidImageFormat; }
             }
 
             MemoryStream ms = null;
@@ -63,7 +63,7 @@ namespace Joonaxii.Image.Codecs.BMP
 
             int colors = br.ReadInt32();
             int impColors = br.ReadInt32();
-  
+
             ColorMode mode;
 
             switch (bpp)
@@ -89,22 +89,18 @@ namespace Joonaxii.Image.Codecs.BMP
 
             unsafe
             {
-                fixed(FastColor* pix = pixels)
+               // byte* ptrPix = (byte*)_texture.LockBits();
+                for (int y = 0; y < height; y++)
                 {
-                    FastColor* ptrPix = pix;
-                    for (int y = 0; y < height; y++)
+                    int yP = topToBot ? y : height - 1 - y;
+                    int scan = yP * _texture.Width;
+                    for (int x = 0; x < width; x++)
                     {
-                        int yP = topToBot ? y : height - 1 - y;
-                       //int scan = yP * _width;
-                        for (int x = 0; x < width; x++)
-                        {
-                            *ptrPix = br.ReadColor(mode, true);
-                            ptrPix++;
-                        }
-                        br.ReadBytes(padding);
+                        _texture.SetPixel(scan + x, br.ReadColor(mode, true));
                     }
-
+                    br.ReadBytes(padding);
                 }
+               // _texture.UnlockBits();
             }
 
 

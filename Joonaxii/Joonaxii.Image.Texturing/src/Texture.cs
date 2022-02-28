@@ -424,6 +424,32 @@ namespace Joonaxii.Image.Texturing
             }
         }
 
+        public void CopyTo(Texture other)
+        {
+            if(other.Format == Format)
+            {
+                if(Format == ColorMode.Indexed)
+                {
+                    other.SetPalette(_palette, _paletteLut);
+                }
+
+                unsafe
+                {
+                    fixed (byte* ptrDest = other._data)
+                    {
+                        fixed (byte* ptrSrc = _data)
+                        {
+                            BufferUtils.Memcpy(ptrDest, ptrSrc, _width * _height * _bytesPerPix);
+                        }
+                    }
+                }
+                return;
+            }
+
+            FastColor[] temp = GetPixels();
+            other.SetPixels(temp);
+        }
+
         public void SetPixel(int x, int y, FastColor color) => SetPixel(y * _width + x, color);
         public void SetPixel(int i, FastColor color)
         {
@@ -438,6 +464,25 @@ namespace Joonaxii.Image.Texturing
                 fixed (byte* ptr = _data)
                 {
                     SetColor(ptr, i * bpp, bpp, color, _format);
+                }
+            }
+        }
+
+        public void SetPixels(FastColor pixel)
+        {
+            int res = _width * _height;
+            unsafe
+            {
+                int bpp = _bpp >> 3;
+                fixed (byte* ptr = _data)
+                {
+                    int l = _width * _height * _bytesPerPix;
+                    byte* ptrPix = ptr;
+
+                    while (l-- > 0)
+                    {
+                        SetColor(ptrPix++, 0, bpp, pixel, _format);
+                    }
                 }
             }
         }
@@ -658,6 +703,7 @@ namespace Joonaxii.Image.Texturing
 
             if(newResolution > currentRes)
             {
+                int diff = newResolution - currentRes;
                 unsafe
                 {
                     fixed (byte* bb = _data)
@@ -676,8 +722,15 @@ namespace Joonaxii.Image.Texturing
                                         ReadjustToNewBpp((byte)bt, _format);
                                     }
                                 }
-
-                                BufferUtils.Memset(bb, )
+                                BufferUtils.Memset(bb, index, _bytesPerPix, currentRes, diff);
+                                break;
+                            default:
+                                FastColor* pixPtr = (FastColor*)bb;
+                                pixPtr += currentRes;
+                                while(diff-- > 0)
+                                {
+                                    *pixPtr++ = _fillColor;
+                                }
                                 break;
                         }
                     }

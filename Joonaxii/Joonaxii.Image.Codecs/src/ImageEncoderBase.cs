@@ -35,7 +35,7 @@ namespace Joonaxii.Image.Codecs
             _height = Math.Abs(height);
 
             SetBitsPerPixel(bPP);
-            _pixels = new FastColor[0];
+            _pixels = new FastColor[width * height];
         }
 
         public ImageEncoderBase(int width, int height, ColorMode mode)
@@ -45,7 +45,7 @@ namespace Joonaxii.Image.Codecs
             _height = Math.Abs(height);
 
             SetColorMode(mode);
-            _pixels = new FastColor[0];
+            _pixels = new FastColor[width * height];
         }
 
         public void SetPalette(IList<FastColor> palette, bool? hasAlpha = null)
@@ -299,8 +299,7 @@ namespace Joonaxii.Image.Codecs
             int reso = _width * _height;
             if (reso == 0) { return; }
             Array.Resize(ref _pixels, reso);
-
-            decoder.GetPixels(_pixels);
+            decoder.GetTexture().GetPixels(_pixels);
         }
 
         public void SetPixel(int i, FastColor c) => _pixels[i] = c;

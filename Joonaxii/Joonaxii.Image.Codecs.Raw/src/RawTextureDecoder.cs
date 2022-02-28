@@ -37,14 +37,14 @@ namespace Joonaxii.Image.Codecs.Raw
                 stamp.Stamp();
             }
 
-            _colorMode = (ColorMode)_brI.ReadByte();
-            _bpp = _colorMode.GetBPP();
+            var format = (ColorMode)_brI.ReadByte();
+            byte bpp = format.GetBPP();
             RawTextureCompressMode compressMode = (RawTextureCompressMode)_brI.ReadByte(7);
             bool compressPixels = _brI.ReadBoolean();
 
-            _width = _br.ReadUInt16();
-            _height = _br.ReadUInt16();
-            int l = _width * _height;
+            var width = _br.ReadUInt16();
+            var height = _br.ReadUInt16();
+            int l = width * height;
  
             if (compressMode == RawTextureCompressMode.None)
             {
@@ -54,21 +54,34 @@ namespace Joonaxii.Image.Codecs.Raw
                     stamp.Start("Huffman Decompression of Color bytes");
                     List<int> ints = new List<int>();
                     Huffman.DecompressFromStream(_brI, ints);
-                    byte[] bytes = new byte[ints.Count];
-                    for (int i = 0; i < ints.Count; i++)
+                    GenerateTexture(width, height, format, bpp);
+
+                    unsafe
                     {
-                        var intT = ints[i];
-                        bytes[i] = (byte)(intT > 255 ? 255 : intT < 0 ? 0 : intT);
+                        byte* pixPtr = (byte*)_texture.LockBits();
+                        for (int i = 0; i < ints.Count; i++)
+                        {
+                            var intT = ints[i];
+                            *pixPtr++ = (byte)(intT > 255 ? 255 : intT < 0 ? 0 : intT);
+                        }
                     }
+                 
                     ints.Clear();
-                    _pixels = ImageCodecExtensions.ToFastColor(bytes, _colorMode);
                     stamp.Stamp();
                 }
                 else
                 {
-                    _pixels = new FastColor[l];
+                    GenerateTexture(width, height, format, bpp);
                     stamp.Start("Read Raw Pixel Data");
-                    _br.ReadColors(_pixels, _colorMode);
+                    unsafe
+                    {
+                        l *= (bpp >> 3);
+                        byte* pixPtr = (byte*)_texture.LockBits();
+                        while(l-- > 0) 
+                        { 
+                            *pixPtr++ = _br.ReadByte();
+                        }
+                    }
                     stamp.Stamp();
                 }
 
@@ -97,7 +110,8 @@ namespace Joonaxii.Image.Codecs.Raw
                     break;
             }
 
-            _pixels = new FastColor[l];
+            GenerateTexture(width, height, format, bpp);
+
             FastColor[] palette = null;
             int paletteSize = 0;
 
@@ -109,8 +123,10 @@ namespace Joonaxii.Image.Codecs.Raw
                 stamp.Stamp();
 
                 stamp.Start("Palette Read");
-                _brI.ReadColors(palette, _colorMode);
+                _brI.ReadColors(palette, format);
                 stamp.Stamp();
+
+                _texture.SetPalette(palette);
             }
 
             List<int> indices = new List<int>();
@@ -121,10 +137,16 @@ namespace Joonaxii.Image.Codecs.Raw
                     RLE.DecompressFromStream(_brI, indices);
                     stamp.Stamp();
 
-                    _brI.ReadColors(_pixels, ColorMode.RGB24);
-                    for (int i = 0; i < _pixels.Length; i++)
+                    unsafe
                     {
-                        _pixels[i].a = (byte)indices[i];
+                        byte* pixPtr = (byte*)_texture.LockBits();
+                        for (int i = 0; i < l; i++)
+                        {
+                            *pixPtr++ = _br.ReadByte();
+                            *pixPtr++ = _br.ReadByte();
+                            *pixPtr++ = _br.ReadByte();
+                            *pixPtr++ = (byte)indices[i];
+                        }
                     }
                     break;
 
@@ -138,32 +160,32 @@ namespace Joonaxii.Image.Codecs.Raw
                     RLE.DecompressFromStream(_brI, indices);
                     stamp.Stamp();
 
-                    for (int i = 0; i < _pixels.Length; i++)
-                    {
-                        var ind = indices[i];
-                        var color = palette[ind];
-                        color.a = (byte)alphaInd[ind];
-                        _pixels[i] = color;
-                    }
+                    //for (int i = 0; i < _pixels.Length; i++)
+                    //{
+                    //    var ind = indices[i];
+                    //    var color = palette[ind];
+                    //    color.a = (byte)alphaInd[ind];
+                    //    _pixels[i] = color;
+                    //}
                     break;
 
                 case RawTextureCompressMode.IdxHuffman:
                     stamp.Start("Decompress Huffman");
                     Huffman.DecompressFromStream(_brI, indices);
-                    for (int i = 0; i < _pixels.Length; i++)
-                    {
-                        _pixels[i] = palette[indices[i]];
-                    }
+                    //for (int i = 0; i < _pixels.Length; i++)
+                    //{
+                    //    _pixels[i] = palette[indices[i]];
+                    //}
                     stamp.Stamp();
                     break;
 
                 case RawTextureCompressMode.IdxRLE:
                     stamp.Start("Decompress RLE");
                     RLE.DecompressFromStream(_brI, indices);
-                    for (int i = 0; i < _pixels.Length; i++)
-                    {
-                        _pixels[i] = palette[indices[i]];
-                    }
+                    //for (int i = 0; i < _pixels.Length; i++)
+                    //{
+                    //    _pixels[i] = palette[indices[i]];
+                    //}
                     stamp.Stamp();
                     break;
 
@@ -186,15 +208,15 @@ namespace Joonaxii.Image.Codecs.Raw
 
                     stamp.Start("Index Writing");
                     int ii = 0;
-                    for (int i = 0; i < indices.Count; i++)
-                    {
-                        var chnk = chunks[indices[i]];
-                        var c = palette[chnk.value.ToInt32];
-                        for (int j = 0; j <= chnk.count; j++)
-                        {
-                            _pixels[ii++] = c;
-                        }
-                    }
+                    //for (int i = 0; i < indices.Count; i++)
+                    //{
+                    //    var chnk = chunks[indices[i]];
+                    //    var c = palette[chnk.value.ToInt32];
+                    //    for (int j = 0; j <= chnk.count; j++)
+                    //    {
+                    //        _pixels[ii++] = c;
+                    //    }
+                    //}
                     stamp.Stamp();
                     break;
             }

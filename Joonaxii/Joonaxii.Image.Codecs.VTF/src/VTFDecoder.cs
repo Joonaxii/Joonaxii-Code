@@ -31,8 +31,8 @@ namespace Joonaxii.Image.Codecs.VTF
 
             uint headerSize = _br.ReadUInt32();
 
-            _width = _br.ReadUInt16();
-            _height = _br.ReadUInt16();
+            ushort width = _br.ReadUInt16();
+            ushort height = _br.ReadUInt16();
 
             VTFFlags flags = (VTFFlags)_br.ReadUInt32();
 
@@ -68,8 +68,8 @@ namespace Joonaxii.Image.Codecs.VTF
 
             System.Diagnostics.Debug.Print($"VTF Version: {version}[{versionA}.{versionB}]");
             System.Diagnostics.Debug.Print($"Header Size: {headerSize} bytes");
-            System.Diagnostics.Debug.Print($"Width: {_width} px");
-            System.Diagnostics.Debug.Print($"Height: {_height} px");
+            System.Diagnostics.Debug.Print($"Width: {_texture.Width} px");
+            System.Diagnostics.Debug.Print($"Height: {_texture.Height} px");
             System.Diagnostics.Debug.Print($"Flags: {flags}");
             System.Diagnostics.Debug.Print($"Frames: {firstFrame}/{frames}");
 
@@ -87,7 +87,6 @@ namespace Joonaxii.Image.Codecs.VTF
             System.Diagnostics.Debug.Print($"Resources: {resourceCount}");
             System.Diagnostics.Debug.Print($"HDR: {_stream.Position-12}");
 
-
             VTFResource[] resources = new VTFResource[resourceCount];
             if (version >= 7.3)
             {
@@ -102,15 +101,20 @@ namespace Joonaxii.Image.Codecs.VTF
                     switch (res.Tag)
                     {
                         case VTFTag.HI_RES_IMAGE:
-                            _pixels = new FastColor[_width * _height];
+                            GenerateTexture(width, height, ColorMode.RGBA32, 32);
                             switch (hiResFmt)
                             {
                                 case VTFFormat.DXT1:
                                     for (int m = 1; m < mipCount; m++)
                                     {
-                                        BC1Decoder.SeekPast(_stream, _width / (1 << m), _height / (1 << m));
+                                        BC1Decoder.SeekPast(_stream, width / (1 << m), height / (1 << m));
                                     }
-                                    BC1Decoder.Decode(_br, _pixels, _width, _height);
+                                    unsafe
+                                    {
+                                        var ptr = (FastColor*)_texture.LockBits();
+                                        BC1Decoder.Decode(_br, ptr, width, height);
+                                        _texture.UnlockBits();
+                                    }
                                     break;
                             }
                             break;
@@ -135,15 +139,20 @@ namespace Joonaxii.Image.Codecs.VTF
             }
 
             _stream.Seek(headerSize + 16, SeekOrigin.Begin);
-            _pixels = new FastColor[_width * _height];
+            GenerateTexture(width, height, ColorMode.RGBA32, 32);
             switch (hiResFmt)
             {
                 case VTFFormat.DXT1:
                     for (int m = 1; m < mipCount; m++)
                     {
-                        BC1Decoder.SeekPast(_stream, _width / (1 << m), _height / (1 << m));
+                        BC1Decoder.SeekPast(_stream, width / (1 << m), height / (1 << m));
                     }
-                    BC1Decoder.Decode(_br, _pixels, _width, _height);
+                    unsafe
+                    {
+                        var ptr = (FastColor*)_texture.LockBits();
+                        BC1Decoder.Decode(_br, ptr, width, height);
+                        _texture.UnlockBits();
+                    }
                     break;
             }
             return ImageDecodeResult.Success;

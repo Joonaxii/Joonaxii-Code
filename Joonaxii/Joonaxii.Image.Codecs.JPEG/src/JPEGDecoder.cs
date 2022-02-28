@@ -142,7 +142,7 @@ namespace Joonaxii.Image.Codecs.JPEG
                     byte components = _br.ReadByte();
 
                     //_pixels = new FastColor[_width * _height];
-                    _bpp = 24;
+                    var bpp = 24;
                     uint[] cmp = new uint[components];
                     for (int i = 0; i < components; i++)
                     {
@@ -152,8 +152,8 @@ namespace Joonaxii.Image.Codecs.JPEG
                     System.Diagnostics.Debug.Print($"{marker}-->: ");
                     System.Diagnostics.Debug.Print($"   -JPEG Mode: {_mode}");
                     System.Diagnostics.Debug.Print($"   -Precision: {precision}");
-                    System.Diagnostics.Debug.Print($"   -Width: {_width}");
-                    System.Diagnostics.Debug.Print($"   -Height: {_height}");
+                    System.Diagnostics.Debug.Print($"   -Width: {_texture.Width}");
+                    System.Diagnostics.Debug.Print($"   -Height: {_texture.Height}");
                     System.Diagnostics.Debug.Print($"   -Components: {components}");
                     for (int i = 0; i < components; i++)
                     {

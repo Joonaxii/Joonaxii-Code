@@ -420,7 +420,7 @@ namespace Joonaxii.Radio
                     default: return SSTVEncodeResult.ImageDecodeFailed;
                 }
             }
-            FastColor[] pixels = decoder.GetPixels();
+            FastColor[] pixels = decoder.GetTexture().GetPixels();
             return Encode(pixels, decoder.Width, decoder.Height);
         }
 

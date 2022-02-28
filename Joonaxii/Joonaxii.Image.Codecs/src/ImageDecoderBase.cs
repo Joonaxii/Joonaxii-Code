@@ -1,5 +1,6 @@
 ﻿using Joonaxii.Data.Coding;
 using Joonaxii.Image.Texturing;
+using Joonaxii.MathJX;
 using System;
 using System.IO;
 
@@ -49,6 +50,21 @@ namespace Joonaxii.Image.Codecs
         //public byte[] GetBytes(PixelByteOrder byteOrder, bool invertY, ColorMode mode) => _pixels.ToBytes(byteOrder, invertY, _width, _height, mode);
 
         public Texture GetTexture() => _texture;
+
+        protected void GenerateTexture(int width, int height, ColorMode format, byte bpp)
+        {
+            width = Maths.Clamp(width, 1, ushort.MaxValue);
+            height = Maths.Clamp(height, 1, ushort.MaxValue);
+
+            if(_texture != null)
+            {
+                _texture.SetResolution(width, height);
+                _texture.BitsPerPixel = bpp;
+                _texture.Format = format;
+                return;
+            }
+            _texture = new Texture(width, height, format, bpp);
+        }
 
         public override void Dispose()
         {

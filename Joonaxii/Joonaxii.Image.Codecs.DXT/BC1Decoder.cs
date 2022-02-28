@@ -12,6 +12,17 @@ namespace Joonaxii.Image.Codecs.DXT
 
         public static void Decode(BinaryReader br, FastColor[] pixels, int width, int height)
         {
+            unsafe
+            {
+                fixed(FastColor* pix = pixels)
+                {
+                    Decode(br, pix, width, height);
+                }
+            }
+        }
+
+        public static unsafe void Decode(BinaryReader br, FastColor* pixels, int width, int height)
+        {
             FastColor[] colBuf = new FastColor[4];
 
             int w4 = width >> 2;

@@ -29,6 +29,7 @@ namespace Testing_Grounds
             using(BMPDecoder bmpDec = new BMPDecoder(stream))
             {
                 var res = bmpDec.Decode(false);
+                var tex = bmpDec.GetTexture();
                 Console.WriteLine($"Bmp Decode! {res}");
                 switch (res)
                 {
@@ -40,7 +41,7 @@ namespace Testing_Grounds
                             {
                                 for (int x = 0; x < bmpDec.Width; x++)
                                 {
-                                    var c = bmpDec.GetPixel(x, y);
+                                    var c = tex.GetPixel(x, y);
                                     bm.SetPixel(x, y, Color.FromArgb(c.a, c.r, c.g, c.b));
                                 }
                             }

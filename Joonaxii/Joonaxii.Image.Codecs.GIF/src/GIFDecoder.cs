@@ -41,7 +41,7 @@ namespace Joonaxii.Image.Codecs.GIF
         {
             if(frame < 0 | frame >= _frames.Count | !IsDecoded) { return; }
             _activeFrame = frame;
-            _pixels = _frames[frame].GetPixels();
+            _texture = _frames[frame].GetTexture();
         }
 
         public int GetPaletteSize() => _palette == null ? 0 : _palette.Length;
@@ -55,7 +55,7 @@ namespace Joonaxii.Image.Codecs.GIF
         }
 
         public GIFFrame GetFrameAt(int i) => _frames[i];
-        private GIFFrame GetFrame(BinaryReader br, byte bgColor, bool is89, FastColor[] table, ref int mode, HashSet<FastColor> palette, GIFFrame previous, GIFFrame first)
+        private GIFFrame GetFrame(BinaryReader br, byte bgColor, int width, int height, FastColor[] table, ref int mode, HashSet<FastColor> palette, GIFFrame previous, GIFFrame first)
         {
             byte f = br.ReadByte();
             if (f == 0x3b || br.BaseStream.Position >= br.BaseStream.Length) { return null; }
@@ -122,7 +122,7 @@ namespace Joonaxii.Image.Codecs.GIF
 
                                 br.ReadByte();
 
-                                frame = new GIFFrame((ushort)_width, (ushort)_height, delayTime);
+                                frame = new GIFFrame((ushort)width, (ushort)height, delayTime);
                                 break;
 
                             default:
@@ -140,6 +140,7 @@ namespace Joonaxii.Image.Codecs.GIF
             }
 
             if (frame == null) { return null; }
+            var tex = frame.GetTexture();
 
             var bg = table.Length < 1 ? default : table[bgColor];
             bool skipAlpha = false;
@@ -147,10 +148,7 @@ namespace Joonaxii.Image.Codecs.GIF
             {
                 case 0x00:
                     bg.a = hasAlpha ? (byte)0 : bg.a;
-                    for (int i = 0; i < frame.Length; i++)
-                    {
-                        frame.SetPixel(i, bg);
-                    }
+                    tex.SetPixels(bg);
                     break;
 
                 case 0x01:
@@ -160,10 +158,7 @@ namespace Joonaxii.Image.Codecs.GIF
 
                 case 0x02:
                     bg.a = hasAlpha ? (byte)0 : bg.a;
-                    for (int i = 0; i < frame.Length; i++)
-                    {
-                        frame.SetPixel(i, bg);
-                    }
+                    tex.SetPixels(bg);
                     break;
                 case 0x04:
                     skipAlpha = true;
@@ -263,10 +258,11 @@ namespace Joonaxii.Image.Codecs.GIF
             for (int yY = 0; yY < h; yY++)
             {
                 int yP = yY + y;
+                int yPP = yP * width;
                 for (int xX = 0; xX < w; xX++)
                 {
                     int xP = xX + x;
-                    int ii = yP * _width + xP;
+                    int ii = yPP + xP;
                     int i = yY * w + xX;
 
                     int ind = indices[i];
@@ -276,8 +272,7 @@ namespace Joonaxii.Image.Codecs.GIF
                         if (skipAlpha) { continue; }
                         clr.a = 0;
                     }
-
-                    frame.SetPixel(ii, clr);
+                    tex.SetPixel(ii, clr);
                 }
             }
 
@@ -435,6 +430,10 @@ namespace Joonaxii.Image.Codecs.GIF
         public override void Dispose()
         {
             _palette = null;
+            for (int i = 0; i < _frames.Count; i++)
+            {
+                _frames[i].Dispose();
+            }
             _frames.Clear();
             base.Dispose();
         }
@@ -465,8 +464,8 @@ namespace Joonaxii.Image.Codecs.GIF
             }
             HashSet<FastColor> palette = new HashSet<FastColor>();
 
-            _width = _br.ReadUInt16();
-            _height = _br.ReadUInt16();
+            var width = _br.ReadUInt16();
+            var height = _br.ReadUInt16();
 
             byte mapInfo = _br.ReadByte();
             byte bgIndex = _br.ReadByte();
@@ -492,7 +491,7 @@ namespace Joonaxii.Image.Codecs.GIF
             int mode = 0;
             while (_stream.Position < _stream.Length)
             {
-                var frame = GetFrame(_br, bgIndex, _header == 2, globalPalette, ref mode, palette, prev, first);
+                var frame = GetFrame(_br, bgIndex, width, height, globalPalette, ref mode, palette, prev, first);
                 if (frame == null) { break; }
 
                 prev = frame;

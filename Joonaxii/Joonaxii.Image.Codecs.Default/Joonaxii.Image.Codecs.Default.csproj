@@ -91,6 +91,10 @@
       <Project>{aebfedb7-0836-4e95-b9c9-13e9dfed9507}</Project>
       <Name>Joonaxii.Image.Codecs</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.Image.Texturing\Joonaxii.Image.Texturing.csproj">
+      <Project>{8AA57CC5-4A7A-4789-8DB7-A73B98E76B71}</Project>
+      <Name>Joonaxii.Image.Texturing</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Joonaxii.Image\Joonaxii.Image.csproj">
       <Project>{3474a9e6-e0bd-4d39-aad1-795198dd4692}</Project>
       <Name>Joonaxii.Image</Name>

@@ -74,35 +74,9 @@ namespace Joonaxii.Image.Codecs.PNG
                             switch (chnk.chunkType)
                             {
                                 case PNGChunkType.IHDR:
-                                    _header = chnk as IHDRChunk;
+                                    SetHeaderChunk(chnk);
                                     System.Diagnostics.Debug.Print($"{_header}");
 
-                                    _width = _header.width;
-                                    _height = _header.height;
-                                    _bpp = _header.bitDepth;
-
-                                    switch (_header.colorType)
-                                    {
-                                        case PNGColorType.GRAYSCALE:
-                                            _bpp = 8;
-                                            _colorMode = ColorMode.Grayscale;
-                                            break;
-                                        case PNGColorType.PALETTE_IDX:
-                                            _colorMode = ColorMode.Indexed;
-                                            _bpp = _header.bitDepth;
-                                            break;
-
-                                        case PNGColorType.RGB:
-                                            _bpp = 24;
-                                            _colorMode = ImageCodecExtensions.GetColorMode(_bpp);
-                                            break;
-
-                                        case PNGColorType.GRAY_ALPHA:
-                                        case PNGColorType.RGB_ALPHA:
-                                            _bpp = 32;
-                                            _colorMode = ImageCodecExtensions.GetColorMode(_bpp);
-                                            break;
-                                    }
                                     break;
                                 case PNGChunkType.PLTE:
                                     paletteChnk = chnk as PLTEChunk;
@@ -203,15 +177,14 @@ namespace Joonaxii.Image.Codecs.PNG
                     gammaTable[i] = (byte)val;
                 }
                 paletteChnk?.ApplyGamma(gammaTable);
-           
-                _texture = new Texture(_width, _height, _colorMode);
-                if (_colorMode == ColorMode.Indexed)
+
+                if (_texture.Format == ColorMode.Indexed)
                 {
                     _texture.SetPalette(paletteChnk.pixels);
                 }
 
                 var bytesPerPix = (byte)(_header.GetBytesPerPixel() * ((_header.bitDepth + 7) >> 3));
-                System.Diagnostics.Debug.Print($"{_colorMode} => {_bpp}, {bytesPerPix}");
+                System.Diagnostics.Debug.Print($"{_texture.Format} => {_texture.BitsPerPixel}, {bytesPerPix}");
 
                 using (MemoryStream ms = new MemoryStream(dataBuffer))
                 using (DeflateStream brDat = new DeflateStream(ms, CompressionMode.Decompress))
@@ -238,7 +211,7 @@ namespace Joonaxii.Image.Codecs.PNG
                         switch (_header.interlaceMethod)
                         {
                             case InterlaceMethod.None:
-                                for (int i = 0; i < _height; i++)
+                                for (int i = 0; i < _texture.Height; i++)
                                 {
                                     PNGFilterMethod filterMode = (PNGFilterMethod)msOut.ReadByte();
                                     msOut.Read(scanData, readOffset, bytesPerLine);
@@ -385,40 +358,32 @@ namespace Joonaxii.Image.Codecs.PNG
         private void SetHeaderChunk(PNGChunk chunk)
         {
             _header = chunk as IHDRChunk;
-            _width = _header.width;
-            _height = _header.height;
-            _bpp = _header.bitDepth;
-
-            if(_texture != null)
-            {
-
-            }
-
-            _texture = new Texture();
-
+            var bpp = _header.bitDepth;
+            ColorMode format = ColorMode.RGBA32;
             switch (_header.colorType)
             {
                 case PNGColorType.GRAYSCALE:
-                    _bpp = 8;
-                    _colorMode = ColorMode.Grayscale;
+                    bpp = 8;
+                    format = ColorMode.Grayscale;
                     break;
                 case PNGColorType.PALETTE_IDX:
-                    _colorMode = ColorMode.Indexed;
-                    _bpp = _header.bitDepth;
+                    format = ColorMode.Indexed;
+                    bpp = _header.bitDepth;
                     break;
 
                 case PNGColorType.RGB:
-                    _bpp = 24;
-                    _colorMode = ImageCodecExtensions.GetColorMode(_bpp);
+                    bpp = 24;
+                    format = ImageCodecExtensions.GetColorMode(bpp);
                     break;
 
                 case PNGColorType.GRAY_ALPHA:
                 case PNGColorType.RGB_ALPHA:
-                    _bpp = 32;
-                    _colorMode = ImageCodecExtensions.GetColorMode(_bpp);
+                    bpp = 32;
+                    format = ImageCodecExtensions.GetColorMode(bpp);
                     break;
             }
-            break;
+
+            GenerateTexture(_header.width, _header.height, format, _header.bitDepth);
         }
 
         private PNGChunk ValidateChunk(PNGChunkType type)

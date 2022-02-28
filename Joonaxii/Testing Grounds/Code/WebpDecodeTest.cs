@@ -65,6 +65,7 @@ namespace Testing_Grounds
                         string relativeName = $"{Path.GetDirectoryName(path)}/{Path.GetFileNameWithoutExtension(path)}";
                         string pngPath = $"{relativeName}_PNG.png";
 
+                        var tex = webpDec.GetTexture();
                         using (Bitmap bm = new Bitmap(webpDec.Width, webpDec.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
                         {
                             for (int y = 0; y < webpDec.Height; y++)
@@ -72,7 +73,7 @@ namespace Testing_Grounds
                                 int yy = webpDec.Height - y - 1;
                                 for (int x = 0; x < webpDec.Width; x++)
                                 {
-                                    var c = webpDec.GetPixel(x, y);
+                                    var c = tex.GetPixel(x, y);
                                     bm.SetPixel(x, yy, Color.FromArgb(c.a, c.r, c.g, c.b));
                                 }
                             }
@@ -132,6 +133,7 @@ namespace Testing_Grounds
                                     switch (resul)
                                     {
                                         case ImageDecodeResult.Success:
+                                            var texB = rawDec.GetTexture();
                                             using(Bitmap bm = new Bitmap(rawDec.Width, rawDec.Height))
                                             {
                                                 for (int y = 0; y < rawDec.Height; y++)
@@ -139,7 +141,7 @@ namespace Testing_Grounds
                                                     int yy = rawDec.Height - y - 1;
                                                     for (int x = 0; x < rawDec.Width; x++)
                                                     {
-                                                        var p = rawDec.GetPixel(x, y);
+                                                        var p = texB.GetPixel(x, y);
                                                         bm.SetPixel(x, yy, Color.FromArgb(p.a, p.r, p.g, p.b));
                                                     }
                                                 }

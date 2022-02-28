@@ -151,8 +151,8 @@ namespace New.JPEG
                         res = ImageDecodeResult.Success;
 
                         byte m = _br.ReadByte();
-                        _height = _br.ReadUInt16BigEndian();
-                        _width = _br.ReadUInt16BigEndian();
+                        //_height = _br.ReadUInt16BigEndian();
+                        //_width = _br.ReadUInt16BigEndian();
 
                         byte c = _br.ReadByte();
 
@@ -162,7 +162,7 @@ namespace New.JPEG
                             ushort bb = _br.ReadByte();
                             _quantMapping.Add(new JPEGSample((uint)(us + (bb << 16))));
                         }
-                        _pixels = new FastColor[_width * _height];
+                       // _pixels = new FastColor[_width * _height];
                         break;
 
                     case JPEGMarker.SOS:
@@ -205,29 +205,29 @@ namespace New.JPEG
                         IDCT crd = new IDCT();
                         IDCT cbd = new IDCT();
 
-                        for (int y = 0; y < _height >> 3; y++)
-                        {
-                            int yP = y * 8;
-                            for (int x = 0; x < _width >> 3; x++)
-                            {
-                                BuildMatrix(st, 0, GetQuant(_quantMapping[0].index), lum, ref oldLumC);
-                                BuildMatrix(st, 1, GetQuant(_quantMapping[1].index), crd, ref oldCrdC);
-                                BuildMatrix(st, 1, GetQuant(_quantMapping[2].index), cbd, ref oldCbdC);
+                        //for (int y = 0; y < _height >> 3; y++)
+                        //{
+                        //    int yP = y * 8;
+                        //    for (int x = 0; x < _width >> 3; x++)
+                        //    {
+                        //        BuildMatrix(st, 0, GetQuant(_quantMapping[0].index), lum, ref oldLumC);
+                        //        BuildMatrix(st, 1, GetQuant(_quantMapping[1].index), crd, ref oldCrdC);
+                        //        BuildMatrix(st, 1, GetQuant(_quantMapping[2].index), cbd, ref oldCbdC);
 
-                                int xP = x * 8;
-                                for (int yy = 0; yy < 8; yy++)
-                                {
-                                    int yyP = yy * 8;
-                                    int yPP = (yP + yy) * _width;
-                                    for (int xx = 0; xx < 8; xx++)
-                                    {
-                                        int iI = yyP + xx;
-                                        _pixels[(xP + xx) + yPP] =
-                                            ColorConversion(lum.baseData[iI], cbd.baseData[iI], crd.baseData[iI]);
-                                    }
-                                }
-                            }
-                        }
+                        //        int xP = x * 8;
+                        //        for (int yy = 0; yy < 8; yy++)
+                        //        {
+                        //            int yyP = yy * 8;
+                        //            int yPP = (yP + yy) * _width;
+                        //            for (int xx = 0; xx < 8; xx++)
+                        //            {
+                        //                int iI = yyP + xx;
+                        //                _pixels[(xP + xx) + yPP] =
+                        //                    ColorConversion(lum.baseData[iI], cbd.baseData[iI], crd.baseData[iI]);
+                        //            }
+                        //        }
+                        //    }
+                        //}
 
                         byte[] GetQuant(int i)
                         {

@@ -72,14 +72,7 @@ namespace Joonaxii.Image.Codecs.Auto
                             case ImageDecodeResult.Success:
                                 break;
                         }
-
-                        _bpp = rawDec.BitsPerPixel;
-                        _colorMode = rawDec.ColorMode;
-                        _width = rawDec.Width;
-                        _height = rawDec.Height;
-
-                        _pixels = new FastColor[_width * _height];
-                        rawDec.GetPixels(_pixels);
+                        _texture = rawDec.GetTexture();
                     }
                     break;
 
@@ -93,14 +86,7 @@ namespace Joonaxii.Image.Codecs.Auto
                             case ImageDecodeResult.Success:
                                 break;
                         }
-
-                        _bpp = pngDec.BitsPerPixel;
-                        _colorMode = pngDec.ColorMode;
-                        _width = pngDec.Width;
-                        _height = pngDec.Height;
-
-                        _pixels = new FastColor[_width * _height];
-                        pngDec.GetPixels(_pixels);
+                        _texture = pngDec.GetTexture();
                     }
                     break;
 
@@ -111,12 +97,7 @@ namespace Joonaxii.Image.Codecs.Auto
                     {
                         var res = gr.Decode(true);
                         if (res != ImageDecodeResult.Success) { return res; }
-                        _isIndexed = gr.IsValidIndexed;
-
-                        _width = gr.Width;
-                        _height = gr.Height;
-                        _bpp = (byte)(_isIndexed ? 8 : gr.HasAlpha ? 32 : 24);
-                        _colorMode = ImageCodecExtensions.GetColorMode(_bpp);
+                        _texture = gr.GetTexture();
                     }
                     break;
                 case HeaderType.WEBP:
@@ -138,14 +119,7 @@ namespace Joonaxii.Image.Codecs.Auto
                             case ImageDecodeResult.Success:
                                 break;
                         }
-
-                        _bpp = bmpDec.BitsPerPixel;
-                        _colorMode = bmpDec.ColorMode;
-                        _width = bmpDec.Width;
-                        _height = bmpDec.Height;
-
-                        _pixels = new FastColor[_width * _height];
-                        bmpDec.GetPixels(_pixels);
+                        _texture = bmpDec.GetTexture();
                     }
                     break;
 
@@ -159,14 +133,7 @@ namespace Joonaxii.Image.Codecs.Auto
                             case ImageDecodeResult.Success:
                                 break;
                         }
-
-                        _bpp = bmpDec.BitsPerPixel;
-                        _colorMode = bmpDec.ColorMode;
-                        _width = bmpDec.Width;
-                        _height = bmpDec.Height;
-
-                        _pixels = new FastColor[_width * _height];
-                        bmpDec.GetPixels(_pixels);
+                        _texture = bmpDec.GetTexture();
                     }
                     break;
 
@@ -175,31 +142,6 @@ namespace Joonaxii.Image.Codecs.Auto
 
             _isReady = true;
             return ImageDecodeResult.Success;
-        }
-
-        public byte[] GetRawPixelData(byte newBPP = 0)
-        {
-            if (!_isReady) { return null; }
-         
-            using(MemoryStream stream = new MemoryStream())
-            {
-                WriteRawPixelData(stream, newBPP);
-                stream.Flush();
-                return stream.ToArray();
-            }
-        }
-
-        public void WriteRawPixelData(Stream stream, byte newBPP = 0)
-        {
-            if (!_isReady) { return; }
-
-            newBPP = newBPP < 1 ? _bpp : newBPP;
-            bool indexed = _isIndexed & newBPP < 16;
-
-            using (BitWriter bw = new BitWriter(stream))
-            {
-
-            }
         }
 
         private static byte[] WebpToBmp(string hash, string webpDecoder, byte[] webpData)

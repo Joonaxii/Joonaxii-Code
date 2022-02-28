@@ -253,35 +253,35 @@ namespace Testing_Grounds
             //}
 
 
-            startJPG:
-            Console.Clear();
-            Console.WriteLine("Enter the full path of the testable JPG");
-            path = Console.ReadLine().Replace("\"", "");
+            //startJPG:
+            //Console.Clear();
+            //Console.WriteLine("Enter the full path of the testable JPG");
+            //path = Console.ReadLine().Replace("\"", "");
 
-            if (!File.Exists(path)) { goto startJPG; }
+            //if (!File.Exists(path)) { goto startJPG; }
 
-            using (FileStream fs = new FileStream(path, FileMode.Open))
-            using (JPEGDecoder jpeg = new JPEGDecoder(fs))
-            {
-                var res = jpeg.Decode(false);
-                Console.WriteLine($"JPEG Done [{res}]");
+            //using (FileStream fs = new FileStream(path, FileMode.Open))
+            //using (JPEGDecoder jpeg = new JPEGDecoder(fs))
+            //{
+            //    var res = jpeg.Decode(false);
+            //    Console.WriteLine($"JPEG Done [{res}]");
 
-                if (res == ImageDecodeResult.Success)
-                {
-                    using (FileStream fsP = new FileStream($"{Path.GetDirectoryName(path)}/{Path.GetFileNameWithoutExtension(path)}_PNG.png", FileMode.Create))
-                    using (PNGEncoder pngEnc = new PNGEncoder(jpeg.Width, jpeg.Height, ColorMode.RGB24))
-                    {
-                        //pngEnc.SetFlags(PNGFlags.ForceRGB);
-                        var pix = jpeg.GetPixelsRef();
-                        pngEnc.SetPixelsRef(ref pix);
-                        var pngRes = pngEnc.Encode(fsP, true);
-                        Console.WriteLine($"PNG Done [{pngRes}]");
-                    }
+            //    if (res == ImageDecodeResult.Success)
+            //    {
+            //        using (FileStream fsP = new FileStream($"{Path.GetDirectoryName(path)}/{Path.GetFileNameWithoutExtension(path)}_PNG.png", FileMode.Create))
+            //        using (PNGEncoder pngEnc = new PNGEncoder(jpeg.Width, jpeg.Height, ColorMode.RGB24))
+            //        {
+            //            //pngEnc.SetFlags(PNGFlags.ForceRGB);
+            //            //var pix = jpeg.GetPixelsRef();
+            //            //pngEnc.SetPixelsRef(ref pix);
+            //            var pngRes = pngEnc.Encode(fsP, true);
+            //            Console.WriteLine($"PNG Done [{pngRes}]");
+            //        }
 
-                }
+            //    }
 
-                Console.ReadKey();
-            }
+            //    Console.ReadKey();
+            //}
 
             startPNG:
             Console.Clear();
@@ -308,8 +308,8 @@ namespace Testing_Grounds
                         using (FileStream fsEncBroken = new FileStream($"{dirP}/{namP}_PAL_Broken.png", FileMode.Create))
                         using (PNGEncoder encPNG = new PNGEncoder(decPNG.Width, decPNG.Height, decPNG.ColorMode))
                         {
-                            var pix = decPNG.GetPixelsRef();
-                            encPNG.SetPixelsRef(ref pix);
+                            //var pix = decPNG.GetPixelsRef();
+                           // encPNG.SetPixelsRef(ref pix);
 
                             encPNG.Flags = ImageDecoderFlags.AllowBigIndices | ImageDecoderFlags.ForceRGB;
                             encPNG.PNGFlags = PNGFlags.UseBrokenSubFilter | PNGFlags.OverrideFilter;
@@ -395,7 +395,7 @@ namespace Testing_Grounds
                 h = png.Height;
                 pixels = new FastColor[w * h];
 
-                png.GetPixels(pixels);
+                //png.GetPixels(pixels);
             }
 
             string dir = Path.GetDirectoryName(path);

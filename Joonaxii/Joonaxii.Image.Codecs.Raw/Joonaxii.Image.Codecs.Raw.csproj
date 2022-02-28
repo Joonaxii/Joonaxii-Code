@@ -38,6 +38,7 @@
     <PlatformTarget>x64</PlatformTarget>
     <LangVersion>7.3</LangVersion>
     <ErrorReport>prompt</ErrorReport>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <OutputPath>bin\x64\Release\</OutputPath>
@@ -47,6 +48,7 @@
     <PlatformTarget>x64</PlatformTarget>
     <LangVersion>7.3</LangVersion>
     <ErrorReport>prompt</ErrorReport>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -88,6 +90,10 @@
     <ProjectReference Include="..\Joonaxii.Image.Processing\Joonaxii.Image.Processing.csproj">
       <Project>{5c45fef5-470c-4696-b328-f884dace518e}</Project>
       <Name>Joonaxii.Image.Processing</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.Image.Texturing\Joonaxii.Image.Texturing.csproj">
+      <Project>{8AA57CC5-4A7A-4789-8DB7-A73B98E76B71}</Project>
+      <Name>Joonaxii.Image.Texturing</Name>
     </ProjectReference>
     <ProjectReference Include="..\Joonaxii.Image\Joonaxii.Image.csproj">
       <Project>{3474a9e6-e0bd-4d39-aad1-795198dd4692}</Project>
