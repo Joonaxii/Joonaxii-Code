@@ -3,6 +3,7 @@ namespace Joonaxii.MathJX
 {
     public unsafe class BufferUtils
     {
+        #region Memset
         public static void Memset(sbyte[] data, sbyte val) => Memset(data, val, 0, data.Length);
         public static void Memset(sbyte[] data, sbyte val, int start, int size)
         {
@@ -107,6 +108,27 @@ namespace Joonaxii.MathJX
             }
         }
 
+        public static void Memset(byte[] data, long val, byte byteCount) => Memset(data, val, byteCount, 0, data.Length);
+        public static void Memset(byte[] data, long val, byte byteCount, int start, int size)
+        {
+            fixed (byte* buf = data) { Memset(buf, val, byteCount, start, size); }
+        }
+        public static void Memset(byte* buffer, long val, byte byteCount, int start, int size)
+        {
+            buffer += start;
+
+            byte* v;
+            while (size > 0)
+            {
+                v = (byte*)&val;
+                for (int i = 0; i < byteCount; i++)
+                {
+                    *buffer++ = *v++;
+                }
+                size -= byteCount;
+            }
+        }
+
         public static void Memset(ulong[] data, ulong val) => Memset(data, val, 0, data.Length);
         public static void Memset(ulong[] data, ulong val, int start, int size)
         {
@@ -144,6 +166,53 @@ namespace Joonaxii.MathJX
             for (int i = start; i < start + size; i++)
             {
                 buffer[i] = val;
+            }
+        }
+        #endregion
+
+        public static void Memcpy(byte[] dest, byte[] src) => Memcpy(dest, 0, src, 0, src.Length);
+        public static void Memcpy(byte[] dest, int startDest, byte[] src, int startSrc, int length)
+        {
+            fixed (byte* buf = dest)
+            {
+                fixed (byte* bufB = src)
+                {
+                    Memcpy(buf, startDest, bufB, startSrc, length);
+                }
+            }
+        }
+
+        public static void Memcpy(byte* dest, byte[] src)
+        {
+            fixed (byte* bufB = src)
+            {
+                Memcpy(dest, bufB, src.Length);
+            }
+        }
+        public static void Memcpy(byte* dest, int startDest, byte[] src, int startSrc, int length)
+        {
+            fixed (byte* bufB = src)
+            {
+                Memcpy(dest, startDest, bufB, startSrc, length);
+            }
+        }
+
+        public static void Memcpy(byte* dest, byte* src, int length)
+        {
+            while (length-- > 0)
+            {
+                *dest++ = (*src++);
+            }
+        }
+
+        public static void Memcpy(byte* dest, int startDest, byte* src, int startSrc, int length)
+        {
+            dest += startDest;
+            src += startSrc;
+
+            while (length-- > 0)
+            {
+                *dest++ = *src++;
             }
         }
     }

@@ -198,10 +198,5 @@ namespace Joonaxii.Image.Codecs.VTF
                     break;
             }
         }
-
-        public override void ValidateFormat()
-        {
-            //throw new NotImplementedException();
-        }
     }
 }

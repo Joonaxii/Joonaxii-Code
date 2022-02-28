@@ -10,20 +10,14 @@ namespace Joonaxii.Image.Codecs.PNG
         public int pixelsPerUnitY;
         public UnitSpecifier unitSpecifier;
 
-        public PHYSChunk(int len, byte[] data, uint crc) : base(len, PNGChunkType.pHYs, data, crc)
+        public PHYSChunk(BinaryReader br, int len, uint crc) : base(len, PNGChunkType.pHYs, crc, 0)
         {
-            using (var stream = GetStream())
-            using (BinaryReader br = new BinaryReader(stream))
-            {
-                pixelsPerUnitX = br.ReadInt32BigEndian();
-                pixelsPerUnitY = br.ReadInt32BigEndian();
-
-                unitSpecifier = (UnitSpecifier)br.ReadByte();
-            }
+            pixelsPerUnitX = br.ReadInt32BigEndian();
+            pixelsPerUnitY = br.ReadInt32BigEndian();
+            unitSpecifier = (UnitSpecifier)br.ReadByte();
         }
 
         public override string ToMinString() => $"{base.ToMinString()} [{pixelsPerUnitX} uX, {pixelsPerUnitY} uY, {unitSpecifier}]";
-
         public override string GetSpedcificInfoString()
         {
             StringBuilder sb = new StringBuilder();

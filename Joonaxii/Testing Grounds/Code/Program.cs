@@ -18,6 +18,7 @@ using New.JPEG;
 using Joonaxii.Image.Codecs.VTF;
 using Joonaxii.Image.Codecs.Raw;
 using Joonaxii.Image.Texturing;
+using Joonaxii.Data.Coding;
 
 namespace Testing_Grounds
 {
@@ -52,6 +53,7 @@ namespace Testing_Grounds
             Console.InputEncoding = Encoding.UTF8;
             Console.OutputEncoding = Encoding.UTF8;
 
+            Stopwatch sw = new Stopwatch();
             string path = "";
 
             startTEXTURE:
@@ -64,32 +66,144 @@ namespace Testing_Grounds
             using (FileStream fs = new FileStream(path, FileMode.Open))
             using (PNGDecoder png = new PNGDecoder(fs))
             {
+                png.LoadGeneralInformation(fs.Position);
+                int dataCRC = png.GetDataCRC(fs.Position);
+
+                Console.WriteLine($"\n-|PNG General Info [{png.Width}x{png.Height}, {png.BitsPerPixel}, {png.ColorMode}]");
+                Console.WriteLine($"-|--Data CRC [All]: 0x{Convert.ToString(dataCRC, 16).PadLeft(8, '0')}");
+                Console.WriteLine($"-|-------------------------------------------------------------------------");
+
+                sw.Restart();
                 var res = png.Decode(false);
-                Console.WriteLine($"PNG Done [{res}]");
+                sw.Stop();
+                Console.WriteLine($"-|PNG Decode Done [{res}]");
+                Console.WriteLine($"-|-{sw.Elapsed} sec, {sw.ElapsedMilliseconds} ms, {sw.ElapsedTicks} ticks");
+                Console.WriteLine($"-|---------------------------------------------------------------------------");
 
                 if (res == ImageDecodeResult.Success)
                 {
-                    using (Texture tex = new Texture(png.Width, png.Height, ColorMode.RGB24))
-                    using (FileStream fsP = new FileStream($"{Path.GetDirectoryName(path)}/{Path.GetFileNameWithoutExtension(path)}_PNG.png", FileMode.Create))
-                    using (FileStream fsPGR = new FileStream($"{Path.GetDirectoryName(path)}/{Path.GetFileNameWithoutExtension(path)}_PNG GR.png", FileMode.Create))
-                    using (PNGEncoder pngEnc = new PNGEncoder(png.Width, png.Height, ColorMode.RGB24))
+                    Texture tex = png.GetTexture();
+                    FastColor[] temp = new FastColor[tex.Width * tex.Height];
+
+                    TextureDataMode[] all = Enum.GetValues(typeof(TextureDataMode)) as TextureDataMode[];
+                    const int TEST_COUNT = 256;
+
+                    long min = long.MaxValue;
+                    long max = 0;
+                    long total = 0;
+                    double avg = 0;
+                    int y = Console.CursorTop;
+
+                    foreach (var mode in all)
                     {
-                        pngEnc.Flags = ImageDecoderFlags.ForceRGB;
-                        var pix = png.GetPixelsRef();
-                        tex.SetPixels(pix);
-                        pix = tex.GetPixels();
-                        pngEnc.SetPixelsRef(ref pix);
+                        min = long.MaxValue;
+                        max = 0;
+                        total = 0;
 
-                        var pngRes = pngEnc.Encode(fsP, true);
-                        Console.WriteLine($"PNG Done [{pngRes}]");
+                        y = Console.CursorTop;
 
-                        tex.SetPixels(pix);
-                        tex.Format = ColorMode.Grayscale;
-                        pix = tex.GetPixels();
-                        pngEnc.SetPixelsRef(ref pix);
+                        tex.PixelIterationMode = mode;
+                        if (tex.PixelIterationMode != mode) { continue; }
 
-                        pngRes = pngEnc.Encode(fsPGR, true);
-                        Console.WriteLine($"PNG Gray Done [{pngRes}]");
+                        Console.SetCursorPosition(0, y);
+                        Console.Write($"-|Test[{tex.PixelIterationMode }] {0}/{TEST_COUNT}".PadRight(64, ' '));
+                        for (int i = 0; i < TEST_COUNT; i++)
+                        {
+                            sw.Restart();
+                            tex.GetPixels(temp);
+                            sw.Stop();
+                            var l = sw.ElapsedTicks;
+                            min = l < min ? l : min;
+                            max = l > max ? l : max;
+                            total += l;
+
+                            Console.SetCursorPosition(0, y);
+                            Console.Write($"-|Test[{tex.PixelIterationMode }] {i + 1}/{TEST_COUNT}".PadRight(64, ' '));
+                        }
+                        Console.SetCursorPosition(0, y);
+
+                        avg = total / (double)TEST_COUNT;
+                        Console.WriteLine($"-|-Copy Pixels to FastColor Array VIA '{tex.PixelIterationMode}' [{TEST_COUNT} times]:".PadRight(64, ' '));
+                        Console.WriteLine($"-|   -Max: {((max / 10000.0) / 1000.0):F4} sec, {(long)((max / 10000.0))} ms, {max} ticks");
+                        Console.WriteLine($"-|   -Min: {((min / 10000.0) / 1000.0):F4} sec, {(long)((min / 10000.0))} ms, {min} ticks");
+                        Console.WriteLine($"-|   -Avg: {((avg / 10000.0) / 1000.0):F4} sec, {(long)((avg / 10000.0))} ms, {avg} ticks");
+                        Console.WriteLine($"-|-----------------------------------------------------");
+                    }
+                  
+                    try
+                    {
+                        //using (FileStream fsP = new FileStream($"{Path.GetDirectoryName(path)}/{Path.GetFileNameWithoutExtension(path)}_PNG.png", FileMode.Create))
+                        //using (PNGEncoder pngEnc = new PNGEncoder(png.Width, png.Height, png.ColorMode))
+                        //{
+                        //    //pngEnc.Flags = ImageDecoderFlags.ForceRGB;
+                        //    var pix = png.GetPixelsRef();
+                        //    pngEnc.SetPixelsRef(ref pix);
+
+                        //    var pngRes = pngEnc.Encode(fsP, true);
+                        //    Console.WriteLine($"PNG Encode Done [{pngRes}]");
+
+                        //    //sw = new Stopwatch();
+                        //    //sw.Start();
+                        //    //unsafe
+                        //    //{
+                        //    //    byte* ptr = (byte*)tex.LockBits();
+                        //    //    int bpp = tex.BitsPerPixel >> 3;
+                        //    //    for (int y = 0; y < tex.Height; y++)
+                        //    //    {
+                        //    //        int yP = y * tex.ScanSize;
+                        //    //        ptr = (byte*)(tex.Scan + yP);
+                        //    //        byte yS = (byte)Maths.Lerp(0, 255, (y / (tex.Height - 1.0f)));
+                        //    //        for (int x = 0; x < tex.Width; x++)
+                        //    //        {
+                        //    //            FastColor cc = new FastColor(yS, (byte)Maths.Lerp(0, 255, (x / (tex.Width - 1.0f))), 0);
+                        //    //            for (int i = 0; i < bpp; i++)
+                        //    //            {
+                        //    //                *ptr = cc[i];
+                        //    //                ptr++;
+                        //    //            }
+                        //    //        }
+                        //    //    }
+                        //    //    tex.UnlockBits();
+                        //    //}
+                        //    //sw.Stop();
+                        //    //Console.WriteLine($"{sw.Elapsed} sec, {sw.ElapsedMilliseconds} ms, {sw.ElapsedTicks} ticks");
+
+                        //    //pix = tex.GetPixels();
+                        //    //pngEnc.SetPixelsRef(ref pix);
+
+                        //    //var pngRes = pngEnc.Encode(fsPGR, true);
+                        //    //Console.WriteLine($"PNG Lock Bits Done [{pngRes}]");
+
+
+                        //    //sw.Restart();
+                        //    //for (int y = 0; y < tex.Height; y++)
+                        //    //{
+                        //    //    int yP = y * tex.ScanSize;
+                        //    //    byte yS = (byte)Maths.Lerp(0, 255, (y / (tex.Height - 1.0f)));
+                        //    //    for (int x = 0; x < tex.Width; x+=2)
+                        //    //    {
+                        //    //        FastColor cc = new FastColor(yS, (byte)Maths.Lerp(0, 255, (x / (tex.Width - 1.0f))), 0);
+                        //    //        tex.SetPixel(yS + x, cc);
+
+                        //    //        if(!isEven && x==tex.Width - 1) { continue; }
+
+                        //    //        cc = new FastColor(yS, (byte)Maths.Lerp(0, 255, ((x + 1) / (tex.Width - 1.0f))), 0);
+                        //    //        tex.SetPixel(yS + x + 1, cc);
+                        //    //    }
+                        //    //}
+                        //    //sw.Stop();
+                        //    //Console.WriteLine($"{sw.Elapsed} sec, {sw.ElapsedMilliseconds} ms, {sw.ElapsedTicks} ticks");
+
+                        //    //pix = tex.GetPixels();
+                        //    //pngEnc.SetPixelsRef(ref pix);
+
+                        //    //pngRes = pngEnc.Encode(fsP, true);
+                        //    //Console.WriteLine($"PNG SetPixel Done [{pngRes}]");
+                        //}
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e.Message);
                     }
                 }
                 Console.ReadKey();
@@ -139,35 +253,35 @@ namespace Testing_Grounds
             //}
 
 
-            //startJPG:
-            //Console.Clear();
-            //Console.WriteLine("Enter the full path of the testable JPG");
-            //path = Console.ReadLine().Replace("\"", "");
+            startJPG:
+            Console.Clear();
+            Console.WriteLine("Enter the full path of the testable JPG");
+            path = Console.ReadLine().Replace("\"", "");
 
-            //if (!File.Exists(path)) { goto startJPG; }
+            if (!File.Exists(path)) { goto startJPG; }
 
-            //using (FileStream fs = new FileStream(path, FileMode.Open))
-            //using (JPEGDecoder jpeg = new JPEGDecoder(fs))
-            //{
-            //    var res = jpeg.Decode(false);
-            //    Console.WriteLine($"JPEG Done [{res}]");
+            using (FileStream fs = new FileStream(path, FileMode.Open))
+            using (JPEGDecoder jpeg = new JPEGDecoder(fs))
+            {
+                var res = jpeg.Decode(false);
+                Console.WriteLine($"JPEG Done [{res}]");
 
-            //    if (res == ImageDecodeResult.Success)
-            //    {
-            //        using (FileStream fsP = new FileStream($"{Path.GetDirectoryName(path)}/{Path.GetFileNameWithoutExtension(path)}_PNG.png", FileMode.Create))
-            //        using (PNGEncoder pngEnc = new PNGEncoder(jpeg.Width, jpeg.Height, ColorMode.RGB24))
-            //        {
-            //            pngEnc.SetFlags(PNGFlags.ForceRGB);
-            //            var pix = jpeg.GetPixelsRef();
-            //            pngEnc.SetPixelsRef(ref pix);
-            //            var pngRes = pngEnc.Encode(fsP, true);
-            //            Console.WriteLine($"PNG Done [{pngRes}]");
-            //        }
+                if (res == ImageDecodeResult.Success)
+                {
+                    using (FileStream fsP = new FileStream($"{Path.GetDirectoryName(path)}/{Path.GetFileNameWithoutExtension(path)}_PNG.png", FileMode.Create))
+                    using (PNGEncoder pngEnc = new PNGEncoder(jpeg.Width, jpeg.Height, ColorMode.RGB24))
+                    {
+                        //pngEnc.SetFlags(PNGFlags.ForceRGB);
+                        var pix = jpeg.GetPixelsRef();
+                        pngEnc.SetPixelsRef(ref pix);
+                        var pngRes = pngEnc.Encode(fsP, true);
+                        Console.WriteLine($"PNG Done [{pngRes}]");
+                    }
 
-            //    }
+                }
 
-            //    Console.ReadKey();
-            //}
+                Console.ReadKey();
+            }
 
             startPNG:
             Console.Clear();
@@ -196,7 +310,7 @@ namespace Testing_Grounds
                         {
                             var pix = decPNG.GetPixelsRef();
                             encPNG.SetPixelsRef(ref pix);
-                       
+
                             encPNG.Flags = ImageDecoderFlags.AllowBigIndices | ImageDecoderFlags.ForceRGB;
                             encPNG.PNGFlags = PNGFlags.UseBrokenSubFilter | PNGFlags.OverrideFilter;
                             encPNG.SetOverrideFilter(PNGFilterMethod.Average);
@@ -204,9 +318,9 @@ namespace Testing_Grounds
                             var resEnc = encPNG.Encode(fsEnc, false);
                             switch (resEnc)
                             {
-                                default: Console.WriteLine($"PNG Encode Failed: [{resEnc}, {encPNG.Flags}]"); break;
+                                default: Console.WriteLine($"PNG Encode Failed: [{resEnc}, {encPNG.Flags}, {encPNG.PNGFlags}]"); break;
                                 case ImageEncodeResult.Success:
-                                    Console.WriteLine($"PNG Encode [{resEnc}, {encPNG.Flags}]!");
+                                    Console.WriteLine($"PNG Encode [{resEnc}, {encPNG.Flags}, {encPNG.PNGFlags}]!");
                                     break;
                             }
 
@@ -217,9 +331,9 @@ namespace Testing_Grounds
                             resEnc = encPNG.Encode(fsEncFilt, false);
                             switch (resEnc)
                             {
-                                default: Console.WriteLine($"PNG Encode Failed: [{resEnc}, {encPNG.Flags}]"); break;
+                                default: Console.WriteLine($"PNG Encode Failed: [{resEnc}, {encPNG.Flags}, {encPNG.PNGFlags}]"); break;
                                 case ImageEncodeResult.Success:
-                                    Console.WriteLine($"PNG Encode [{resEnc}, {encPNG.Flags}]!");
+                                    Console.WriteLine($"PNG Encode [{resEnc}, {encPNG.Flags}, {encPNG.PNGFlags}]!");
                                     break;
                             }
 
@@ -230,22 +344,22 @@ namespace Testing_Grounds
                             resEnc = encPNG.Encode(fsEncFiltF, false);
                             switch (resEnc)
                             {
-                                default: Console.WriteLine($"PNG Encode Failed: [{resEnc}, {encPNG.Flags}]"); break;
+                                default: Console.WriteLine($"PNG Encode Failed: [{resEnc}, {encPNG.Flags}, {encPNG.PNGFlags}]"); break;
                                 case ImageEncodeResult.Success:
-                                    Console.WriteLine($"PNG Encode [{resEnc}, {encPNG.Flags}]!");
+                                    Console.WriteLine($"PNG Encode [{resEnc}, {encPNG.Flags}, {encPNG.PNGFlags}]!");
                                     break;
                             }
 
                             encPNG.Flags = (ImageDecoderFlags.AllowBigIndices | ImageDecoderFlags.ForcePalette/*| PNGFlags.OverrideFilter*/);
                             encPNG.PNGFlags = PNGFlags.None;
-                           //encPNG.SetOverrideFilter(PNGFilterMethod.Paeth);
+                            //encPNG.SetOverrideFilter(PNGFilterMethod.Paeth);
 
-                           resEnc = encPNG.Encode(fsEncBroken, false);
+                            resEnc = encPNG.Encode(fsEncBroken, false);
                             switch (resEnc)
                             {
-                                default: Console.WriteLine($"PNG Encode Failed: [{resEnc}, {encPNG.Flags}]"); break;
+                                default: Console.WriteLine($"PNG Encode Failed: [{resEnc}, {encPNG.Flags}, {encPNG.PNGFlags}]"); break;
                                 case ImageEncodeResult.Success:
-                                    Console.WriteLine($"PNG Encode [{resEnc}, {encPNG.Flags}]!");
+                                    Console.WriteLine($"PNG Encode [{resEnc}, {encPNG.Flags}, {encPNG.PNGFlags}]!");
                                     break;
                             }
                         }

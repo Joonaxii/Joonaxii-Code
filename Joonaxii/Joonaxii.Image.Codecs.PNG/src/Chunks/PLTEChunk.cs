@@ -10,43 +10,42 @@ namespace Joonaxii.Image.Codecs.PNG
     {
         public FastColor[] pixels;
 
-        public PLTEChunk(IList<ColorContainer> palette) : base(0, PNGChunkType.PLTE, null, 0)
+        public PLTEChunk(BinaryReader br, int len, uint crc) : base(len, PNGChunkType.PLTE, crc, 0)
         {
-            int palLen = palette.Count * 3;
-           // using (var stream = new MemoryStream(new byte[palLen], true))
-            //using (BinaryWriter bw = new BinaryWriter(stream))
+            int palLen = (length / 3);
+            pixels = new FastColor[palLen];
+
+            unsafe
             {
-                data = new byte[palLen];
-                pixels = new FastColor[palette.Count];
-                int pos = 0;
-                for (int i = 0; i < palette.Count; i++)
+                fixed (FastColor* ptr = pixels)
                 {
-                    var c = palette[i].color;
-                    IOExtensions.WriteToByteArray(data, pos, c.r, 1, false);
-                    IOExtensions.WriteToByteArray(data, pos + 1, c.g, 1, false);
-                    IOExtensions.WriteToByteArray(data, pos + 2, c.b, 1, false);
-      
-                    pos += 3;
-                    pixels[i] = c;
+                    for (int i = 0; i < palLen; i++)
+                    {
+                        ptr[i] = new FastColor(br.ReadByte(), br.ReadByte(), br.ReadByte());
+                    }
                 }
-                length = palLen;
-                crc = GetCrc();
             }
         }
 
-        public PLTEChunk(int len, byte[] data, uint crc) : base(len, PNGChunkType.PLTE, data, crc)
+        public static void Write(BinaryWriter bw, IList<ColorContainer> palette)
         {
-            pixels = new FastColor[0];
-
-            using (var stream = GetStream())
-            using (BinaryReader br = new BinaryReader(stream))
+            var length = palette.Count * 3;
+            unsafe
             {
-                int palLen = (length / 3);
-                pixels = new FastColor[palLen];
+                byte[] plt = new byte[length + 4];
 
-                for (int i = 0; i < palLen; i++)
+                fixed(byte* ptr = plt)
                 {
-                    pixels[i] = new FastColor(br.ReadByte(), br.ReadByte(), br.ReadByte());
+                    IOExtensions.WriteToByteArray(plt, 0, (int)PNGChunkType.PLTE, 4, true);
+                    int pos = 4;
+
+                    for (int i = 0; i < palette.Count; i++)
+                    {
+                        var c = palette[i].color;
+                        IOExtensions.WriteToByteArray(plt, pos, (int)c, 3, false);
+                        pos += 3;
+                    }
+                    Write(bw, ptr, length);
                 }
             }
         }
@@ -63,13 +62,17 @@ namespace Joonaxii.Image.Codecs.PNG
             }
         }
 
-        public void ApplyTransparency(byte[] data)
+        public void ApplyTransparency(Stream stream, tRNSChunk chunk)
         {
-            int min = Math.Min(data.Length, pixels.Length);
+            long pos = stream.Position;
+            stream.Seek(chunk.dataStart, SeekOrigin.Begin);
+
+            int min = Math.Min(chunk.length, pixels.Length);
             for (int i = 0; i < min; i++)
             {
-                pixels[i].Set(data[i]);
+                pixels[i].SetAlpha((byte)stream.ReadByte());
             }
+            stream.Seek(pos, SeekOrigin.Begin);
         }
 
         public override string ToMinString() => $"{base.ToMinString()} [{pixels.Length} colors]";

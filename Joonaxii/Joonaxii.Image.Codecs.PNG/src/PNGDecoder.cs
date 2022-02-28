@@ -1,9 +1,15 @@
-﻿using Joonaxii.Data;
+﻿using Joonaxii.Collections;
+using Joonaxii.Data;
+using Joonaxii.Data.Coding;
+using Joonaxii.Debugging;
+using Joonaxii.Image.Texturing;
+using Joonaxii.IO;
 using Joonaxii.MathJX;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Runtime.InteropServices;
 
 namespace Joonaxii.Image.Codecs.PNG
 {
@@ -12,6 +18,11 @@ namespace Joonaxii.Image.Codecs.PNG
         public const float DEFAULT_GAMMA = 1.0f / 2.2f;
 
         private PNGGammaReadMode _gammaMode;
+
+        private IHDRChunk _header;
+        private List<PNGChunk> _dataChunks = null;
+
+        private int _requiredData = 0;
 
         public PNGDecoder(Stream stream) : this(PNGGammaReadMode.Ignore, stream) { }
         public PNGDecoder(PNGGammaReadMode gammaMode, Stream stream) : base(stream) { _gammaMode = gammaMode; }
@@ -26,51 +37,72 @@ namespace Joonaxii.Image.Codecs.PNG
                 if (hdr != HeaderType.PNG) { return ImageDecodeResult.InvalidImageFormat; }
             }
 
-            var strm = _br.BaseStream;
             Dictionary<PNGChunkType, PNGChunk> chunkLut = new Dictionary<PNGChunkType, PNGChunk>();
-
-            IHDRChunk hdrChnk = null;
-            PLTEChunk paletteChnk = null;
-            gAMAChunk gammaChnk = null;
-
-            List<SPLTChunk> sPalettes = new List<SPLTChunk>();
-#if DEBUG
-            List<PNGChunk> chunks = new List<PNGChunk>();
-            Dictionary<PNGFilterMethod, int> filterCounts = new Dictionary<PNGFilterMethod, int>();
-            int totalFilters = 0;
-#endif
-            int stateIDAT = 0;
-            using (MemoryStream ms = new MemoryStream())
+            unsafe
             {
-                while (strm.Length > strm.Position)
+                PLTEChunk paletteChnk = null;
+                gAMAChunk gammaChnk = null;
+
+                _dataChunks = new List<PNGChunk>();
+
+                List<SPLTChunk> sPalettes = new List<SPLTChunk>();
+#if DEBUG
+                List<PNGChunk> chunks = new List<PNGChunk>();
+                Dictionary<PNGFilterMethod, int> filterCounts = new Dictionary<PNGFilterMethod, int>();
+                int totalFilters = 0;
+#endif
+
+                int stateIDAT = 0;
+                while (_stream.Length > _stream.Position)
                 {
-                    var chnk = PNGChunk.Read(_br);
-                    if (!chnk.IsValid)
-                    {
-                        uint val = chnk.GetCrc();
-                        System.Diagnostics.Debug.Print($"{chnk.ToMinString()}\n -Hash was: {val} [0x{Convert.ToString(val, 16).PadLeft(8, '0')}]\n -Should be: {chnk.crc} [0x{Convert.ToString(chnk.crc, 16).PadLeft(8, '0')}]");
-                        return ImageDecodeResult.HashMismatch;
-                    }
+                    var chnk = PNGChunk.Read(_br, _stream, ValidateChunk);
+                    if (!chnk.IsValid) { return ImageDecodeResult.HashMismatch; }
 #if DEBUG
                     chunks.Add(chnk);
 #endif
                     switch (chnk.chunkType)
                     {
                         case PNGChunkType.IEND: break;
-
                         default:
-                            if (chunkLut.ContainsKey(chnk.chunkType)) 
+                            if (chunkLut.ContainsKey(chnk.chunkType))
                             {
                                 System.Diagnostics.Debug.Print($"Found a duplicate of '{chnk.chunkType}'");
-                                return ImageDecodeResult.DuplicateChunkFound; 
+                                return ImageDecodeResult.DuplicateChunkFound;
                             }
 
                             chunkLut.Add(chnk.chunkType, chnk);
                             switch (chnk.chunkType)
                             {
                                 case PNGChunkType.IHDR:
-                                    hdrChnk = chnk as IHDRChunk;
-                                    System.Diagnostics.Debug.Print($"{hdrChnk}");
+                                    _header = chnk as IHDRChunk;
+                                    System.Diagnostics.Debug.Print($"{_header}");
+
+                                    _width = _header.width;
+                                    _height = _header.height;
+                                    _bpp = _header.bitDepth;
+
+                                    switch (_header.colorType)
+                                    {
+                                        case PNGColorType.GRAYSCALE:
+                                            _bpp = 8;
+                                            _colorMode = ColorMode.Grayscale;
+                                            break;
+                                        case PNGColorType.PALETTE_IDX:
+                                            _colorMode = ColorMode.Indexed;
+                                            _bpp = _header.bitDepth;
+                                            break;
+
+                                        case PNGColorType.RGB:
+                                            _bpp = 24;
+                                            _colorMode = ImageCodecExtensions.GetColorMode(_bpp);
+                                            break;
+
+                                        case PNGColorType.GRAY_ALPHA:
+                                        case PNGColorType.RGB_ALPHA:
+                                            _bpp = 32;
+                                            _colorMode = ImageCodecExtensions.GetColorMode(_bpp);
+                                            break;
+                                    }
                                     break;
                                 case PNGChunkType.PLTE:
                                     paletteChnk = chnk as PLTEChunk;
@@ -81,7 +113,7 @@ namespace Joonaxii.Image.Codecs.PNG
                         case PNGChunkType.tRNS:
                             if (paletteChnk != null)
                             {
-                                paletteChnk.ApplyTransparency(chnk.data);
+                                paletteChnk.ApplyTransparency(_stream, chnk as tRNSChunk);
                             }
                             break;
 
@@ -91,7 +123,9 @@ namespace Joonaxii.Image.Codecs.PNG
                                 case 0: stateIDAT = 1; break;
                                 case 2: return ImageDecodeResult.DataMisalignment;
                             }
-                            ms.Write(chnk.data, 0, chnk.data.Length);
+
+                            _dataChunks.Add(chnk);
+                            _requiredData += chnk.length;
                             break;
 
                         case PNGChunkType.sPLT:
@@ -114,8 +148,24 @@ namespace Joonaxii.Image.Codecs.PNG
                             break;
                     }
 
-                    if (hdrChnk == null) { return ImageDecodeResult.DataCorrupted; }
+                    if (_header == null) { return ImageDecodeResult.DataCorrupted; }
                 }
+  
+                byte[] dataBuffer = new byte[_requiredData];
+                int bufPos = 0;
+
+                long pos = _stream.Position;
+                foreach (var chnk in _dataChunks)
+                {
+                    _stream.Seek(chnk.dataStart, SeekOrigin.Begin);
+
+                    int len = chnk.length;
+                    _stream.Read(dataBuffer, bufPos, len);
+                    bufPos += len;
+                }
+                
+                _dataChunks.Clear();
+                _stream.Seek(pos, SeekOrigin.Begin);
 
                 float gamma = 1.0f;
                 bool applyGamma = false;
@@ -143,7 +193,7 @@ namespace Joonaxii.Image.Codecs.PNG
                         }
                         break;
                 }
-
+              
                 const float BYTE_TO_FLOAT = 1.0f / 255.0f;
                 byte[] gammaTable = new byte[256];
                 for (int i = 0; i < 256; i++)
@@ -153,204 +203,265 @@ namespace Joonaxii.Image.Codecs.PNG
                     gammaTable[i] = (byte)val;
                 }
                 paletteChnk?.ApplyGamma(gammaTable);
-
-                ms.Seek(0, SeekOrigin.Begin);
-                byte flagA = (byte)ms.ReadByte();
-                byte flagB = (byte)ms.ReadByte();
-                ms.Seek(2, SeekOrigin.Begin);
-
-                _width = hdrChnk.width;
-                _height = hdrChnk.height;
-                _bpp = hdrChnk.bitDepth;
-
-                switch (hdrChnk.colorType)
+           
+                _texture = new Texture(_width, _height, _colorMode);
+                if (_colorMode == ColorMode.Indexed)
                 {
-                    case PNGColorType.GRAYSCALE:
-                        _bpp = 8;
-                        _colorMode = ColorMode.Grayscale;
-                        break;
-                    case PNGColorType.PALETTE_IDX:
-                        _colorMode = ColorMode.Indexed;
-                        _bpp = hdrChnk.bitDepth;
-                        break;
-
-                    case PNGColorType.RGB:
-                        _bpp = 24;
-                        _colorMode = ImageCodecExtensions.GetColorMode(_bpp);
-                        break;
-
-                    case PNGColorType.GRAY_ALPHA:
-                    case PNGColorType.RGB_ALPHA:
-                        _bpp = 32;
-                        _colorMode = ImageCodecExtensions.GetColorMode(_bpp);
-                        break;
+                    _texture.SetPalette(paletteChnk.pixels);
                 }
 
-                _pixels = new FastColor[_width * _height];
-                var bytesPerPix = (byte)(hdrChnk.GetBytesPerPixel() * ((hdrChnk.bitDepth + 7) >> 3));
+                var bytesPerPix = (byte)(_header.GetBytesPerPixel() * ((_header.bitDepth + 7) >> 3));
                 System.Diagnostics.Debug.Print($"{_colorMode} => {_bpp}, {bytesPerPix}");
 
+                using (MemoryStream ms = new MemoryStream(dataBuffer))
                 using (DeflateStream brDat = new DeflateStream(ms, CompressionMode.Decompress))
-                using (MemoryStream msIn = new MemoryStream())
+                using (BufferedStream msOut = new BufferedStream(brDat, 8192))
                 {
-                    brDat.CopyTo(msIn);
-                    msIn.Seek(0, SeekOrigin.Begin);
+                    ms.Seek(2, SeekOrigin.Begin);
 
-                    byte[] buffer = new byte[8];
+                    int bytesPerLine = _header.GetBytesPerScanline();
+                    int bufSize = bytesPerLine << 1;
 
-                    var data = new byte[msIn.Length];
-                    msIn.Read(data, 0, data.Length);
-                    int posGottenTo = 0;
-                    switch (hdrChnk.interlaceMethod)
+                    bool usePalette = paletteChnk != null && _header.colorType == PNGColorType.PALETTE_IDX;
+                    int bufferOffset = bytesPerPix << 1;
+                    byte[] scanData = new byte[bufSize + bufferOffset];
+
+                    int readOffset = bytesPerLine + bufferOffset;
+                    int endOffset = bufSize + bufferOffset;
+                    var scanPtr = (byte*)_texture.LockBits();
+                    fixed (byte* scan = scanData)
                     {
-                        case InterlaceMethod.None:
-                            var bytesPerLine = hdrChnk.GetBytesPerScanline();
+                        byte* prior = scan + bytesPerPix;
+                        byte* prev = scan + bytesPerLine + bytesPerPix;
+                        byte* cur = scan + readOffset;
 
-                            for (int i = 0; i < _height; i++)
-                            {
-                                int index = i * (bytesPerLine + 1);
-                                int pixI = i * _width;
-                                PNGFilterMethod filterMode = (PNGFilterMethod)data[index++];
+                        switch (_header.interlaceMethod)
+                        {
+                            case InterlaceMethod.None:
+                                for (int i = 0; i < _height; i++)
+                                {
+                                    PNGFilterMethod filterMode = (PNGFilterMethod)msOut.ReadByte();
+                                    msOut.Read(scanData, readOffset, bytesPerLine);
 #if DEBUG
-                                if (filterCounts.ContainsKey(filterMode)) { filterCounts[filterMode]++; }
-                                else { filterCounts.Add(filterMode, 1); }
-                                totalFilters++;
+                                    if (filterCounts.ContainsKey(filterMode)) { filterCounts[filterMode]++; }
+                                    else { filterCounts.Add(filterMode, 1); }
+                                    totalFilters++;
 #endif
-                                int end = index + bytesPerLine;
-                                if (filterMode != PNGFilterMethod.None)
-                                {
-                                    ReverseFilter(data, filterMode, bytesPerPix, i, bytesPerLine);
-                                }
-                                int x = 0;
-
-                                if (paletteChnk != null && hdrChnk.colorType == PNGColorType.PALETTE_IDX)
-                                {
-                                    posGottenTo = index;
-                                    for (int j = 0; j < _width; j++)
+                                    if (filterMode != PNGFilterMethod.None)
                                     {
-                                        Buffer.BlockCopy(data, index + j * bytesPerPix, buffer, 0, bytesPerPix);
-
-                                        int indexP = 0;
-                                        for (int p = 0; p < bytesPerPix; p++)
-                                        {
-                                            indexP |= (buffer[p] << (p << 3));
-                                        }
-                                        _pixels[pixI + j] = indexP >= paletteChnk.pixels.Length ? FastColor.clear : paletteChnk.pixels[indexP];
-                                        posGottenTo += bytesPerPix;
+                                        ReverseFilter(prior, scan, prev, cur, filterMode, bytesPerLine);
                                     }
-                                    continue;
-                                }
+                                    BufferUtils.Memcpy(prior, cur, bytesPerLine);
+                                  
+                                    if (usePalette)
+                                    {
+                                        BufferUtils.Memcpy(scanPtr, cur, bytesPerLine);
+                                        scanPtr += bytesPerLine;
+                                        continue;
+                                    }
 
-                                posGottenTo = end;
-                                for (int j = index; j < end; j += bytesPerPix)
-                                {
-                                    Buffer.BlockCopy(data, j, buffer, 0, bytesPerPix);
                                     switch (bytesPerPix)
                                     {
-                                        case 1:
-                                            _pixels[pixI + x] = new FastColor(buffer[0]);
-                                            break;
-                                        case 2:
-                                            _pixels[pixI + x] = new FastColor(buffer[1], buffer[1], buffer[1], buffer[0]);
-                                            break;
-                                        case 3:
-                                            _pixels[pixI + x] = new FastColor(gammaTable[buffer[0]], gammaTable[buffer[1]], gammaTable[buffer[2]]);
-                                            break;
-
-                                        case 4:
-                                            _pixels[pixI + x] = new FastColor(gammaTable[buffer[0]], gammaTable[buffer[1]], gammaTable[buffer[2]], buffer[3]);
+                                        default:
+                                            BufferUtils.Memcpy(scanPtr, cur, bytesPerLine);
+                                            scanPtr += bytesPerLine;
                                             break;
                                         case 8:
                                             const float SHORT_TO_BYTE = (1.0f / ushort.MaxValue) * 255;
-                                            ushort r = (ushort)(buffer[1] + (buffer[0] << 8));
-                                            ushort g = (ushort)(buffer[3] + (buffer[2] << 8));
-                                            ushort b = (ushort)(buffer[5] + (buffer[4] << 8));
-                                            ushort a = (ushort)(buffer[7] + (buffer[6] << 8));
+                                            for (int j = 0; j < bytesPerLine; j += 8)
+                                            {
+                                                ushort r = (ushort)(cur[j + 1] + (cur[j + 0] << 8));
+                                                ushort g = (ushort)(cur[j + 3] + (cur[j + 2] << 8));
+                                                ushort b = (ushort)(cur[j + 5] + (cur[j + 4] << 8));
+                                                ushort a = (ushort)(cur[j + 7] + (cur[j + 6] << 8));
 
-                                            _pixels[pixI + x] = new FastColor(
-                                                gammaTable[(byte)(r * SHORT_TO_BYTE)],
-                                                gammaTable[(byte)(g * SHORT_TO_BYTE)],
-                                                gammaTable[(byte)(b * SHORT_TO_BYTE)],
-                                                (byte)(a * SHORT_TO_BYTE));
+                                                *scanPtr++ = gammaTable[(byte)(r * SHORT_TO_BYTE)];
+                                                *scanPtr++ = gammaTable[(byte)(g * SHORT_TO_BYTE)];
+                                                *scanPtr++ = gammaTable[(byte)(b * SHORT_TO_BYTE)];
+                                                *scanPtr++ = (byte)(a * SHORT_TO_BYTE);
+                                            }
                                             break;
                                     }
-                                    x++;
                                 }
-                            }
-                            break;
-                        default: return ImageDecodeResult.NotSupported;
+                                break;
+                            default: return ImageDecodeResult.NotSupported;
+                        }
                     }
 
-
-                    System.Diagnostics.Debug.Print($"ZLIB Flags [0x{Convert.ToString(flagA, 16).PadLeft(2, '0')}, 0x{Convert.ToString(flagB, 16).PadLeft(2, '0')}]\nFinal Read Pos: {posGottenTo}, {data.Length - posGottenTo} diff to length");
+                    _texture.UnlockBits();
                 }
-
-            }
 #if DEBUG
-            foreach (var chunk in chunks)
-            {
-                System.Diagnostics.Debug.Print($"{chunk.ToMinString()}");
-            }
-            System.Diagnostics.Debug.Print(new string('=', 32));
-            System.Diagnostics.Debug.Print("");
+                foreach (var filters in filterCounts)
+                {
+                    System.Diagnostics.Debug.Print($"Filter: {filters.Key}, {filters.Value} ({((filters.Value / (float)totalFilters) * 100.0f).ToString("F2")}%)");
+                }
+                System.Diagnostics.Debug.Print(new string('=', 32));
+                System.Diagnostics.Debug.Print("");
 
-            foreach (var filters in filterCounts)
-            {
-                System.Diagnostics.Debug.Print($"Filter: {filters.Key}, {filters.Value} ({((filters.Value / (float)totalFilters) * 100.0f).ToString("F2")}%)");
-            }
-            System.Diagnostics.Debug.Print(new string('=', 32));
-            System.Diagnostics.Debug.Print("");
 #endif
+            }
             return ImageDecodeResult.Success;
         }
 
-        private void ReverseFilter(byte[] data, PNGFilterMethod filterMode, int bytesPerPixel, int scanLine, int bytesPerLine)
+        public override void LoadGeneralInformation(long pos)
         {
-            bytesPerLine++;
-            int prior = (scanLine - 1) * bytesPerLine;
-            scanLine *= bytesPerLine;
+            base.LoadGeneralInformation(pos);
+            long cur = _stream.Position;
+            _stream.Seek(pos, SeekOrigin.Begin);
 
-            for (int i = 1; i < bytesPerLine; i++)
+            var hdr = HeaderManager.GetFileType(_br, false);
+            if (hdr == HeaderType.PNG)
             {
-                int j = scanLine + i;
-                int x = i;
-                switch (filterMode)
+                PNGChunk dummy = new PNGChunk();
+                while (_header == null)
                 {
-                    case PNGFilterMethod.Sub:
-                        data[j] += Raw(x - bytesPerPixel);
-                        break;
+                    var chnk = PNGChunk.Read(_br, _stream, (PNGChunkType curT) =>
+                    {
+                        switch (curT)
+                        {
+                            case PNGChunkType.IHDR:
+                                return _header;
+                            default: return dummy;
+                        }
+                    });
 
-                    case PNGFilterMethod.Up:
-                        data[j] += Prior(x);
-                        break;
-
-                    default: System.Diagnostics.Debug.Print($"Filter: {filterMode} not implemented! [{x}, {scanLine / bytesPerLine}]"); break;
-                    case PNGFilterMethod.Average:
-                        data[j] += (byte)((Raw(x - bytesPerPixel) + Prior(x)) >> 1);
-                        break;
-                    case PNGFilterMethod.Paeth:
-                        byte l = Raw(x - bytesPerPixel);
-                        byte a = Prior(x);
-                        byte aL = Prior(x - bytesPerPixel);
-                        data[j] += GetPaethValue(l, a, aL);
-                        break;
+                    if (chnk.chunkType == PNGChunkType.IHDR)
+                    {
+                        SetHeaderChunk(chnk);
+                    }
                 }
             }
+            _stream.Seek(cur, SeekOrigin.Begin);
+        }
 
-            byte Prior(int i)
+        public override int GetDataCRC(long pos)
+        {
+            int crc = 0;
+            long cur = _stream.Position;
+            _stream.Seek(pos, SeekOrigin.Begin);
+
+            var hdr = HeaderManager.GetFileType(_br, false);
+            BufferList crcList = new BufferList(4);
+            if (hdr == HeaderType.PNG)
             {
-                if (i < 1 | prior < 0) { return 0; }
+                PNGChunk dummy = new PNGChunk();
 
-                int v = prior + i;
-                return data[v];
+                while (true)
+                {
+                    uint? crcIn = PNGChunk.ReadCrc(_br, _stream, out PNGChunkType chunkType, (PNGChunkType curT) =>
+                    {
+                        switch (curT)
+                        {
+                            case PNGChunkType.PLTE:
+                            case PNGChunkType.tRNS:
+                            case PNGChunkType.sPLT:
+                            case PNGChunkType.IHDR:
+                            case PNGChunkType.IDAT:
+                                return false;
+
+                            default: return true;
+                        }
+                    });
+                    if(chunkType == PNGChunkType.IEND) { break; }
+
+                    if (crcIn == null) { continue; }
+                    crcList.Add(crcIn.GetValueOrDefault());
+                }
+            }
+            _stream.Seek(cur, SeekOrigin.Begin);
+
+            byte[] data = new byte[crcList.ByteSize];
+            crcList.CopyTo(data, 0);
+            unsafe
+            {
+                fixed (byte* b = data)
+                {
+                    crc = (int)CRC.Calculate(b, 0, data.Length);
+                }
+            }
+            return crc;
+        }
+
+        private void SetHeaderChunk(PNGChunk chunk)
+        {
+            _header = chunk as IHDRChunk;
+            _width = _header.width;
+            _height = _header.height;
+            _bpp = _header.bitDepth;
+
+            if(_texture != null)
+            {
+
             }
 
-            byte Raw(int i)
-            {
-                if (i < 1) { return 0; }
+            _texture = new Texture();
 
-                int v = scanLine + i;
-                return data[v];
+            switch (_header.colorType)
+            {
+                case PNGColorType.GRAYSCALE:
+                    _bpp = 8;
+                    _colorMode = ColorMode.Grayscale;
+                    break;
+                case PNGColorType.PALETTE_IDX:
+                    _colorMode = ColorMode.Indexed;
+                    _bpp = _header.bitDepth;
+                    break;
+
+                case PNGColorType.RGB:
+                    _bpp = 24;
+                    _colorMode = ImageCodecExtensions.GetColorMode(_bpp);
+                    break;
+
+                case PNGColorType.GRAY_ALPHA:
+                case PNGColorType.RGB_ALPHA:
+                    _bpp = 32;
+                    _colorMode = ImageCodecExtensions.GetColorMode(_bpp);
+                    break;
+            }
+            break;
+        }
+
+        private PNGChunk ValidateChunk(PNGChunkType type)
+        {
+            switch (type)
+            {
+                default: return null;
+                case PNGChunkType.IHDR: return _header;
+            }
+        }
+
+        private unsafe void ReverseFilter(byte* prior, byte* priorPrev, byte* prev, byte* scan, PNGFilterMethod filterMode, int scanSize)
+        {
+            switch (filterMode)
+            {
+                default: System.Diagnostics.Debug.Print($"Filter: {filterMode} not implemented!"); break;
+
+                case PNGFilterMethod.Sub:
+                    while (scanSize-- > 0)
+                    {
+                        *scan++ += *prev++;
+                    }
+                    break;
+
+                case PNGFilterMethod.Up:
+                    while (scanSize-- > 0)
+                    {
+                        *scan++ += *prior++;
+                    }
+                    break;
+
+                case PNGFilterMethod.Average:
+                    while (scanSize-- > 0)
+                    {
+                        *scan++ += (byte)((*prev++ + *prior++) >> 1);
+                    }
+                    break;
+                case PNGFilterMethod.Paeth:
+                    while (scanSize-- > 0)
+                    {
+                        *scan++ += GetPaethValue(*prev++, *prior++, *priorPrev++);
+                    }
+                    break;
             }
         }
 
@@ -366,31 +477,11 @@ namespace Joonaxii.Image.Codecs.PNG
             return pB <= pC ? b : c;
         }
 
-        public override void ValidateFormat()
+        public override void Dispose()
         {
-            switch (_colorMode)
-            {
-                case ColorMode.ARGB555:
-                    _colorMode = ColorMode.RGBA32;
-                    _bpp = 32;
-                    break;
-
-                case ColorMode.RGB555:
-                case ColorMode.RGB565:
-                    _colorMode = ColorMode.RGB24;
-                    _bpp = 24;
-                    break;
-
-                case ColorMode.OneBit:
-                    _colorMode = ColorMode.Grayscale;
-                    _bpp = 8;
-                    break;
-
-                case ColorMode.Indexed4:
-                    _colorMode = ColorMode.Indexed8;
-                    _bpp = 8;
-                    break;
-            }
+            base.Dispose();
+            _texture?.Dispose();
+            _texture = null;
         }
     }
 }

@@ -1,4 +1,6 @@
-﻿using Joonaxii.IO;
+﻿using Joonaxii.Image.Texturing;
+using Joonaxii.IO;
+using Joonaxii.MathJX;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -431,6 +433,77 @@ namespace Joonaxii.Image.Codecs
                 return;
             }
             WriteColorInternal(bw, color, pFmt);
+        }
+
+        public static unsafe void ReadColors(this BinaryReader br, Texture texture, PixelByteOrder orderSrc)
+        {
+            byte[] scanBuffer = new byte[texture.ScanSize];
+            byte* scan = (byte*)texture.LockBits();
+
+            fixed(byte* scanBuf = scanBuffer)
+            {
+                if (orderSrc == PixelByteOrder.RGBA | texture.Format == ColorMode.ARGB555 | (texture.Format == ColorMode.Indexed))
+                {
+                    for (int i = 0; i < texture.Height; i++)
+                    {
+                        br.Read(scanBuffer, 0, texture.ScanSize);
+                        BufferUtils.Memcpy(scanBuf, scan, texture.ScanSize);
+                        scan += texture.ScanSize;
+                    }
+                    texture.UnlockBits();
+                    return;
+                }
+
+                int h = texture.Height;
+                byte* scanPtr;
+                switch (orderSrc)
+                {
+                    case PixelByteOrder.ARGB:
+                        scanPtr = scanBuf;
+                        while (h-- > 0)
+                        {
+                            br.Read(scanBuffer, 0, texture.ScanSize);
+                            for (int i = 0; i < texture.ScanSize; i = +texture.BytesPerPixel)
+                            {
+                                for (int j = 0; j < texture.BytesPerPixel; j++)
+                                {
+                                    switch (j)
+                                    {
+                                        default: scan[3] = *scanPtr++; break;
+                                        case 1: scan[0] = *scanPtr++; break;
+                                        case 2: scan[1] = *scanPtr++; break;
+                                        case 3: scan[2] = *scanPtr++; break;
+                                    }
+                                }
+                                scan += texture.BytesPerPixel;
+                            }
+                        }
+                        break;
+
+                    case PixelByteOrder.ABGR:
+                        scanPtr = scanBuf;
+                        while (h-- > 0)
+                        {
+                            br.Read(scanBuffer, 0, texture.ScanSize);
+                            for (int i = 0; i < texture.ScanSize; i = +texture.BytesPerPixel)
+                            {
+                                for (int j = 0; j < texture.BytesPerPixel; j++)
+                                {
+                                    switch (j)
+                                    {
+                                        default: scan[3] = *scanPtr++; break;
+                                        case 1: scan[2] = *scanPtr++; break;
+                                        case 2: scan[1] = *scanPtr++; break;
+                                        case 3: scan[0] = *scanPtr++; break;
+                                    }
+                                }
+                                scan += texture.BytesPerPixel;
+                            }
+                        }
+                        break;
+                }
+                texture.UnlockBits();
+            }
         }
 
         public static FastColor ReadColor(this BitReader br, ColorMode pFmt, bool reverse)

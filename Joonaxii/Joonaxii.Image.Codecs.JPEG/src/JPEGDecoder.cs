@@ -137,11 +137,11 @@ namespace Joonaxii.Image.Codecs.JPEG
                     }
 
                     byte precision = _br.ReadByte();
-                    _height = _br.ReadUInt16BigEndian();
-                    _width = _br.ReadUInt16BigEndian();
+                   // _height = _br.ReadUInt16BigEndian();
+                    //_width = _br.ReadUInt16BigEndian();
                     byte components = _br.ReadByte();
 
-                    _pixels = new FastColor[_width * _height];
+                    //_pixels = new FastColor[_width * _height];
                     _bpp = 24;
                     uint[] cmp = new uint[components];
                     for (int i = 0; i < components; i++)
@@ -204,18 +204,18 @@ namespace Joonaxii.Image.Codecs.JPEG
                         IDCT matLum = _idctPool.Get();
                         IDCT matCr = _idctPool.Get();
                         IDCT matCb = _idctPool.Get();
-                        for (int y = 0; y < _height >> 3; y++)
-                        {
-                            for (int x = 0; x < _width >> 3; x++)
-                            {
-                                BuildMatrix(br, 0, GetQuantTable(_quantMapping[0]), oldLumCoe, matLum, out oldLumCoe);
-                                BuildMatrix(br, 1, GetQuantTable(_quantMapping[1]), oldCrdCoe, matCr, out oldCrdCoe);
-                                BuildMatrix(br, 1, GetQuantTable(_quantMapping[2]), oldCbdCoe, matCb, out oldCbdCoe);
+                        //for (int y = 0; y < _height >> 3; y++)
+                        //{
+                        //    for (int x = 0; x < _width >> 3; x++)
+                        //    {
+                        //        BuildMatrix(br, 0, GetQuantTable(_quantMapping[0]), oldLumCoe, matLum, out oldLumCoe);
+                        //        BuildMatrix(br, 1, GetQuantTable(_quantMapping[1]), oldCrdCoe, matCr, out oldCrdCoe);
+                        //        BuildMatrix(br, 1, GetQuantTable(_quantMapping[2]), oldCbdCoe, matCb, out oldCbdCoe);
 
-                                ApplyMatrix(x, y, matLum, matCb, matCr);
+                        //        ApplyMatrix(x, y, matLum, matCb, matCr);
 
-                            }
-                        }
+                        //    }
+                        //}
 
                         _idctPool.Return(matLum);
                         _idctPool.Return(matCr);
@@ -354,22 +354,22 @@ namespace Joonaxii.Image.Codecs.JPEG
 
         private void ApplyMatrix(int x, int y, IDCT matL, IDCT matCb, IDCT matCr)
         {
-            for (int yy = 0; yy < 8; yy++)
-            {
-                int y1 = (y + yy);
-                if(y1 >= _height) { break; }
-                int yP = yy * 8;
-                int y1P = y1 * _width;
-                for (int xx = 0; xx < 8; xx++)
-                {
-                    int x1 = (x + xx);
-                    if(x1 >= _width) { continue; }
+            //for (int yy = 0; yy < 8; yy++)
+            //{
+            //    int y1 = (y + yy);
+            //    if(y1 >= _height) { break; }
+            //    int yP = yy * 8;
+            //    int y1P = y1 * _width;
+            //    for (int xx = 0; xx < 8; xx++)
+            //    {
+            //        int x1 = (x + xx);
+            //        if(x1 >= _width) { continue; }
 
-                    int i = yP + xx;
-                    int iI = y1P + x1;
-                    _pixels[iI] = ColorConversion(matL.baseValues[i], matCr.baseValues[i], matCb.baseValues[i]);
-                }
-            }
+            //        int i = yP + xx;
+            //        int iI = y1P + x1;
+            //        _pixels[iI] = ColorConversion(matL.baseValues[i], matCr.baseValues[i], matCb.baseValues[i]);
+            //    }
+            //}
         }
 
         private int DecodeNum(byte code, int bits)
@@ -463,18 +463,6 @@ namespace Joonaxii.Image.Codecs.JPEG
                     }
                     return;
                 }
-            }
-        }
-
-        public override void ValidateFormat()
-        {
-            switch (_colorMode)
-            {
-                case ColorMode.RGB24: return;
-                default:
-                    _colorMode = ColorMode.RGB24;
-                    _bpp = 24;
-                    break;
             }
         }
     }

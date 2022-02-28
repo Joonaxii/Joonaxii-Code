@@ -299,6 +299,7 @@ namespace Joonaxii.Image.Codecs
             int reso = _width * _height;
             if (reso == 0) { return; }
             Array.Resize(ref _pixels, reso);
+
             decoder.GetPixels(_pixels);
         }
 

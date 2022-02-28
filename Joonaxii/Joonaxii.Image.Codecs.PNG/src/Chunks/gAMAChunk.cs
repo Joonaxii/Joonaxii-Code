@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.IO;
+using System.Text;
 
 namespace Joonaxii.Image.Codecs.PNG
 {
@@ -6,9 +7,17 @@ namespace Joonaxii.Image.Codecs.PNG
     {
         public float gamma;
 
-        public gAMAChunk(int len, byte[] data, uint crc) : base(len, PNGChunkType.gAMA, data, crc)
+        public gAMAChunk(BinaryReader br, int len, uint crc) : base(len, PNGChunkType.gAMA, crc, 0)
         {
-            gamma = ((uint)(data[3] + (data[2] << 8) + (data[1] << 16) + (data[0] << 24))) / 100000.0f;
+            unsafe
+            {
+                byte* temp = stackalloc byte[4];
+                for (int i = 0; i < 4; i++, temp++)
+                {
+                    *temp = br.ReadByte();
+                }
+                gamma = ((uint)(temp[3] + (temp[2] << 8) + (temp[1] << 16) + (temp[0] << 24))) / 100000.0f;
+            }
         }
 
         public override string ToMinString() => $"{base.ToMinString()} [{gamma}]";

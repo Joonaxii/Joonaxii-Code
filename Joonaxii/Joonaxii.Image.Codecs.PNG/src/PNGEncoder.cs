@@ -1,4 +1,5 @@
 ﻿using Joonaxii.Data;
+using Joonaxii.Data.Coding;
 using Joonaxii.IO;
 using Joonaxii.MathJX;
 using System;
@@ -11,8 +12,8 @@ namespace Joonaxii.Image.Codecs.PNG
 {
     public class PNGEncoder : ImageEncoderBase
     {
-        public PNGFlags PNGFlags 
-        { 
+        public PNGFlags PNGFlags
+        {
             get => _pngFlags;
             set
             {
@@ -23,6 +24,9 @@ namespace Joonaxii.Image.Codecs.PNG
 
         private PNGFlags _pngFlags;
         private PNGFilterMethod _overrideFilter;
+
+        private unsafe byte* _compressBufferPtr;
+        private byte[] _compressBuffer;
 
         public PNGEncoder(int width, int height, byte bPP) : base(width, height, bPP)
         {
@@ -81,7 +85,7 @@ namespace Joonaxii.Image.Codecs.PNG
                             if (_flags.HasFlag(ImageDecoderFlags.ForceRGB))
                             {
                                 pngType = _hasAlpha ? PNGColorType.RGB_ALPHA : PNGColorType.RGB;
-                                SetColorMode(_hasAlpha ?  ColorMode.RGBA32 : ColorMode.RGB24);
+                                SetColorMode(_hasAlpha ? ColorMode.RGBA32 : ColorMode.RGB24);
                                 bps = 8;
                                 break;
                             }
@@ -102,11 +106,7 @@ namespace Joonaxii.Image.Codecs.PNG
                     bps = _bpp;
                     _colorMode = ColorMode.Indexed;
                 }
-
-                IHDRChunk hdr = new IHDRChunk(_width, _height, bps, pngType);
-                hdr.Write(bw);
-
-                System.Diagnostics.Debug.Print(hdr.ToMinString());
+                IHDRChunk.Write(bw, _width, _height, bps, pngType);
 
                 int posInBuf = 0;
                 byte[] finalBuf = null;
@@ -115,17 +115,8 @@ namespace Joonaxii.Image.Codecs.PNG
                 bool forceFilter = _pngFlags.HasFlag(PNGFlags.ForceFilter);
                 if (hasPalette)
                 {
-                    PLTEChunk plt = new PLTEChunk(_palette);
-                    plt.Write(bw);
-                    System.Diagnostics.Debug.Print(plt.ToMinString());
-
-                    if (_hasAlpha)
-                    {
-                        tRNSChunk alph = new tRNSChunk(_palette);
-                        alph.Write(bw);
-
-                        System.Diagnostics.Debug.Print(alph.ToMinString());
-                    }
+                    PLTEChunk.Write(bw, _palette);
+                    if (_hasAlpha) { tRNSChunk.Write(bw, _palette); }
 
                     if (!forceFilter)
                     {
@@ -159,10 +150,10 @@ namespace Joonaxii.Image.Codecs.PNG
                             IOExtensions.WriteToByteArray(dataBuf, posInBuf, index, bytesPP, false);
                             posInBuf += bytesPP;
                         }
-                    }        
+                    }
                 }
-                
-                if(!hasPalette | forceFilter)
+
+                if (!hasPalette | forceFilter)
                 {
 #if DEBUG
                     Dictionary<PNGFilterMethod, int> filterCounts = new Dictionary<PNGFilterMethod, int>();
@@ -191,13 +182,13 @@ namespace Joonaxii.Image.Codecs.PNG
                         lowFilter = _pngFlags.HasFlag(PNGFlags.OverrideFilter) ? _overrideFilter : PNGFilterMethod.None;
                         ApplyFilter(lowFilter, y, scanline, bytesPerPix, dataBuf, lowestSoFar, wW);
 
-                        if (!_pngFlags.HasFlag(PNGFlags.OverrideFilter)) 
+                        if (!_pngFlags.HasFlag(PNGFlags.OverrideFilter))
                         {
                             lowestVariation = GetByteVariation(lowestSoFar, 0, lowestSoFar.Length);
-                            ApplyFilter(ref lowestVariation, ref lowFilter, PNGFilterMethod.Sub,     y, scanline,bytesPerPix, dataBuf, writeBuf, lowestSoFar, wW);
-                            ApplyFilter(ref lowestVariation, ref lowFilter, PNGFilterMethod.Up,      y, scanline,bytesPerPix, dataBuf, writeBuf, lowestSoFar, wW);
-                            ApplyFilter(ref lowestVariation, ref lowFilter, PNGFilterMethod.Average, y, scanline,bytesPerPix, dataBuf, writeBuf, lowestSoFar, wW);
-                            ApplyFilter(ref lowestVariation, ref lowFilter, PNGFilterMethod.Paeth,   y, scanline,bytesPerPix, dataBuf, writeBuf, lowestSoFar, wW);
+                            ApplyFilter(ref lowestVariation, ref lowFilter, PNGFilterMethod.Sub, y, scanline, bytesPerPix, dataBuf, writeBuf, lowestSoFar, wW);
+                            ApplyFilter(ref lowestVariation, ref lowFilter, PNGFilterMethod.Up, y, scanline, bytesPerPix, dataBuf, writeBuf, lowestSoFar, wW);
+                            ApplyFilter(ref lowestVariation, ref lowFilter, PNGFilterMethod.Average, y, scanline, bytesPerPix, dataBuf, writeBuf, lowestSoFar, wW);
+                            ApplyFilter(ref lowestVariation, ref lowFilter, PNGFilterMethod.Paeth, y, scanline, bytesPerPix, dataBuf, writeBuf, lowestSoFar, wW);
                         }
 
                         finalBuf[posInBuf++] = (byte)lowFilter;
@@ -225,27 +216,23 @@ namespace Joonaxii.Image.Codecs.PNG
                 }
 
                 {
-                    IDATChunk idat = new IDATChunk();
                     const int CHUNK_MAX_SIZE = 8192;
-                    finalBuf = GetCompressedData(finalBuf, hasPalette && _palette.Count <= 256 ? CompressionLevel.NoCompression : CompressionLevel.Fastest);
-                    byte[] chunkBUF = new byte[CHUNK_MAX_SIZE];
+                    GetCompressedData(bw, finalBuf, CompressionLevel.Optimal);
 
-                    using(MemoryStream ms = new MemoryStream(finalBuf))
-                    {
-                        while (ms.Position < ms.Length)
-                        {
-                            int len = ms.Read(chunkBUF, 0, CHUNK_MAX_SIZE);
-
-                            idat.SetData(chunkBUF, len);
-                            idat.Write(bw);
-                        }
-                    }
+                    //int finBufPos = 0;
+                    //using (MemoryStream ms = new MemoryStream(finalBuf))
+                    //{
+                    //    while (finBufPos < finalBuf.Length)
+                    //    {
+                    //        int len = Math.Min(CHUNK_MAX_SIZE, finalBuf.Length - finBufPos);
+                    //        PNGChunk.Write(bw, PNGChunkType.IDAT, finalBuf, finBufPos, len);
+                    //        finBufPos += len;
+                    //    }
+                    //}
                 }
 
                 //IEND Chunk
-                RawChunk iend = new RawChunk(0, PNGChunkType.IEND, new byte[0], 0);
-                iend.crc = iend.GetCrc();
-                iend.Write(bw);
+                PNGChunk.Write(bw, PNGChunkType.IEND, new byte[0], 0, 0);
             }
             return ImageEncodeResult.Success;
         }
@@ -276,7 +263,7 @@ namespace Joonaxii.Image.Codecs.PNG
                 case PNGFilterMethod.Paeth:
                     for (int x = 0; x < ww; x++)
                     {
-                        PaethFilter(x, y,bytesPerPix, data, target);
+                        PaethFilter(x, y, bytesPerPix, data, target);
                     }
                     break;
             }
@@ -287,15 +274,58 @@ namespace Joonaxii.Image.Codecs.PNG
             ApplyFilter(filter, y, scan, bytesPerPix, data, target, ww);
             int vari = GetByteVariation(target, 0, target.Length);
 
-            if(vari < variation)
+            if (vari < variation)
             {
                 variation = vari;
                 curFilter = filter;
                 Buffer.BlockCopy(target, 0, curLowest, 0, curLowest.Length);
             }
         }
+        
+        private const int CHUNK_MAX_SIZE = 8192;
+        private const int CHUNK_DATA_SIZE = 8192 - 4;
 
-        private byte[] GetCompressedData(byte[] original, CompressionLevel cmpLevel)
+        private unsafe void WriteCompressedData(BinaryWriter bw, MemoryStream defStream, DeflateStream compStream, byte* data, byte* chunkBuf, int length, bool first, int crc)
+        {
+            //Adler32Checksum.RunProgressive(data, length, ref sum1, ref sum2);
+            byte* chunkPtr = chunkBuf;
+
+            IOExtensions.WriteToByteArray(chunkPtr, 0, (int)PNGChunkType.IDAT, 4, true);
+            chunkPtr += 4;
+
+            if (first)
+            {
+                *chunkPtr++ = 0x78;
+                *chunkPtr++ = 0xDA;
+            }
+
+            //IOExtensions.WriteToByteArray(chunkPtr, 0, crc, 4, true);
+            if (length < CHUNK_DATA_SIZE)
+            {
+                int off = CHUNK_DATA_SIZE - length;
+
+                if (off >= 4)
+                {
+                    IOExtensions.WriteToByteArray(chunkPtr, 0, crc, 4, true);
+                    PNGChunk.Write(bw, chunkBuf, length + 4);
+                    return;
+                }
+
+                int lo = 4 - off;
+                IOExtensions.WriteToByteArray(chunkPtr, 0, crc, lo, true);
+                PNGChunk.Write(bw, chunkBuf, CHUNK_MAX_SIZE);
+            
+                chunkPtr = chunkBuf;
+                IOExtensions.WriteToByteArray(chunkPtr, 0, (int)PNGChunkType.IDAT, 4, true);
+                chunkPtr += 4;
+
+                IOExtensions.WriteToByteArray(chunkPtr, 4, crc, off, true);
+                PNGChunk.Write(bw, chunkBuf, off);
+                return;
+            }
+        }
+
+        private unsafe void GetCompressedData(BinaryWriter bw, byte[] original, CompressionLevel cmpLevel)
         {
             byte v = 1;
             switch (cmpLevel)
@@ -310,33 +340,89 @@ namespace Joonaxii.Image.Codecs.PNG
                     v = 0xDA;
                     break;
             }
-            //uint crc = PNGChunk.CalcualteCrc(original, 0, original.Length);
-            
-            using(MemoryStream ms = new MemoryStream())
-            using(DeflateStream def = new DeflateStream(ms, cmpLevel, true))
-            using(MemoryStream msA = new MemoryStream())
+
+            byte* chunk = stackalloc byte[CHUNK_MAX_SIZE];
+            byte* dataPtr = chunk + 4;
+            byte[] chunkRead = new byte[CHUNK_MAX_SIZE];
+
+            int pos = 0;
+
+            fixed (byte* orgBuf = chunkRead)
             {
-                def.Write(original, 0, original.Length);
-                def.Close();
+                byte* ogBuf = orgBuf;
+                using (MemoryStream ms = new MemoryStream())
+                using (DeflateStream def = new DeflateStream(ms, cmpLevel, true))
+                using (BufferedStream str = new BufferedStream(def, 8192))
+                {
+                    ms.Seek(0, SeekOrigin.Begin);
+                    long posPrev = ms.Position;
 
-                ms.Seek(0, SeekOrigin.Begin);
-                ms.CopyTo(msA);
+                    int len = (original.Length - pos) - 2;
+                    len = len > CHUNK_DATA_SIZE ? CHUNK_DATA_SIZE : len;
+                    str.Write(chunkRead, pos, len);
+                    pos += len;
+                    long posNow = ms.Position;
 
-                byte[] data = new byte[msA.Length + 2];
+                    ms.Seek(posPrev, SeekOrigin.Begin);
 
-                data[0] = 0x78;
-                data[1] = v;
 
-                Buffer.BlockCopy(msA.ToArray(), 0, data, 2, (int)msA.Length);
+                   // int crc = Adler32Checksum.Calculate(original);
 
-                //int start = data.Length - 4;
-                //int ii = 24;
-                //for (int i = start; i < start + 4; i++)
-                //{
-                //    data[i] = (byte)((crc >> ii) & 0xFF);
-                //    ii -= 8;
-                //}
-                return data;
+                    bool first = true;
+                    bool last = false;
+                    while (len > 0)
+                    {
+                        byte* ptr = chunk;
+                        IOExtensions.WriteToByteArray(ptr, 0, (int)PNGChunkType.IDAT, 4, true);
+
+                        if (first)
+                        {
+                            *dataPtr++ = 0x78;
+                            *dataPtr++ = v;
+                            first = false;
+                        }
+
+                        BufferUtils.Memcpy(ogBuf, dataPtr, len);
+                        ogBuf += len;
+
+                        PNGChunk.Write(bw, chunk, len);
+
+                        len = (original.Length - pos) - 2;
+                        len = len > CHUNK_DATA_SIZE ? CHUNK_DATA_SIZE : len;
+                        str.Write(chunkRead, pos, len);
+                        last = len < CHUNK_DATA_SIZE;
+                        pos += len;
+
+                        if (last)
+                        {
+                            int off = CHUNK_DATA_SIZE - (len + 4);
+                            if (off < 0)
+                            {
+                                off = -off;
+                                dataPtr += len;
+                            //    IOExtensions.WriteToByteArray(dataPtr, 0, crc, off, true);
+                                len = CHUNK_DATA_SIZE;
+                                PNGChunk.Write(bw, chunk, len);
+
+                              //  crc >>= (off << 3);
+                                len = 4 - off;
+                                dataPtr = chunk;
+
+                                IOExtensions.WriteToByteArray(ptr, 0, (int)PNGChunkType.IDAT, 4, true);
+                                //IOExtensions.WriteToByteArray(dataPtr, 0, crc, len, true);
+                                PNGChunk.Write(bw, chunk, len);
+                                break;
+                            }
+
+                            dataPtr += len;
+                           // IOExtensions.WriteToByteArray(dataPtr, 0, crc, 4, true);
+                            len += 4;
+                            PNGChunk.Write(bw, chunk, len + 4);
+                            break;
+                        }
+                        PNGChunk.Write(bw, chunk, len);
+                    }
+                }
             }
         }
 
@@ -389,8 +475,8 @@ namespace Joonaxii.Image.Codecs.PNG
             }
         }
 
-        private byte Sub(int x, int scanline, int bytesPerPix, byte[] data)   =>      x < bytesPerPix ? (byte)0 : data[scanline - bytesPerPix];
-        private byte Prior(int x, int y, int w, byte[] data) => (x < 0 | y < 1) ? (byte)0 : data[(y - 1)  * w + x];
+        private byte Sub(int x, int scanline, int bytesPerPix, byte[] data) => x < bytesPerPix ? (byte)0 : data[scanline - bytesPerPix];
+        private byte Prior(int x, int y, int w, byte[] data) => (x < 0 | y < 1) ? (byte)0 : data[(y - 1) * w + x];
 
         private void SubFilter(int scanline, int x, int bytesPerPix, byte[] data, byte[] targetData)
         {

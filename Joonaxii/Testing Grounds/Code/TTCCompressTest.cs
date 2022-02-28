@@ -145,13 +145,14 @@ namespace Testing_Grounds
             int compressedSize = origSize;
 
             string elapsed = "";
-
+            TimeStamper ts;
             if (compress)
             {
                 FileDebugger debug;
+                ts = new TimeStamper("TTC (Compression)");
+
                 using (MemoryStream stream = new MemoryStream())
                 using (BinaryWriter bw = new BinaryWriter(stream))
-                using (TimeStamper ts = new TimeStamper("TTC (Compression)"))
                 {
                     long pos = bw.BaseStream.Position;
                     debug = new FileDebugger("TTC Compression", stream);
@@ -210,9 +211,9 @@ namespace Testing_Grounds
             }
             string decompressed = "";
 
+            ts = new TimeStamper("TTC (Decompression)");
             using (MemoryStream stream = new MemoryStream(data))
             using (BinaryReader br = new BinaryReader(stream))
-            using (TimeStamper ts = new TimeStamper("TTC (Decompression)"))
             {
                 //br.ReadString();
                 if (asBytes)

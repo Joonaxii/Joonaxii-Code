@@ -439,33 +439,6 @@ namespace Joonaxii.Image.Codecs.GIF
             base.Dispose();
         }
 
-        public override void ValidateFormat()
-        {
-            switch (_colorMode)
-            {
-                case ColorMode.ARGB555:
-                    _colorMode = ColorMode.RGBA32;
-                    _bpp = 32;
-                    break;
-
-                case ColorMode.RGB555:
-                case ColorMode.RGB565:
-                    _colorMode = ColorMode.RGB24;
-                    _bpp = 24;
-                    break;
-
-                case ColorMode.OneBit:
-                    _colorMode = ColorMode.Grayscale;
-                    _bpp = 8;
-                    break;
-
-                case ColorMode.Indexed4:
-                    _colorMode = ColorMode.Indexed8;
-                    _bpp = 8;
-                    break;
-            }
-        }
-
         public override ImageDecodeResult Decode(bool skipHeader)
         {
             FastColor[] globalPalette;

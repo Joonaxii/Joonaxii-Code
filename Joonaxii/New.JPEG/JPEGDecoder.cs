@@ -76,18 +76,6 @@ namespace New.JPEG
             _huffmanTables = new HuffmanTable[32];
         }
 
-        public override void ValidateFormat()
-        {
-            switch (_colorMode)
-            {
-                case ColorMode.RGB24: return;
-                default:
-                    _colorMode = ColorMode.RGB24;
-                    _bpp = 24;
-                    break;
-            }
-        }
-
         public FastColor ColorConversion(double y, double cr, double cb)
         {
             float r = (float)(cr * (2 - 2 * 0.299) + y);
@@ -271,11 +259,72 @@ namespace New.JPEG
                         foreach (var item in lengths)
                         {
                             if (item == 0) { continue; }
-                            elements.AddRange(_br.ReadBytes(item));
+                            var bt = _br.ReadBytes(item);
+                            elements.AddRange(bt);
                         }
-                        _huffmanTables[huffHdr] = new HuffmanTable(lengths, elements.ToArray());
+
+                        var huff =_huffmanTables[huffHdr] = new HuffmanTable(null);
+                        huff.left = new HuffmanTable(huff);
+                        huff.right = new HuffmanTable(huff);
+
+                        HuffmanTable node;
+                        int cur = 0;
+                        for (int i = 0; i < 16; i++)
+                        {
+                            if(lengths[i] == 0)
+                            {
+                                //node = huff.FindNext(i);
+                                //while (node != null)
+                                //{
+                                //    node.left = new HuffmanTable(node);
+                                //    node.right = new HuffmanTable(node);
+                                //    node = huff.FindNext(i);
+                                //}
+                                continue;
+                            }
+
+                            for (int j = 0; j < lengths[i]; j++)
+                            {
+                                node = huff.FindNextNonLeaf(i);
+                                if(node == null) { break; }
+
+                                node.AssignLeaf(elements[cur++]);
+                            }
+
+                            node = huff.FindNext(i);
+                            while (node != null)
+                            {
+                                node.left = new HuffmanTable(node);
+                                node.right = new HuffmanTable(node);
+                                node = huff.FindNext(i);
+                            }
+                        }
+
+                        List<HuffmanTable> allNodes = new List<HuffmanTable>();
+                        huff.FindAllNodes(allNodes);
+
+                        Stack<byte> bits = new Stack<byte>();
+                        foreach (var nodeE in allNodes)
+                        {
+                            var rootN = nodeE;
+                            while (rootN != null)
+                            {
+                                bits.Push((byte)(rootN.IsRight ? 1 : 0));
+                                rootN = rootN.root;
+                            }
+
+                            string str = "";
+                            while (bits.Count > 0)
+                            {
+                                str += bits.Pop().ToString();
+                            }
+
+                            System.Diagnostics.Debug.Print($"Tree: [{nodeE.value}] {str}");
+                        }
                         break;
                 }
+
+              
 
             }
             return res;

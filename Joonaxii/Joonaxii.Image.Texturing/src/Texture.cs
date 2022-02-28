@@ -7,8 +7,14 @@ namespace Joonaxii.Image.Texturing
 {
     public class Texture : IDisposable
     {
+        private unsafe delegate FastColor PixelAction(byte* ptr, int bpp, IList<FastColor> palette);
+        private unsafe delegate void BytePixelAction(byte* ptr, byte* data, int bpp, IList<FastColor> palette);
+
         public int Width { get => _width; }
         public int Height { get => _height; }
+
+        public bool HasPalette { get => _palette != null; }
+        public int GetPaletteLength { get => HasPalette ? _palette.Count : 0; }
 
         public IntPtr Scan { get => _scan; }
         private IntPtr _scan;
@@ -19,11 +25,51 @@ namespace Joonaxii.Image.Texturing
             set => SetFormat(value, true);
         }
         public int ScanSize { get => _scanSize; }
-        public byte BytesPerPixel { get => _bpp; }
+        public byte BitsPerPixel 
+        { 
+            get => _bpp;
+            set
+            {
+                switch (Format)
+                {
+                    default:return;
+                    case ColorMode.Indexed: break;
+                }
+
+                if(_bpp != value)
+                {
+                    ReadjustToNewBpp(value, Format);
+                }
+            }
+        }
+        public byte BytesPerPixel { get => _bytesPerPix; }
+
+        public TextureDataMode PixelIterationMode 
+        { 
+            get => _dataLayout;
+            set 
+            {
+                if(value == _dataLayout) { return; }
+
+                int reso = _width * _height;
+                if (value == TextureDataMode.Auto)
+                {
+                    _dataLayout = ResolutionToLayout(reso);
+                    return;
+                }
+                _dataLayout = value;
+
+                if((reso % (int)_dataLayout) != 0)
+                {
+                    _dataLayout = ResolutionToLayout(reso);
+                }
+            }
+        }
 
         private ColorMode _format;
         private int _scanSize;
         private byte _bpp;
+        private byte _bytesPerPix;
 
         private ushort _width;
         private ushort _height;
@@ -32,38 +78,70 @@ namespace Joonaxii.Image.Texturing
         private ushort _pH;
         private ResizeMode _mode;
 
-        private IntPtr _data;
+        private byte[] _data;
 
         private TextureModification _pendingMods;
         private GCHandle _handle;
 
+        private FastColor _fillColor;
+
         private Dictionary<FastColor, int> _paletteLut = null;
         private List<FastColor> _palette = null;
+        private TextureDataMode _dataLayout;
 
-        public Texture(int width, int height, ColorMode format) : this(width, height, format, FastColor.black) { }
-        public Texture(int width, int height, ColorMode format, FastColor fillColor)
+        public Texture(int width, int height, ColorMode format) : this(width, height, format, 8, TextureDataMode.Auto, FastColor.black) { }
+        public Texture(int width, int height, ColorMode format, byte bpp) : this(width, height, format, bpp, TextureDataMode.Auto, FastColor.black) { }
+        public Texture(int width, int height, ColorMode format, FastColor fillColor) : this(width, height, format, 8, TextureDataMode.Auto, fillColor) { }
+        private Texture(int width, int height, ColorMode format, byte bpp, TextureDataMode iterationMode, FastColor fillColor)
         {
             _width = (ushort)Maths.Clamp(width, 0, ushort.MaxValue);
             _height = (ushort)Maths.Clamp(height, 0, ushort.MaxValue);
+
+            _bpp = bpp;
             SetFormat(format, false);
 
+            int reso = _width * _height;
+            _dataLayout = iterationMode == TextureDataMode.Auto ? ResolutionToLayout(reso) : iterationMode;
+
+            _fillColor = fillColor;
             unsafe
             {
-                int reso = _width * _height;
-                _data = Marshal.AllocHGlobal(_width * _height * (_bpp >> 3));
-
-                int bpp = _bpp >> 3;
-                byte* ptr = (byte*)_data;
-                for (int i = 0; i < reso; i++)
+                _data = new byte[reso * _bytesPerPix];
+                fixed (byte* ptr = _data)
                 {
-                    int iD = i * bpp;
-                    SetColor(ptr, iD, _bpp, fillColor, _format);
+                    for (int i = 0; i < reso; i++)
+                    {
+                        int iD = i * _bytesPerPix;
+                        SetColor(ptr, iD, _bytesPerPix, fillColor, _format);
+                    }
                 }
             }
 
             _handle = default(GCHandle);
             _scan = IntPtr.Zero;
             _pendingMods = TextureModification.None;
+        }
+
+        public Texture(Texture other)
+        {
+            _width = other._width;
+            _height = other._height;
+
+            SetFormat(other.Format, false);
+
+        }
+
+        private TextureDataMode ResolutionToLayout(int reso)
+        {
+            if (reso < 2) { return TextureDataMode.DB1; }
+
+            if((reso % 32) == 0)  { return TextureDataMode.DB32; }
+            if((reso % 16) == 0)  { return TextureDataMode.DB16; }
+            if((reso % 8 ) == 0)  { return TextureDataMode.DB8; }
+            if((reso % 4 ) == 0)  { return TextureDataMode.DB4; }
+            if((reso % 3 ) == 0)  { return TextureDataMode.DB3; }
+
+            return TextureDataMode.DB2;
         }
 
         public FastColor GetPixel(int x, int y) => GetPixel(y * _width + x);
@@ -73,72 +151,178 @@ namespace Joonaxii.Image.Texturing
             unsafe
             {
                 int bpp = _bpp >> 3;
-                byte* ptr = (byte*)_data;
-                return GetColor(ptr, i * bpp, bpp, _format);
+                fixed (byte* ptr = _data)
+                {
+                    return ColorExtensions.GetColor(ptr + (i * bpp), bpp, _format, _palette);
+                }
             }
         }
 
         public FastColor[] GetPixels()
         {
-            if (_data == IntPtr.Zero) { return null; }
-
+            if (_data == null) { return null; }
             FastColor[] pix = new FastColor[_width * _height];
             unsafe
             {
-                int bpp = _bpp >> 3;
-                byte* ptr = (byte*)_data;
-                for (int i = 0; i < pix.Length; i++)
+                fixed(FastColor* cPtr = pix)
                 {
-                    int iD = i * bpp;
-                    pix[i] = GetColor(ptr, iD, bpp, _format);
+                    GetPixels((byte*)cPtr, pix.Length);
                 }
             }
             return pix;
         }
 
-        private unsafe FastColor GetColor(byte* ptr, int iD, int bpp, ColorMode format)
+        public void GetPixels(FastColor[] pixels)
         {
-            int ind;
-            switch (format)
+            int len = Math.Min(pixels.Length, _width * _height);
+            unsafe
             {
-                case ColorMode.Indexed:
-                    ind = 0;
-                    for (int j = 0; j < bpp; j++)
-                    {
-                        ind += (ptr[iD + j] << (j << 3));
-                    }
-                    return  _palette[ind];
-
-                case ColorMode.RGB24: return new FastColor(ptr[iD], ptr[iD + 1], ptr[iD + 2]);
-                case ColorMode.RGBA32: return new FastColor(ptr[iD], ptr[iD + 1], ptr[iD + 2], ptr[iD + 3]);
-
-                case ColorMode.RGB565:
-                    ind = 0;
-                    for (int j = 0; j < bpp; j++)
-                    {
-                        ind += (ptr[iD + j] << (j << 3));
-                    }
-                    return ColorExtensions.FromRGB565(ind, false);
-      
-                case ColorMode.RGB555:
-                    ind = 0;
-                    for (int j = 0; j < bpp; j++)
-                    {
-                        ind += (ptr[iD + j] << (j << 3));
-                    }
-                    return ColorExtensions.FromRGB555(ind, false);
-                case ColorMode.ARGB555:
-                    ind = 0;
-                    for (int j = 0; j < bpp; j++)
-                    {
-                        ind += (ptr[iD + j] << (j << 3));
-                    }
-                    return ColorExtensions.FromARGB555(ind, false);
-                case ColorMode.Grayscale: return new FastColor(ptr[iD]);
-                case ColorMode.GrayscaleAlpha: return new FastColor(ptr[iD], ptr[iD + 1]);
+                fixed(FastColor* cPtr = pixels)
+                {
+                    GetPixels((byte*)cPtr, len);
+                }
             }
-            return FastColor.clear;
         }
+
+        private unsafe void GetPixels(byte* cPtr, int len)
+        {
+            unsafe
+            {
+                fixed (byte* ptr = _data)
+                {
+                    byte* ptrData = ptr;
+                    int bytesPerPix = BitsPerPixel >> 3;
+
+                    BytePixelAction pxAct;
+                    switch (_format)
+                    {
+                        default: pxAct = ColorExtensions.GetIndexedPtr; break;
+
+                        case ColorMode.RGB24: pxAct = ColorExtensions.GetRGB24Ptr; break;
+                        case ColorMode.RGBA32: pxAct = ColorExtensions.GetRGBA32Ptr; break;
+
+                        case ColorMode.RGB555: pxAct = ColorExtensions.GetRGB555Ptr; break;
+                        case ColorMode.RGB565: pxAct = ColorExtensions.GetRGB565Ptr; break;
+                        case ColorMode.ARGB555: pxAct = ColorExtensions.GetARGB555Ptr; break;
+
+                        case ColorMode.Grayscale: pxAct = ColorExtensions.GetGrayscalePtr; break;
+                        case ColorMode.GrayscaleAlpha: pxAct = ColorExtensions.GetGrayscaleAlphaPtr; break;
+                    }
+
+                    switch (_dataLayout)
+                    {
+                        default:
+                            while (len-- > 0)
+                            {
+                                pxAct.Invoke(ptrData, cPtr, _bytesPerPix, _palette);
+                                cPtr += 4;
+                                ptrData += bytesPerPix;
+                            }
+                            break;
+
+                        case TextureDataMode.DB2:
+                            bytesPerPix <<= 1;
+                            len >>= 1;
+                            while (len-- > 0)
+                            {
+                                for (int i = 0; i < 2; i++)
+                                {
+                                    pxAct.Invoke(ptrData, cPtr, _bytesPerPix, _palette);
+                                }
+                                cPtr += 4 * 2;
+                                ptrData += bytesPerPix;
+                            }
+                            break;
+
+                        case TextureDataMode.DB3:
+                            bytesPerPix *= 3;
+                            len /= 3;
+                            while (len-- > 0)
+                            {
+                                for (int i = 0; i < 3; i++)
+                                {
+                                    pxAct.Invoke(ptrData, cPtr, _bytesPerPix, _palette);
+                                }
+                                cPtr += 4 * 3;
+                                ptrData += bytesPerPix;
+                            }
+                            break;
+
+                        case TextureDataMode.DB4:
+                            bytesPerPix <<= 2;
+                            len >>= 2;
+                            while (len-- > 0)
+                            {
+                                for (int i = 0; i < 4; i++)
+                                {
+                                    pxAct.Invoke(ptrData, cPtr, _bytesPerPix, _palette);
+                                }
+                                cPtr += 4 * 4;
+                                ptrData += bytesPerPix;
+                            }
+                            break;
+
+                        case TextureDataMode.DB5:
+                            bytesPerPix *= 5;
+                            len /= 5;
+                            while (len-- > 0)
+                            {
+                                for (int i = 0; i < 5; i++)
+                                {
+                                    pxAct.Invoke(ptrData, cPtr, _bytesPerPix, _palette);
+                                }
+                                cPtr += 4 * 5;
+                                ptrData += bytesPerPix;
+                            }
+                            break;
+
+                        case TextureDataMode.DB8:
+                            bytesPerPix <<= 3;
+                            len >>= 3;
+                            while (len-- > 0)
+                            {
+                                for (int i = 0; i < 8; i++)
+                                {
+                                    pxAct.Invoke(ptrData, cPtr, _bytesPerPix, _palette);
+                                }
+                                cPtr += 4 * 8;
+                                ptrData += bytesPerPix;
+                            }
+                            break;
+
+                        case TextureDataMode.DB16:
+                            bytesPerPix <<= 4;
+                            len >>= 4;
+                            while (len-- > 0)
+                            {
+                                for (int i = 0; i < 16; i++)
+                                {
+                                    pxAct.Invoke(ptrData, cPtr, _bytesPerPix, _palette);
+                                }
+                                cPtr += 4 * 16;
+                                ptrData += bytesPerPix;
+                            }
+                            break;
+
+                        case TextureDataMode.DB32:
+                            bytesPerPix <<= 5;
+                            len >>= 5;
+                            while (len-- > 0)
+                            {
+                                for (int i = 0; i < 32; i++)
+                                {
+                                    pxAct.Invoke(ptrData, cPtr, _bytesPerPix, _palette);
+                                }
+                                cPtr += 4 * 32;
+                                ptrData += bytesPerPix;
+                            }
+                            break;
+                    }
+                }
+            }
+        }
+
+        public FastColor GetPaletteColor(int i) => HasPalette ? _palette[i] : FastColor.clear;
 
         private void SetFormat(ColorMode format, bool adjustBpp)
         {
@@ -173,15 +357,19 @@ namespace Joonaxii.Image.Texturing
                     break;
             }
 
-            if (!adjustBpp || !ReadjustToNewBpp(bpp, fmt)) 
+            if (!adjustBpp || !ReadjustToNewBpp(bpp, fmt))
             {
                 _bpp = bpp;
                 _format = fmt;
-                _scanSize = _width * (_bpp >> 3);
+                _bytesPerPix = (byte)(bpp >> 3);
+
+                _scanSize = _width * _bytesPerPix;
+
 
                 ValidatePalette();
-                return; 
+                return;
             }
+            _bytesPerPix = (byte)(bpp >> 3);
         }
 
         private unsafe void SetColor(byte* ptr, int iD, int bpp, FastColor color, ColorMode format)
@@ -196,8 +384,8 @@ namespace Joonaxii.Image.Texturing
                         _palette.Add(color);
 
                         var bt = Maths.BytesNeeded(_palette.Count) << 3;
-                        if (bt != _bpp) 
-                        { 
+                        if (bt != _bpp)
+                        {
                             ReadjustToNewBpp((byte)bt, _format);
                             bpp = bt >> 3;
                         }
@@ -247,8 +435,10 @@ namespace Joonaxii.Image.Texturing
             unsafe
             {
                 int bpp = _bpp >> 3;
-                byte* ptr = (byte*)_data;
-                SetColor(ptr, i * bpp, bpp, color, _format);
+                fixed (byte* ptr = _data)
+                {
+                    SetColor(ptr, i * bpp, bpp, color, _format);
+                }
             }
         }
 
@@ -262,10 +452,12 @@ namespace Joonaxii.Image.Texturing
             unsafe
             {
                 int bpp = _bpp >> 3;
-                byte* ptr = (byte*)_data;
-                for (int i = 0; i < pixels.Length; i++)
+                fixed (byte* ptr = _data)
                 {
-                    SetColor(ptr, i * bpp, bpp, pixels[i], _format);
+                    for (int i = 0; i < pixels.Length; i++)
+                    {
+                        SetColor(ptr, i * bpp, bpp, pixels[i], _format);
+                    }
                 }
             }
         }
@@ -282,69 +474,11 @@ namespace Joonaxii.Image.Texturing
             _pendingMods |= TextureModification.Resize;
         }
 
-        public void Apply()
-        {
-            //TO-DO: Actually Implement resizing with IntPtrs
-
-            //if(_pendingMods > 0)
-            //{
-            //    if (_pendingMods.HasFlag(TextureModification.Resize))
-            //    {
-            //        int res = _width * _height;
-            //        if (_pixels == null)
-            //        {
-            //            _refPixels = false;
-            //            _pixels = new FastColor[res];
-            //            return;
-            //        }
-            //        else
-            //        {
-            //            if (_pixels.Length < res)
-            //            {
-            //                Array.Resize(ref _pixels, res);
-            //            }
-            //            Resize(ref _pixels, _width, _height, _pW, _pH, _mode);
-            //        }
-            //    }
-            //}
-
-            _pendingMods = TextureModification.None;
-        }
-
-        //public static bool Resize(ref FastColor[] pixels, int originalW, int originalH, int width, int height, ResizeMode mode)
-        //{
-        //    FastColor[] temp = new FastColor[originalW * originalH];
-        //    Array.Copy(pixels, temp, temp.Length);
-
-        //    Array.Resize(ref pixels, width * height);
-
-        //    float wL = 1.0f / (width < 2 ? 1.0f : width - 1.0f);
-        //    float hL = 1.0f / (height < 2 ? 1.0f : height - 1.0f);
-        //    switch (mode)
-        //    {
-        //        default: return false;
-        //        case ResizeMode.NearestNeighbor:
-        //            for (int y = 0; y < height; y++)
-        //            {
-        //                int yP = y * width;
-        //                int yOP = (int)(y * hL * originalH) * originalW;
-        //                for (int x = 0; x < width; x++)
-        //                {
-        //                    int xOP = (int)(x * wL * originalW);
-        //                    int iOP = yOP + xOP;
-        //                    int i = yP + x;
-        //                    pixels[i] = temp[iOP];
-        //                }
-        //            }
-        //            return true;
-        //    }
-        //}
-
         public IntPtr LockBits()
         {
             if (_handle.IsAllocated) { return _scan; }
             _handle = GCHandle.Alloc(_data, GCHandleType.Pinned);
-            _scan = GCHandle.ToIntPtr(_handle);
+            _scan = _handle.AddrOfPinnedObject();
             return _scan;
         }
 
@@ -357,11 +491,11 @@ namespace Joonaxii.Image.Texturing
 
         public void Dispose()
         {
-            if (_data == IntPtr.Zero) { return; }
+            if (_data == null) { return; }
             UnlockBits();
-            Marshal.FreeHGlobal(_data);
+            _data = null;
 
-            if(_palette != null)
+            if (_palette != null)
             {
                 _palette.Clear();
                 _paletteLut.Clear();
@@ -371,83 +505,233 @@ namespace Joonaxii.Image.Texturing
             }
         }
 
+        public void SetPalette(IList<FastColor> colors)
+        {
+            if (HasPalette)
+            {
+                _palette.Clear();
+                _paletteLut.Clear();
+            }
+            else
+            {
+                _palette = new List<FastColor>();
+                _paletteLut = new Dictionary<FastColor, int>();
+            }
+
+            foreach (var c in colors)
+            {
+                if (_paletteLut.TryGetValue(c, out int i)) { continue; }
+                _paletteLut.Add(c, _palette.Count);
+                _palette.Add(c);
+            }
+        }
+
+        public void SetPalette(IList<FastColor> colors, IDictionary<FastColor, int> paletteLut)
+        {
+
+        }
+
+        public bool AddColor(FastColor color)
+        {
+            if (!HasPalette) { return false; }
+            if (_paletteLut.TryGetValue(color, out var i)) { return false; }
+
+            _paletteLut.Add(color, _palette.Count);
+            _palette.Add(color);
+
+            int newBpp = Maths.BytesNeeded(_palette.Count);
+            int bpp = _bpp >> 3;
+            if (newBpp != bpp)
+            {
+                RecalcualteColorIndices(_width * _height, bpp, newBpp, _palette, _paletteLut);
+            }
+            return true;
+        }
+
+        public void ClearPalette()
+        {
+            bool lockedBits = _handle.IsAllocated;
+
+            int bpp = _bpp >> 3;
+            int sizeCur = sizeCur = _width * _height * bpp;
+
+            if (bpp > 1)
+            {
+                if (lockedBits)
+                {
+                    UnlockBits();
+                }
+                _bpp = 8;
+                sizeCur = _width * _height;
+
+                _data = new byte[sizeCur];
+
+                if (lockedBits)
+                {
+                    LockBits();
+                }
+            }
+
+            _palette.Clear();
+            _paletteLut.Clear();
+
+            _palette.Add(FastColor.black);
+            _paletteLut.Add(FastColor.black, 0);
+
+            unsafe
+            {
+                fixed (byte* ptr = _data)
+                {
+                    BufferUtils.Memset(ptr, 0, 0, sizeCur);
+                }
+            }
+        }
+
         public void TrimPalette()
-        {          
-            if(_palette != null && _format == ColorMode.Indexed)
+        {
+            if (_palette != null && _format == ColorMode.Indexed)
             {
                 unsafe
                 {
                     Dictionary<FastColor, int> lut = new Dictionary<FastColor, int>();
                     List<FastColor> pal = new List<FastColor>();
-                 
+
                     int bpp = _bpp >> 3;
-                    byte* ptr = (byte*)_data;
                     int reso = _width * _height;
-                    for (int i = 0; i < reso; i+=bpp)
+                    fixed (byte* ptr = _data)
                     {
-                        int v = 0;
-                        for (int j = 0; j < bpp; j++) { v += (ptr[i + j] << (j << 3)); }
-                        var c = _palette[v];
-                        if (lut.TryGetValue(c, out int vI)) { continue; }
-
-                        lut.Add(c, lut.Count);      
-                        if(lut.Count >= _palette.Count) { return; }
-                    }
-
-                    int nBpp = Maths.BytesNeeded(lut.Count); 
-                    if(nBpp != bpp)
-                    {
-                        int sizeCur = reso * bpp;
-                        int sizeNew = reso * nBpp;
-
-                        byte* temp = (byte*)Marshal.AllocHGlobal(sizeCur);
-             
-                        //Copy current data to temp buffer
-                        for (int i = 0; i < sizeCur; i++) { temp[i] = ptr[i]; }
-
-                        //Free current & allocate new with the new size
-                        Marshal.FreeHGlobal(_data);
-                        ptr = (byte*)(_data = Marshal.AllocHGlobal(sizeNew));
-
-                        if (_handle.IsAllocated)
-                        {
-                            _handle.Free();
-                            _handle = GCHandle.Alloc(_data, GCHandleType.Pinned);
-                            _scan = GCHandle.ToIntPtr(_handle);
-                        }
-
                         for (int i = 0; i < reso; i += bpp)
                         {
                             int v = 0;
-                            for (int j = 0; j < bpp; j++) { v += (temp[i + j] << (j << 3)); }
-                            v = lut[_palette[v]];
+                            for (int j = 0; j < bpp; j++) { v += (ptr[i + j] << (j << 3)); }
+                            var c = _palette[v];
+                            if (lut.TryGetValue(c, out int vI)) { continue; }
 
-                            for (int j = 0; j < nBpp; j++) { ptr[i + j] = (byte)((v >> (j << 3)) & 0xFF); }
+                            lut.Add(c, lut.Count);
+                            if (lut.Count >= _palette.Count) { return; }
                         }
+                    }
 
-                        _paletteLut = lut;
-                        _palette = pal;
-
-                        _bpp = (byte)(nBpp << 3);
-                        _scanSize = _width * nBpp;
-
-                        Marshal.FreeHGlobal((IntPtr)temp);
+                    int nBpp = Maths.BytesNeeded(lut.Count);
+                    if (nBpp != bpp)
+                    {
+                        RecalcualteColorIndices(reso, bpp, nBpp, pal, lut);
                         return;
                     }
 
-                    for (int i = 0; i < reso; i += bpp)
+                    fixed (byte* ptr = _data)
                     {
-                        int v = 0;
-                        for (int j = 0; j < bpp; j++) { v += (ptr[i + j] << (j << 3)); }
-                        v = lut[_palette[v]];
+                        for (int i = 0; i < reso; i += bpp)
+                        {
+                            int v = 0;
+                            for (int j = 0; j < bpp; j++) { v += (ptr[i + j] << (j << 3)); }
+                            v = lut[_palette[v]];
 
-                        for (int j = 0; j < bpp; j++) { ptr[i + j] = (byte)((v >> (j << 3)) & 0xFF); }
+                            for (int j = 0; j < bpp; j++) { ptr[i + j] = (byte)((v >> (j << 3)) & 0xFF); }
+                        }
                     }
 
                     _paletteLut = lut;
                     _palette = pal;
                 }
             }
+        }
+
+        public void SetResolution(int width, int height)
+        {
+            if(width == _width & height == _height) { return; }
+
+            width = Maths.Clamp(width, 1, ushort.MaxValue);
+            height = Maths.Clamp(height, 1, ushort.MaxValue);
+
+            int newResolution = width * height * _bytesPerPix;
+            int currentRes = _data.Length;
+
+            if(newResolution == currentRes) { return; }
+
+            bool alloc = _handle.IsAllocated;
+            if (alloc)
+            {
+                UnlockBits();
+            }
+            Array.Resize(ref _data, newResolution);
+
+            if(newResolution > currentRes)
+            {
+                unsafe
+                {
+                    fixed (byte* bb = _data)
+                    {
+                        switch (_format)
+                        {
+                            case ColorMode.Indexed:
+                                if (!_paletteLut.TryGetValue(_fillColor, out var index))
+                                {
+                                    _paletteLut.Add(_fillColor, index = _palette.Count);
+                                    _palette.Add(_fillColor);
+
+                                    var bt = Maths.BytesNeeded(_palette.Count) << 3;
+                                    if (bt != _bpp)
+                                    {
+                                        ReadjustToNewBpp((byte)bt, _format);
+                                    }
+                                }
+
+                                BufferUtils.Memset(bb, )
+                                break;
+                        }
+                    }
+                }
+            }
+
+            if (alloc)
+            {
+                LockBits();
+            }
+        }
+
+        private unsafe void RecalcualteColorIndices(int reso, int bpp, int nBpp, List<FastColor> pal, Dictionary<FastColor, int> lut)
+        {
+            int sizeCur = reso * bpp;
+            int sizeNew = reso * nBpp;
+
+            byte* temp = (byte*)Marshal.AllocHGlobal(sizeCur);
+
+            //Copy current data to temp buffer
+            fixed (byte* ptr = _data)
+            {
+                for (int i = 0; i < sizeCur; i++) { temp[i] = ptr[i]; }
+            }
+
+            //Free current & allocate new with the new size
+            _data = new byte[sizeNew];
+
+            if (_handle.IsAllocated)
+            {
+                _handle.Free();
+                _handle = GCHandle.Alloc(_data, GCHandleType.Pinned);
+                _scan = GCHandle.ToIntPtr(_handle);
+            }
+
+            fixed (byte* ptr = _data)
+            {
+                for (int i = 0; i < reso; i += bpp)
+                {
+                    int v = 0;
+                    for (int j = 0; j < bpp; j++) { v += (temp[i + j] << (j << 3)); }
+                    v = lut[_palette[v]];
+
+                    for (int j = 0; j < nBpp; j++) { ptr[i + j] = (byte)((v >> (j << 3)) & 0xFF); }
+                }
+
+            }
+            _paletteLut = lut;
+            _palette = pal;
+
+            _bpp = (byte)(nBpp << 3);
+            _scanSize = _width * nBpp;
+
+            Marshal.FreeHGlobal((IntPtr)temp);
         }
 
         private unsafe bool ReadjustToNewBpp(byte newBpp, ColorMode newFormat)
@@ -464,72 +748,74 @@ namespace Joonaxii.Image.Texturing
             int sizeNew = reso * nBpp;
 
             byte* temp = (byte*)Marshal.AllocHGlobal(sizeCur);
-            byte* ptr  = (byte*)_data;
-
-            //Copy current data to temp buffer
-            for (int i = 0; i < sizeCur; i++) { temp[i] = ptr[i]; }
-
-            //Free current & allocate new with the new size
-            Marshal.FreeHGlobal(_data);
-            ptr = (byte*)(_data = Marshal.AllocHGlobal(sizeNew));
-
-            if (_handle.IsAllocated)
+            fixed (byte* ptr = _data)
             {
-                _handle.Free();
-                _handle = GCHandle.Alloc(_data, GCHandleType.Pinned);
-                _scan = GCHandle.ToIntPtr(_handle);
+                //Copy current data to temp buffer
+                for (int i = 0; i < sizeCur; i++) { temp[i] = ptr[i]; }
+
+                _data = new byte[sizeNew];
+                if (_handle.IsAllocated)
+                {
+                    _handle.Free();
+                    _handle = GCHandle.Alloc(_data, GCHandleType.Pinned);
+                    _scan = GCHandle.ToIntPtr(_handle);
+                }
             }
 
-            //Readjust/Convert data
-            switch (_format)
+            fixed (byte* ptr = _data)
             {
-                case ColorMode.Indexed:
-                    switch (newFormat)
-                    {
-                        case ColorMode.Indexed4:
-                        case ColorMode.Indexed8:
-                        case ColorMode.OneBit:
-                        case ColorMode.Indexed:
-                            int newMask = (1 << newBpp) - 1;
-                            for (int i = 0; i < reso; i++)
-                            {
-                                int iDP = i * bpp;
-                                int iD = i * nBpp;
+                //Readjust/Convert data
+                switch (_format)
+                {
+                    case ColorMode.Indexed:
+                        switch (newFormat)
+                        {
+                            case ColorMode.Indexed4:
+                            case ColorMode.Indexed8:
+                            case ColorMode.OneBit:
+                            case ColorMode.Indexed:
+                                int newMask = (1 << newBpp) - 1;
+                                for (int i = 0; i < reso; i++)
+                                {
+                                    int iDP = i * bpp;
+                                    int iD = i * nBpp;
 
-                                int oldV = 0;
-                                for (int j = 0; j < bpp; j++) { oldV += (temp[iDP + j] << (j << 3)); }
-                                oldV &= newMask;
-                                for (int j = 0; j < nBpp; j++) { ptr[iD + j] = (byte)((oldV >> (j << 3)) & 0xFF); }
-                            }
-                            break;
+                                    int oldV = 0;
+                                    for (int j = 0; j < bpp; j++) { oldV += (temp[iDP + j] << (j << 3)); }
+                                    oldV &= newMask;
+                                    for (int j = 0; j < nBpp; j++) { ptr[iD + j] = (byte)((oldV >> (j << 3)) & 0xFF); }
+                                }
+                                break;
 
-                        default:
-                            for (int i = 0; i < reso; i++)
-                            {
-                                int iDP = i * bpp;
-                                int iD = i * nBpp;
+                            default:
+                                for (int i = 0; i < reso; i++)
+                                {
+                                    int iDP = i * bpp;
+                                    int iD = i * nBpp;
 
-                                var c = GetColor(temp, iDP, bpp, _format);
-                                SetColor(ptr, iD, nBpp, c, newFormat);
-                            }
-                            break;
-                    }
-                    break;
-                default:
-                    for (int i = 0; i < reso; i++)
-                    {
-                        int iDP = i * bpp;
-                        int iD = i * nBpp;
+                                    var c = ColorExtensions.GetColor(temp + iDP, bpp, _format, _palette);
+                                    SetColor(ptr, iD, nBpp, c, newFormat);
+                                }
+                                break;
+                        }
+                        break;
+                    default:
+                        for (int i = 0; i < reso; i++)
+                        {
+                            int iDP = i * bpp;
+                            int iD = i * nBpp;
 
-                        var c = GetColor(temp, iDP, bpp, _format);
-                        SetColor(ptr, iD, nBpp, c, newFormat);
-                    }
-                    break;
+                            var c = ColorExtensions.GetColor(temp + iDP, bpp, _format, _palette);
+                            SetColor(ptr, iD, nBpp, c, newFormat);
+                        }
+                        break;
+                }
             }
 
             _format = newFormat;
             _bpp = newBpp;
             _scanSize = _width * nBpp;
+            _bytesPerPix = (byte)(bpp >> 3);
 
             ValidatePalette();
             //Free temp
@@ -542,7 +828,7 @@ namespace Joonaxii.Image.Texturing
             switch (_format)
             {
                 case ColorMode.Indexed:
-                    if(_palette == null | _palette.Count < 1)
+                    if (_palette == null || _palette.Count < 1)
                     {
                         _palette = new List<FastColor>();
                         _palette.Add(FastColor.black);

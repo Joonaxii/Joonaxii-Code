@@ -1,9 +1,14 @@
-﻿namespace New.JPEG
+﻿using System.Collections.Generic;
+
+namespace New.JPEG
 {
     public class HuffmanTable
     {
-        public bool IsLeaf { get; private set; }
+        public bool IsLeaf { get => value > -1; }
         public int Length { get => left == null ? 0 : right == null ? 1 : 2; }
+        public bool IsEmpty { get => (left == null | right == null) & !IsLeaf; }
+
+        public bool IsRight { get => root != null ? root.right == this : false; }
 
         public HuffmanTable root;
 
@@ -12,75 +17,77 @@
 
         public short value = -1;
 
-        public HuffmanTable() { IsLeaf = false; }
-        public HuffmanTable(byte value) { this.value = value; IsLeaf = true; }
-        public HuffmanTable(byte[] lengths, byte[] elements)
+        public HuffmanTable(HuffmanTable root) { this.root = root; }
+
+        public void AssignLeaf(short value)
         {
-            IsLeaf = false;
-            int ii = 0;
-            for (int i = 0; i < lengths.Length; i++)
+            this.value = value;
+        }
+
+        public HuffmanTable FindNext(int depth)
+        {
+            if(depth < 0)
             {
-                for (int j = 0; j < lengths[i]; j++)
+                if(left == null)
                 {
-                    BitsFromLength(this, elements[ii++], i);
+                    return left = new HuffmanTable(this);
                 }
+                if (left.IsEmpty) { return left; }
+
+                if (right == null)
+                {
+                    return right = new HuffmanTable(this);
+                }
+                if (right.IsEmpty) { return right; }
+                return null;
             }
+
+            var l = left?.FindNext(depth - 1);
+            if(l != null) { return l; }
+            return right?.FindNext(depth - 1);
         }
 
-        private bool BitsFromLength(HuffmanTable root, byte value, int pos)
+        public HuffmanTable FindNextNonLeaf(int depth)
         {
-            if (root.IsLeaf) { return false; }
-            if (pos == 0) { return root.AddLeaf(value); }
-
-            for (int i = 0; i < 1; i++)
+            if (depth < 0)
             {
-                if (root.Length == i) { root.AddChild(); }
-                if(BitsFromLength((i == 0 ? root.left : root.right), value, pos - 1)) { System.Diagnostics.Debug.Print($"{pos}, {value}, {i}"); return true; }
+                if (left == null)
+                {
+                    return left = new HuffmanTable(this);
+                }
+                if (!left.IsLeaf) { return left; }
+
+                if (right == null)
+                {
+                    return right = new HuffmanTable(this);
+                }
+                if (!right.IsLeaf) { return right; }
+                return null;
             }
-            return false;
+
+            var l = left?.FindNext(depth - 1);
+            if (l != null) { return l; }
+            return right?.FindNext(depth - 1);
         }
 
-        private bool AddLeaf(byte value)
+        public HuffmanTable FindNextLeaf(int depth)
         {
-            switch (Length)
+            if (depth <= 0)
             {
-                case 0:
-                    if(left != null)
-                    {
-                        left.value = value;
-                        left.IsLeaf = true;
-                        return true;
-                    }
-                    left = new HuffmanTable(value);
-                    left.root = this;
-                    return true;
-                case 1:
-                    if (right != null)
-                    {
-                        right.value = value;
-                        right.IsLeaf = true;
-                        return true;
-                    }
-                    right = new HuffmanTable(value);
-                    right.root = this;
-                    return true;
+                return left.IsEmpty ? left : right.IsEmpty ? right : null;
             }
-            return false;
+
+            var l = left?.FindNext(depth - 1);
+            if (l != null) { return l; }
+            return right?.FindNext(depth - 1);
         }
 
-        private void AddChild()
+        public void FindAllNodes(List<HuffmanTable> nodes)
         {
-            switch (Length)
-            {
-                case 0:
-                    left = new HuffmanTable();
-                    left.root = this;
-                    break;
-                case 1:
-                    right = new HuffmanTable();
-                    right.root = this;
-                    break;
-            }
+            if (IsLeaf) { nodes.Add(this); return; }
+
+            left?.FindAllNodes(nodes);
+            right?.FindAllNodes(nodes);
         }
 
         public int GetCode(JPEGDecoder.BitStream st)

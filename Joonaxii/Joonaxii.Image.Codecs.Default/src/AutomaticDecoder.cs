@@ -253,6 +253,5 @@ namespace Joonaxii.Image.Codecs.Auto
             base.Dispose();
             _indices = null;
         }
-        public override void ValidateFormat() { }
     }
 }

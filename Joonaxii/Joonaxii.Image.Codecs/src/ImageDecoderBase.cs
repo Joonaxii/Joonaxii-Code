@@ -1,4 +1,5 @@
 ﻿using Joonaxii.Data.Coding;
+using Joonaxii.Image.Texturing;
 using System;
 using System.IO;
 
@@ -6,81 +7,48 @@ namespace Joonaxii.Image.Codecs
 {
     public abstract class ImageDecoderBase : CodecBase
     {
-        public int Width { get => _width; }
-        public int Height { get => _height; }
-        public byte BitsPerPixel { get => _bpp; }
-        public ColorMode ColorMode { get => _colorMode; }
-        public bool IsDecoded { get => _pixels != null; }
+        protected const int MAX_STACK_ALLOC = 128_000; 
+
+        public int Width { get => IsDecoded ? _texture.Width : 0; }
+        public int Height { get => IsDecoded ? _texture.Height : 0; }
+        public byte BitsPerPixel { get => IsDecoded ? _texture.BitsPerPixel : (byte)0; }
+        public ColorMode ColorMode { get => IsDecoded ? _texture.Format : ColorMode.RGBA32; }
+
+        public bool IsDecoded { get => _texture != null; }
 
         protected Stream _stream;
         protected BinaryReader _br;
         protected bool _dispose;
+        protected bool _releaseTexture;
 
-        protected int _width;
-        protected int _height;
+        protected Texture _texture;
 
-        protected byte _bpp
+        public ImageDecoderBase(Stream stream) : this(stream, true) { }
+        public ImageDecoderBase(Stream stream, bool releaseTexture)
         {
-            get => _bppPriv;
-            set
-            {
-                _bppPriv = value;
-                ValidateFormat();
-            }
-        }
-        private byte _bppPriv;
-
-        protected ColorMode _colorMode 
-        {
-            get => _colorModePriv;
-            set
-            {
-                _colorModePriv = value;
-                ValidateFormat();
-            }
-        }
-        private ColorMode _colorModePriv;
-        protected FastColor[] _pixels;
-        
-        public ImageDecoderBase(Stream stream)
-        {
+            _releaseTexture = releaseTexture;
             _stream = stream;
             _br = new BinaryReader(_stream);
             _dispose = true;
-            _pixels = null;
+            _texture = null;
         }
-        public ImageDecoderBase(BinaryReader br, bool dispose)
+
+        public ImageDecoderBase(BinaryReader br, bool dispose) : this(br, dispose, true) { }
+        public ImageDecoderBase(BinaryReader br, bool dispose, bool releaseTexture)
         {
+            _releaseTexture = releaseTexture;
             _stream = br.BaseStream;
             _br = br;
             _dispose = dispose;
-            _pixels = null;
+            _texture = null;
         }
 
-        public abstract void ValidateFormat();
         public abstract ImageDecodeResult Decode(bool skipHeader);
 
-        public byte[] GetBytes(PixelByteOrder byteOrder, bool invertY) => _pixels.ToBytes(byteOrder, invertY, _width, _height, _colorMode);
-        public byte[] GetBytes(PixelByteOrder byteOrder, bool invertY, ColorMode mode) => _pixels.ToBytes(byteOrder, invertY, _width, _height, mode);
+        //public byte[] GetBytes(PixelByteOrder byteOrder, bool invertY) => _pixels.ToBytes(byteOrder, invertY, _width, _height, _colorMode);
+        //public byte[] GetBytes(PixelByteOrder byteOrder, bool invertY, ColorMode mode) => _pixels.ToBytes(byteOrder, invertY, _width, _height, mode);
 
-        public FastColor[] GetPixels()
-        {
-            FastColor[] pix = new FastColor[_pixels.Length];
-            Array.Copy(_pixels, pix, pix.Length);
-            return pix;
-        }
-
-        public FastColor[] GetPixelsRef() => _pixels;
-
-        public int GetPixels(FastColor[] buffer)
-        {
-            int min = buffer.Length < _pixels.Length ? _pixels.Length : buffer.Length;
-            Array.Copy(_pixels, buffer, min);
-            return min;
-        }
-
-        public FastColor GetPixel(int i) => _pixels[i];
-        public FastColor GetPixel(int x, int y) => _pixels[y * _width + x];
+        public Texture GetTexture() => _texture;
 
         public override void Dispose()
         {
@@ -88,7 +56,8 @@ namespace Joonaxii.Image.Codecs
             _stream.Dispose();
             _br.Dispose();
 
-            _pixels = null;
+            _texture?.Dispose();
+            _texture = null;
         }
     }
 }

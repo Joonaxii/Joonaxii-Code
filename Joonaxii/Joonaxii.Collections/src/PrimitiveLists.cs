@@ -1,5 +1,13 @@
-﻿namespace Joonaxii.Collections
+﻿using System;
+
+namespace Joonaxii.Collections
 {
+    public class StructList<T> : PrimitiveListBase<T> where T : IEquatable<T>
+    {
+        public StructList() : base() { }
+        public StructList(int capacity) : base(capacity) { }
+    }
+
     public class SByteList : PrimitiveListBase<sbyte>
     {
         public SByteList() : base() { }

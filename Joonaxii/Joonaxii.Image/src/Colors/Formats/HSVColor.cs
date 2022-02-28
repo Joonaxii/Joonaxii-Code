@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 namespace Joonaxii.Image
 {
     [StructLayout(LayoutKind.Explicit, Size = 4)]
-    public struct HSVColor : IColor
+    public struct HSVColor : IColor, IEquatable<HSVColor>
     {
         [FieldOffset(0)] private int _hsv;
 

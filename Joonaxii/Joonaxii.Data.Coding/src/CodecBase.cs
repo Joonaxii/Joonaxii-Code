@@ -50,5 +50,8 @@ namespace Joonaxii.Data.Coding
             if (_onBegin == null) { return; }
             _onBegin -= act;
         }
+
+        public virtual void LoadGeneralInformation(long pos) { }
+        public virtual int GetDataCRC(long pos) { return 0; }
     }
 }

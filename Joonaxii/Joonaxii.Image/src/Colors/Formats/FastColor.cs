@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 namespace Joonaxii.Image
 {
     [StructLayout(LayoutKind.Explicit, Size = 4), Serializable]
-    public struct FastColor : IColor
+    public struct FastColor : IColor, IEquatable<FastColor>
     {
         public static FastColor clear { get; } = new FastColor(0, 0, 0, 0);
         public static FastColor black { get; } = new FastColor(0, 0, 0);
@@ -288,8 +288,23 @@ namespace Joonaxii.Image
             a = setAlpha ? gray : (byte)255;
         }
 
-        public void Set(byte alpha)
+        public void SetAlpha(byte alpha)
         {
+            a = alpha;
+        }
+
+        public void Set(byte gray)
+        {
+            r = gray;
+            g = gray;
+            b = gray;
+        }
+
+        public void Set(byte gray, byte alpha)
+        {
+            r = gray;
+            g = gray;
+            b = gray;
             a = alpha;
         }
 

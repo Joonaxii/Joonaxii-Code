@@ -104,14 +104,32 @@ namespace Joonaxii.IO
             return value;
         }
 
+        public static unsafe void WriteToByteArray(byte* buf, int start, long value, int bytes, bool bigEndian)
+        {
+            if (bigEndian)
+            {
+                bytes--;
+                for (int i = 0; i <= bytes; i++)
+                {
+                    buf[start + (bytes - i)] = (byte)((value >> (i << 3)) & 0xFF);
+                }
+                return;
+            }
+            for (int i = 0; i < bytes; i++)
+            {
+                int bI = start + i;
+                buf[bI] = (byte)((value >> (i << 3)) & 0xFF);
+            }
+        }
+
         public static void WriteToByteArray(byte[] buf, int start, long value, int bytes, bool bigEndian)
         {
             if (bigEndian)
             {
-                for (int i = 0; i < bytes; i++)
+                bytes--;
+                for (int i = 0; i <= bytes; i++)
                 {
-                    int bI = start + i;
-                    buf[bytes - 1 - bI] = (byte)((value >> (i << 3)) & 0xFF);
+                    buf[start + (bytes - i)] = (byte)((value >> (i << 3)) & 0xFF);
                 }
                 return;
             }

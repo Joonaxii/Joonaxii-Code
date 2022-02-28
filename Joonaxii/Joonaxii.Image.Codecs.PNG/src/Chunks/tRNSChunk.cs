@@ -1,20 +1,33 @@
-﻿using System.Collections.Generic;
-using System.Text;
+﻿using Joonaxii.Data.Coding;
+using Joonaxii.IO;
+using System.Collections.Generic;
+using System.IO;
 
 namespace Joonaxii.Image.Codecs.PNG
 {
     public class tRNSChunk : PNGChunk
     {
-        public tRNSChunk(IList<ColorContainer> palette) : base(palette.Count, PNGChunkType.tRNS, new byte [palette.Count], 0)
-        {
-            for (int i = 0; i < palette.Count; i++)
-            {
-                data[i] = palette[i].color.a;
-            }
-            crc = GetCrc();
-        }
+        public byte[] alphaData;
 
-        public tRNSChunk(int len, byte[] data, uint crc) : base(len, PNGChunkType.tRNS, data, crc) { }
+        public tRNSChunk(int len, uint crc, long pos) : base(len, PNGChunkType.tRNS, crc, pos)  { }
+
+        public static void Write(BinaryWriter bw, IList<ColorContainer> palette)
+        {
+            var length = palette.Count;
+            unsafe
+            {
+                byte[] alpha = new byte[length + 4];
+                fixed(byte* alph = alpha)
+                {
+                    IOExtensions.WriteToByteArray(alpha, 0, (int)PNGChunkType.tRNS, 4, true);
+                    for (int i = 0, j = 4; i < length; i++, j++)
+                    {
+                        alpha[j] = palette[i].color.a;
+                    }
+                    Write(bw, alph, length);
+                }
+            }
+        }
 
         public override string ToMinString() => base.ToMinString();
         public override string GetSpedcificInfoString() => string.Empty;

@@ -32,6 +32,26 @@
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>7.3</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>bin\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>7.3</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -46,14 +66,11 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="src\ResizeMode.cs" />
     <Compile Include="src\Texture.cs" />
+    <Compile Include="src\TextureDataMode.cs" />
     <Compile Include="src\TextureModification.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
-    <ProjectReference Include="..\Joonaxii.Image.Codecs\Joonaxii.Image.Codecs.csproj">
-      <Project>{aebfedb7-0836-4e95-b9c9-13e9dfed9507}</Project>
-      <Name>Joonaxii.Image.Codecs</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Joonaxii.Image\Joonaxii.Image.csproj">
       <Project>{3474a9e6-e0bd-4d39-aad1-795198dd4692}</Project>
       <Name>Joonaxii.Image</Name>

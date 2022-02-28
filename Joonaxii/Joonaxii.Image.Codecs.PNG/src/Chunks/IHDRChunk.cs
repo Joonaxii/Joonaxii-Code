@@ -1,4 +1,5 @@
-﻿using Joonaxii.IO;
+﻿using Joonaxii.Data.Coding;
+using Joonaxii.IO;
 using System.IO;
 using System.Text;
 
@@ -17,54 +18,36 @@ namespace Joonaxii.Image.Codecs.PNG
 
         public InterlaceMethod interlaceMethod;
 
-        public IHDRChunk(int width, int height, byte bitDepth, PNGColorType colorType) : base(0, PNGChunkType.IHDR, null, 0)
+        public IHDRChunk(BinaryReader br, int len, uint crc) : base(len, PNGChunkType.IHDR, crc, 0)
         {
-            this.width = width;
-            this.height = height;
+            width = br.ReadInt32BigEndian();
+            height = br.ReadInt32BigEndian();
 
-            this.bitDepth = bitDepth;
-            this.colorType = colorType;
-            compressionMethod = 0;
-            filterMethod = 0;
-            interlaceMethod = 0;
+            bitDepth = br.ReadByte();
+            colorType = (PNGColorType)br.ReadByte();
 
-            using(MemoryStream ms = new MemoryStream())
-            using(BinaryWriter bw = new BinaryWriter(ms))
-            {
-                bw.WriteBigEndian(width);
-                bw.WriteBigEndian(height);
-                bw.Write(bitDepth);
-                bw.Write((byte)colorType);
-
-                bw.Write((byte)compressionMethod);
-                bw.Write((byte)filterMethod);
-                bw.Write((byte)interlaceMethod);
-
-                ms.Flush();
-                bw.Flush();
-
-                data = ms.ToArray();
-            }
-
-            length = data.Length;
-            crc = GetCrc();
+            compressionMethod = (PNGCompressionMethod)br.ReadByte();
+            filterMethod = (PNGFilterMethod)br.ReadByte();
+            interlaceMethod = (InterlaceMethod)br.ReadByte();
         }
 
-        public IHDRChunk(int len, byte[] data, uint crc) : base(len, PNGChunkType.IHDR, data, crc)
+        public static void Write(BinaryWriter bw, int width, int height, byte bitDepth, PNGColorType colorType)
         {
-            using(var stream = GetStream())
-            using(BinaryReader br = new BinaryReader(stream))
+            unsafe
             {
-                width = br.ReadInt32BigEndian();
-                height = br.ReadInt32BigEndian();
+                byte* data = stackalloc byte[17];
+                IOExtensions.WriteToByteArray(data, 0, (int)PNGChunkType.IHDR, 4, true);
 
-                bitDepth = br.ReadByte();
-                colorType = (PNGColorType)br.ReadByte();
+                IOExtensions.WriteToByteArray(data, 4, width, 4, true);
+                IOExtensions.WriteToByteArray(data, 8, height, 4, true);
 
-                compressionMethod = (PNGCompressionMethod)br.ReadByte();
-                filterMethod = (PNGFilterMethod)br.ReadByte();
+                IOExtensions.WriteToByteArray(data, 12, bitDepth, 1, false);
+                IOExtensions.WriteToByteArray(data, 13, (long)colorType, 1, false);
 
-                interlaceMethod = (InterlaceMethod)br.ReadByte();
+                IOExtensions.WriteToByteArray(data, 14, 0L, 1, false);
+                IOExtensions.WriteToByteArray(data, 15, 0L, 1, false);
+                IOExtensions.WriteToByteArray(data, 16, 0L, 1, false);
+                Write(bw, data, 13);
             }
         }
 
@@ -72,15 +55,15 @@ namespace Joonaxii.Image.Codecs.PNG
         {
             switch (colorType)
             {
-                default:                        return 0;
+                default: return 0;
 
-                case PNGColorType.GRAYSCALE:    
-                case PNGColorType.PALETTE_IDX:  return 1;
+                case PNGColorType.GRAYSCALE:
+                case PNGColorType.PALETTE_IDX: return 1;
 
-                case PNGColorType.RGB:          return 3;
+                case PNGColorType.RGB: return 3;
 
-                case PNGColorType.GRAY_ALPHA:   return 2;
-                case PNGColorType.RGB_ALPHA:    return 4;
+                case PNGColorType.GRAY_ALPHA: return 2;
+                case PNGColorType.RGB_ALPHA: return 4;
             }
         }
 
@@ -89,12 +72,12 @@ namespace Joonaxii.Image.Codecs.PNG
             switch (bitDepth)
             {
                 default: return width * GetBytesPerPixel() * ((bitDepth + 7) >> 3);
-                case 1:  return (width + 7) >> 3;
-                case 2:  return (width + 3) >> 2;
-                case 4:  return (width + 1) >> 1;
+                case 1: return (width + 7) >> 3;
+                case 2: return (width + 3) >> 2;
+                case 4: return (width + 1) >> 1;
 
-                //case 8:
-                //case 16: return width * GetBytesPerPixel() * ((bitDepth + 7) >> 3);
+                    //case 8:
+                    //case 16: return width * GetBytesPerPixel() * ((bitDepth + 7) >> 3);
             }
         }
 

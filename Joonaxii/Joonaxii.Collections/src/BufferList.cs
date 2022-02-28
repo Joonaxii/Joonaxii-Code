@@ -198,6 +198,11 @@ namespace Joonaxii.Collections
             Buffer.BlockCopy(_buffer, 0, array, arrayIndex * 8, (array.Length - arrayIndex) * 8);
         }
 
+        public void CopyTo(byte[] array, int arrayIndex)
+        {
+            Buffer.BlockCopy(_buffer, 0, array, arrayIndex, (array.Length - arrayIndex));
+        }
+
         public int IndexOf(long item)
         {
             if (BytesPerValue == 1) { return Array.IndexOf(_buffer, (byte)item, 0, Count); }

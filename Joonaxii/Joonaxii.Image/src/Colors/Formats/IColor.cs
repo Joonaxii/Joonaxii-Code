@@ -1,4 +1,6 @@
 ﻿
+using System;
+
 namespace Joonaxii.Image
 {
     public interface IColor

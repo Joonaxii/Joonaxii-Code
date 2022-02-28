@@ -1,11 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace Joonaxii.Image
 {
     [StructLayout(LayoutKind.Explicit, Size = 4), Serializable]
-    public struct YCrCb : IColor
+    public struct YCrCb : IColor, IEquatable<YCrCb>
     {
         public float Y  { get => ( y / (float)byte.MaxValue); }
         public float CB { get => (cb / (float)byte.MaxValue - 0.5f) * 2.0f; }

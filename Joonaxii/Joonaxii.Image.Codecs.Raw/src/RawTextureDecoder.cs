@@ -210,31 +210,6 @@ namespace Joonaxii.Image.Codecs.Raw
             Console.WriteLine(stamp.ToString());
             indices.Clear();
             return ImageDecodeResult.Success;
-        }
-
-        public override void ValidateFormat()
-        {
-            switch (_colorMode)
-            {
-                case ColorMode.ARGB555:
-                    _colorMode = ColorMode.RGBA32;
-                    _bpp = 32;
-                    break;
-
-                case ColorMode.RGB555:
-                case ColorMode.RGB565:
-                    _colorMode = ColorMode.RGB24;
-                    _bpp = 24;
-                    break;
-
-                case ColorMode.OneBit:
-                case ColorMode.Indexed4:
-                case ColorMode.Indexed8:
-                case ColorMode.Grayscale:
-                    _colorMode = ColorMode.RGB24;
-                    _bpp = 24;
-                    break;
-            }
-        }
+        }       
     }
 }

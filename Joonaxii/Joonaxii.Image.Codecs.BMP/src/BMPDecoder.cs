@@ -1,4 +1,5 @@
 ﻿using Joonaxii.Data;
+using Joonaxii.Image.Texturing;
 using Joonaxii.IO;
 using System;
 using System.IO;
@@ -35,18 +36,18 @@ namespace Joonaxii.Image.Codecs.BMP
 
             int hdrize = br.ReadInt32();
 
-            _width = Math.Abs(br.ReadInt32());
-            _height = br.ReadInt32();
+            int width = Math.Abs(br.ReadInt32());
+            int height = br.ReadInt32();
 
-            bool topToBot = _height < 0;
-            _height = topToBot ? -_height : _height;
+            bool topToBot = height < 0;
+            height = topToBot ? -height : height;
 
             ushort planes = br.ReadUInt16();
-            _bpp = (byte)br.ReadUInt16();
+            byte bpp = (byte)br.ReadUInt16();
 
             byte cmpMode = (byte)br.ReadInt32();
 
-            System.Diagnostics.Debug.Print($"BMP Info: {_width} W, {_height} H, Rev Y: {topToBot}, BPP: {_bpp}, Cmp: {cmpMode}");
+            System.Diagnostics.Debug.Print($"BMP Info: {width} W, {height} H, Rev Y: {topToBot}, BPP: {bpp}, Cmp: {cmpMode}");
 
             switch (cmpMode)
             {
@@ -62,9 +63,10 @@ namespace Joonaxii.Image.Codecs.BMP
 
             int colors = br.ReadInt32();
             int impColors = br.ReadInt32();
-            _pixels = new FastColor[_width * _height];
+  
+            ColorMode mode;
 
-            switch (_bpp)
+            switch (bpp)
             {
                 case 16:
                 case 32:
@@ -72,45 +74,41 @@ namespace Joonaxii.Image.Codecs.BMP
                     int g = br.ReadInt32();
                     int b = br.ReadInt32();
                     int a = br.ReadInt32();
-                    _colorMode = ImageCodecExtensions.GetColorMode(_bpp, r, g, b, a);
+                    mode = ImageCodecExtensions.GetColorMode(bpp, r, g, b, a);
                     break;
 
                 default:
-                    _colorMode = ImageCodecExtensions.GetColorMode(_bpp);
+                    mode = ImageCodecExtensions.GetColorMode(bpp);
                     break;
             }
 
-            int bytesPerP = _bpp / 8;
-            int padding = IOExtensions.NextDivBy(_width * bytesPerP, 4) - (_width * bytesPerP);
-            for (int y = 0; y < _height; y++)
+            _texture = new Texture(width, height, mode);
+
+            int bytesPerP = bpp >> 3;
+            int padding = IOExtensions.NextDivBy(width * bytesPerP, 4) - (width * bytesPerP);
+
+            unsafe
             {
-                int yP = topToBot ? y : _height - 1 - y;
-                for (int x = 0; x < _width; x++)
+                fixed(FastColor* pix = pixels)
                 {
-                    _pixels[yP * _width + x] = br.ReadColor(_colorMode, true);
+                    FastColor* ptrPix = pix;
+                    for (int y = 0; y < height; y++)
+                    {
+                        int yP = topToBot ? y : height - 1 - y;
+                       //int scan = yP * _width;
+                        for (int x = 0; x < width; x++)
+                        {
+                            *ptrPix = br.ReadColor(mode, true);
+                            ptrPix++;
+                        }
+                        br.ReadBytes(padding);
+                    }
+
                 }
-                br.ReadBytes(padding);
             }
+
 
             return ImageDecodeResult.Success;
-        }
-
-        public override void ValidateFormat()
-        {
-            switch (_colorMode)
-            {
-                case ColorMode.OneBit:
-                case ColorMode.Indexed4:
-                case ColorMode.Indexed8:
-                case ColorMode.Grayscale:
-                    _colorMode = ColorMode.RGB24;
-                    _bpp = 24;
-                    break;
-                case ColorMode.GrayscaleAlpha:
-                    _colorMode = ColorMode.RGBA32;
-                    _bpp = 32;
-                    break;
-            }
         }
     }
 }
