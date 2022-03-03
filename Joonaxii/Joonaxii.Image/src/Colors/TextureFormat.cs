@@ -1,6 +1,6 @@
 ﻿namespace Joonaxii.Image
 {
-    public enum ColorMode
+    public enum TextureFormat
     {
         OneBit,
         Indexed4,

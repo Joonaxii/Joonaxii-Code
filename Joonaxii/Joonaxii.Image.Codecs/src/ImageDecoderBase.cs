@@ -13,7 +13,7 @@ namespace Joonaxii.Image.Codecs
         public int Width { get => IsDecoded ? _texture.Width : 0; }
         public int Height { get => IsDecoded ? _texture.Height : 0; }
         public byte BitsPerPixel { get => IsDecoded ? _texture.BitsPerPixel : (byte)0; }
-        public ColorMode ColorMode { get => IsDecoded ? _texture.Format : ColorMode.RGBA32; }
+        public TextureFormat ColorMode { get => IsDecoded ? _texture.Format : TextureFormat.RGBA32; }
 
         public bool IsDecoded { get => _texture != null; }
 
@@ -51,7 +51,7 @@ namespace Joonaxii.Image.Codecs
 
         public Texture GetTexture() => _texture;
 
-        protected void GenerateTexture(int width, int height, ColorMode format, byte bpp)
+        protected void GenerateTexture(int width, int height, TextureFormat format, byte bpp)
         {
             width = Maths.Clamp(width, 1, ushort.MaxValue);
             height = Maths.Clamp(height, 1, ushort.MaxValue);

@@ -101,7 +101,7 @@ namespace Joonaxii.Image.Codecs.VTF
                     switch (res.Tag)
                     {
                         case VTFTag.HI_RES_IMAGE:
-                            GenerateTexture(width, height, ColorMode.RGBA32, 32);
+                            GenerateTexture(width, height, TextureFormat.RGBA32, 32);
                             switch (hiResFmt)
                             {
                                 case VTFFormat.DXT1:
@@ -139,7 +139,7 @@ namespace Joonaxii.Image.Codecs.VTF
             }
 
             _stream.Seek(headerSize + 16, SeekOrigin.Begin);
-            GenerateTexture(width, height, ColorMode.RGBA32, 32);
+            GenerateTexture(width, height, TextureFormat.RGBA32, 32);
             switch (hiResFmt)
             {
                 case VTFFormat.DXT1:
@@ -177,32 +177,32 @@ namespace Joonaxii.Image.Codecs.VTF
             }
         }
 
-        private void ConvertToColorMode(VTFFormat fmt, out ColorMode mode, out PixelByteOrder byteOrder)
+        private void ConvertToColorMode(VTFFormat fmt, out TextureFormat mode, out PixelByteOrder byteOrder)
         {
-            mode = ColorMode.RGB24;
+            mode = TextureFormat.RGB24;
             byteOrder = PixelByteOrder.RGBA;
             switch (fmt) 
             {
                 case VTFFormat.ABGR8888:
-                    mode = ColorMode.RGBA32;
+                    mode = TextureFormat.RGBA32;
                     byteOrder = PixelByteOrder.ABGR;
                     break;
                 case VTFFormat.ARGB8888:
-                    mode = ColorMode.RGBA32;
+                    mode = TextureFormat.RGBA32;
                     byteOrder = PixelByteOrder.ARGB;
                     break;
 
                 case VTFFormat.BGR565:
-                    mode = ColorMode.RGB565;
+                    mode = TextureFormat.RGB565;
                     byteOrder = PixelByteOrder.ABGR;
                     break;
                 case VTFFormat.BGR888:
-                    mode = ColorMode.RGB24;
+                    mode = TextureFormat.RGB24;
                     byteOrder = PixelByteOrder.ARGB;
                     break;
 
                 case VTFFormat.DXT1:
-                    mode = ColorMode.RGB565;
+                    mode = TextureFormat.RGB565;
                     byteOrder = PixelByteOrder.ABGR;
                     break;
             }

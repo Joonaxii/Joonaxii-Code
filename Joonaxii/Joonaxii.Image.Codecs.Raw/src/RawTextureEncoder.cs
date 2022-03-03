@@ -23,8 +23,8 @@ namespace Joonaxii.Image.Codecs.Raw
             _compressPixelData = compressPixelData;
         }
 
-        public RawTextureEncoder(int width, int height, ColorMode pFmt) : this(RawTextureCompressMode.None, false, width, height, pFmt) { }
-        public RawTextureEncoder(RawTextureCompressMode compress, bool compressPixelData, int width, int height, ColorMode pFmt) : base(width, height, pFmt)
+        public RawTextureEncoder(int width, int height, TextureFormat pFmt) : this(RawTextureCompressMode.None, false, width, height, pFmt) { }
+        public RawTextureEncoder(RawTextureCompressMode compress, bool compressPixelData, int width, int height, TextureFormat pFmt) : base(width, height, pFmt)
         {
             _compressMode = compress;
             _compressPixelData = compressPixelData;
@@ -77,25 +77,25 @@ namespace Joonaxii.Image.Codecs.Raw
 
                         switch (_colorMode)
                         {
-                            case ColorMode.ARGB555:
-                            case ColorMode.RGBA32: break;
+                            case TextureFormat.ARGB555:
+                            case TextureFormat.RGBA32: break;
                             default: res = RawTextureCompressMode.None; break;
                         }
                         break;
                     case RawTextureCompressMode.IdxaRLE:
                         switch (_colorMode)
                         {
-                            case ColorMode.ARGB555:
-                            case ColorMode.RGBA32: break;
+                            case TextureFormat.ARGB555:
+                            case TextureFormat.RGBA32: break;
                             default: res = RawTextureCompressMode.IdxRLE; break;
                         }
 
                         if (res != RawTextureCompressMode.IdxaRLE) { break; }
                         switch (palMode)
                         {
-                            case ColorMode.RGBA32:
-                            case ColorMode.ARGB555:
-                                palMode = ColorMode.RGB24;
+                            case TextureFormat.RGBA32:
+                            case TextureFormat.ARGB555:
+                                palMode = TextureFormat.RGB24;
                                 break;
                         }
                         break;
@@ -177,7 +177,7 @@ namespace Joonaxii.Image.Codecs.Raw
                         RLE.CompressToStream(bw, alph);
                         stamp.Stamp();
 
-                        bw.WriteColors(_pixels, ColorMode.RGB24);
+                        bw.WriteColors(_pixels, TextureFormat.RGB24);
                         break;
 
                     case RawTextureCompressMode.IdxaRLE:
@@ -272,22 +272,22 @@ namespace Joonaxii.Image.Codecs.Raw
             base.ValidateFormat();
             switch (_colorMode)
             {
-                case ColorMode.ARGB555:
-                    _colorMode = ColorMode.RGBA32;
+                case TextureFormat.ARGB555:
+                    _colorMode = TextureFormat.RGBA32;
                     _bpp = 32;
                     break;
 
-                case ColorMode.RGB555:
-                case ColorMode.RGB565:
-                    _colorMode = ColorMode.RGB24;
+                case TextureFormat.RGB555:
+                case TextureFormat.RGB565:
+                    _colorMode = TextureFormat.RGB24;
                     _bpp = 24;
                     break;
 
-                case ColorMode.OneBit:
-                case ColorMode.Indexed4:
-                case ColorMode.Indexed8:
-                case ColorMode.Grayscale:
-                    _colorMode = ColorMode.RGB24;
+                case TextureFormat.OneBit:
+                case TextureFormat.Indexed4:
+                case TextureFormat.Indexed8:
+                case TextureFormat.Grayscale:
+                    _colorMode = TextureFormat.RGB24;
                     _bpp = 24;
                     break;
             }

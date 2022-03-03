@@ -16,14 +16,14 @@ namespace Joonaxii.Image.Codecs.GIF
         public GIFFrame(ushort width, ushort height, ushort delay, FastColor[] pixels)
         {
             Delay = delay;
-            _texture = new Texture(width, height, ColorMode.RGBA32);
+            _texture = new Texture(width, height, TextureFormat.RGBA32);
             _texture.SetPixels(pixels);
         }
 
         public GIFFrame(ushort width, ushort height, ushort delay)
         {
             Delay = delay;
-            _texture = new Texture(width, height, ColorMode.RGBA32);
+            _texture = new Texture(width, height, TextureFormat.RGBA32);
         }
 
         public void CopyTo(GIFFrame other)

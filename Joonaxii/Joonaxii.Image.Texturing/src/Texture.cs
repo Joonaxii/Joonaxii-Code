@@ -19,37 +19,45 @@ namespace Joonaxii.Image.Texturing
         public IntPtr Scan { get => _scan; }
         private IntPtr _scan;
 
-        public ColorMode Format
+        public bool HasAlpha { get => _hasAlpha; }
+
+        public List<FastColor> Palette { get => _palette; }
+        public Dictionary<FastColor, int> PaletteLUT { get => _paletteLut; }
+
+        public TextureFormat Format
         {
             get => _format;
             set => SetFormat(value, true);
         }
         public int ScanSize { get => _scanSize; }
-        public byte BitsPerPixel 
-        { 
+        public byte BitsPerPixel
+        {
             get => _bpp;
             set
             {
                 switch (Format)
                 {
-                    default:return;
-                    case ColorMode.Indexed: break;
+                    default: return;
+                    case TextureFormat.Indexed: break;
                 }
 
-                if(_bpp != value)
+                if (_bpp != value)
                 {
-                    ReadjustToNewBpp(value, Format);
+                    if (!ReadjustToNewBpp(value, Format))
+                    {
+                        PixelIterationMode = _dataLayout;
+                    }
                 }
             }
         }
         public byte BytesPerPixel { get => _bytesPerPix; }
 
-        public TextureDataMode PixelIterationMode 
-        { 
+        public TextureDataMode PixelIterationMode
+        {
             get => _dataLayout;
-            set 
+            set
             {
-                if(value == _dataLayout) { return; }
+                if (value == _dataLayout) { return; }
 
                 int reso = _width * _height;
                 if (value == TextureDataMode.Auto)
@@ -59,14 +67,14 @@ namespace Joonaxii.Image.Texturing
                 }
                 _dataLayout = value;
 
-                if((reso % (int)_dataLayout) != 0)
+                if ((reso % (int)_dataLayout) != 0)
                 {
                     _dataLayout = ResolutionToLayout(reso);
                 }
             }
         }
 
-        private ColorMode _format;
+        private TextureFormat _format;
         private int _scanSize;
         private byte _bpp;
         private byte _bytesPerPix;
@@ -74,9 +82,9 @@ namespace Joonaxii.Image.Texturing
         private ushort _width;
         private ushort _height;
 
-        private ushort _pW;
-        private ushort _pH;
-        private ResizeMode _mode;
+        //private ushort _pW;
+        //private ushort _pH;
+        //private ResizeMode _mode;
 
         private byte[] _data;
 
@@ -89,10 +97,12 @@ namespace Joonaxii.Image.Texturing
         private List<FastColor> _palette = null;
         private TextureDataMode _dataLayout;
 
-        public Texture(int width, int height, ColorMode format) : this(width, height, format, 8, TextureDataMode.Auto, FastColor.black) { }
-        public Texture(int width, int height, ColorMode format, byte bpp) : this(width, height, format, bpp, TextureDataMode.Auto, FastColor.black) { }
-        public Texture(int width, int height, ColorMode format, FastColor fillColor) : this(width, height, format, 8, TextureDataMode.Auto, fillColor) { }
-        private Texture(int width, int height, ColorMode format, byte bpp, TextureDataMode iterationMode, FastColor fillColor)
+        private bool _hasAlpha;
+
+        public Texture(int width, int height, TextureFormat format) : this(width, height, format, 8, TextureDataMode.Auto, FastColor.black) { }
+        public Texture(int width, int height, TextureFormat format, byte bpp) : this(width, height, format, bpp, TextureDataMode.Auto, FastColor.black) { }
+        public Texture(int width, int height, TextureFormat format, FastColor fillColor) : this(width, height, format, 8, TextureDataMode.Auto, fillColor) { }
+        private Texture(int width, int height, TextureFormat format, byte bpp, TextureDataMode iterationMode, FastColor fillColor)
         {
             _width = (ushort)Maths.Clamp(width, 0, ushort.MaxValue);
             _height = (ushort)Maths.Clamp(height, 0, ushort.MaxValue);
@@ -101,7 +111,7 @@ namespace Joonaxii.Image.Texturing
             SetFormat(format, false);
 
             int reso = _width * _height;
-            _dataLayout = iterationMode == TextureDataMode.Auto ? ResolutionToLayout(reso) : iterationMode;
+            PixelIterationMode = iterationMode;
 
             _fillColor = fillColor;
             unsafe
@@ -112,7 +122,7 @@ namespace Joonaxii.Image.Texturing
                     for (int i = 0; i < reso; i++)
                     {
                         int iD = i * _bytesPerPix;
-                        SetColor(ptr, iD, _bytesPerPix, fillColor, _format);
+                        ColorExtensions.SetColor(ptr, iD, _bytesPerPix, fillColor, _format, GetColorIndex);
                     }
                 }
             }
@@ -122,24 +132,25 @@ namespace Joonaxii.Image.Texturing
             _pendingMods = TextureModification.None;
         }
 
-        public Texture(Texture other)
+        public Texture(Texture other) : this(other, other.Format, other.BitsPerPixel) { }
+
+        public Texture(Texture other, TextureFormat format, byte bpp)
         {
             _width = other._width;
             _height = other._height;
 
-            SetFormat(other.Format, false);
-
+            ConvertTo(other, format, bpp);
         }
 
         private TextureDataMode ResolutionToLayout(int reso)
         {
             if (reso < 2) { return TextureDataMode.DB1; }
 
-            if((reso % 32) == 0)  { return TextureDataMode.DB32; }
-            if((reso % 16) == 0)  { return TextureDataMode.DB16; }
-            if((reso % 8 ) == 0)  { return TextureDataMode.DB8; }
-            if((reso % 4 ) == 0)  { return TextureDataMode.DB4; }
-            if((reso % 3 ) == 0)  { return TextureDataMode.DB3; }
+            if ((reso % 32) == 0) { return TextureDataMode.DB32; }
+            if ((reso % 16) == 0) { return TextureDataMode.DB16; }
+            if ((reso % 8) == 0)  { return TextureDataMode.DB8; }
+            if ((reso % 4) == 0)  { return TextureDataMode.DB4; }
+            if ((reso % 3) == 0)  { return TextureDataMode.DB3; }
 
             return TextureDataMode.DB2;
         }
@@ -147,13 +158,12 @@ namespace Joonaxii.Image.Texturing
         public FastColor GetPixel(int x, int y) => GetPixel(y * _width + x);
         public FastColor GetPixel(int i)
         {
-            if (i < 0 | i >= _width * _height) { throw new IndexOutOfRangeException("Index is out of range of the pixel array!"); }
+            if (i < 0 | i >= _data.Length) { throw new IndexOutOfRangeException("Index is out of range of the pixel array!"); }
             unsafe
             {
-                int bpp = _bpp >> 3;
                 fixed (byte* ptr = _data)
                 {
-                    return ColorExtensions.GetColor(ptr + (i * bpp), bpp, _format, _palette);
+                    return ColorExtensions.GetColor(ptr + (i * _bytesPerPix), _bytesPerPix, _format, _palette);
                 }
             }
         }
@@ -164,7 +174,7 @@ namespace Joonaxii.Image.Texturing
             FastColor[] pix = new FastColor[_width * _height];
             unsafe
             {
-                fixed(FastColor* cPtr = pix)
+                fixed (FastColor* cPtr = pix)
                 {
                     GetPixels((byte*)cPtr, pix.Length);
                 }
@@ -177,7 +187,7 @@ namespace Joonaxii.Image.Texturing
             int len = Math.Min(pixels.Length, _width * _height);
             unsafe
             {
-                fixed(FastColor* cPtr = pixels)
+                fixed (FastColor* cPtr = pixels)
                 {
                     GetPixels((byte*)cPtr, len);
                 }
@@ -198,15 +208,15 @@ namespace Joonaxii.Image.Texturing
                     {
                         default: pxAct = ColorExtensions.GetIndexedPtr; break;
 
-                        case ColorMode.RGB24: pxAct = ColorExtensions.GetRGB24Ptr; break;
-                        case ColorMode.RGBA32: pxAct = ColorExtensions.GetRGBA32Ptr; break;
+                        case TextureFormat.RGB24: pxAct = ColorExtensions.GetRGB24Ptr; break;
+                        case TextureFormat.RGBA32: pxAct = ColorExtensions.GetRGBA32Ptr; break;
 
-                        case ColorMode.RGB555: pxAct = ColorExtensions.GetRGB555Ptr; break;
-                        case ColorMode.RGB565: pxAct = ColorExtensions.GetRGB565Ptr; break;
-                        case ColorMode.ARGB555: pxAct = ColorExtensions.GetARGB555Ptr; break;
+                        case TextureFormat.RGB555: pxAct = ColorExtensions.GetRGB555Ptr; break;
+                        case TextureFormat.RGB565: pxAct = ColorExtensions.GetRGB565Ptr; break;
+                        case TextureFormat.ARGB555: pxAct = ColorExtensions.GetARGB555Ptr; break;
 
-                        case ColorMode.Grayscale: pxAct = ColorExtensions.GetGrayscalePtr; break;
-                        case ColorMode.GrayscaleAlpha: pxAct = ColorExtensions.GetGrayscaleAlphaPtr; break;
+                        case TextureFormat.Grayscale: pxAct = ColorExtensions.GetGrayscalePtr; break;
+                        case TextureFormat.GrayscaleAlpha: pxAct = ColorExtensions.GetGrayscaleAlphaPtr; break;
                     }
 
                     switch (_dataLayout)
@@ -324,35 +334,63 @@ namespace Joonaxii.Image.Texturing
 
         public FastColor GetPaletteColor(int i) => HasPalette ? _palette[i] : FastColor.clear;
 
-        private void SetFormat(ColorMode format, bool adjustBpp)
+        public void SetFormat(TextureFormat format, byte bpp)
+        {
+            if (Format == format & _bpp == bpp) { return; }
+
+            unsafe
+            {
+                if (!ReadjustToNewBpp(bpp, format))
+                {
+                    _bpp = bpp;
+                    _format = format;
+                    _bytesPerPix = (byte)(bpp >> 3);
+                    _scanSize = _width * _bytesPerPix;
+
+                    PixelIterationMode = _dataLayout;
+                    ValidatePalette();
+
+                    if (format == TextureFormat.Indexed)
+                    {
+                        foreach (var item in _palette)
+                        {
+                            if (item.a < 255) { _hasAlpha = true; break; }
+                        }
+                    }
+                }
+            }
+        }
+
+        private void SetFormat(TextureFormat format, bool adjustBpp)
         {
             byte bpp = 8;
-            ColorMode fmt = format;
+            TextureFormat fmt = format;
+            _hasAlpha = false;
             switch (fmt)
             {
-                case ColorMode.Grayscale:
+                case TextureFormat.Grayscale:
                     bpp = 8;
                     break;
 
-                case ColorMode.OneBit:
-                case ColorMode.Indexed4:
-                case ColorMode.Indexed8:
-                    fmt = ColorMode.Indexed;
+                case TextureFormat.OneBit:
+                case TextureFormat.Indexed4:
+                case TextureFormat.Indexed8:
+                    fmt = TextureFormat.Indexed;
                     bpp = 8;
                     break;
 
-                case ColorMode.RGB24:
+                case TextureFormat.RGB24:
                     bpp = 24;
                     break;
 
-                case ColorMode.RGBA32:
+                case TextureFormat.RGBA32:
                     bpp = 32;
                     break;
 
-                case ColorMode.RGB555:
-                case ColorMode.RGB565:
-                case ColorMode.ARGB555:
-                case ColorMode.GrayscaleAlpha:
+                case TextureFormat.RGB555:
+                case TextureFormat.RGB565:
+                case TextureFormat.ARGB555:
+                case TextureFormat.GrayscaleAlpha:
                     bpp = 16;
                     break;
             }
@@ -364,20 +402,26 @@ namespace Joonaxii.Image.Texturing
                 _bytesPerPix = (byte)(bpp >> 3);
 
                 _scanSize = _width * _bytesPerPix;
-
-
                 ValidatePalette();
+
+                if (fmt == TextureFormat.Indexed)
+                {
+                    foreach (var item in _palette)
+                    {
+                        if (item.a < 255) { _hasAlpha = true; break; }
+                    }
+                }
                 return;
             }
             _bytesPerPix = (byte)(bpp >> 3);
         }
 
-        private unsafe void SetColor(byte* ptr, int iD, int bpp, FastColor color, ColorMode format)
+        private unsafe void SetColor(byte* ptr, int iD, int bpp, FastColor color, TextureFormat format)
         {
             int ind = 0;
             switch (format)
             {
-                case ColorMode.Indexed:
+                case TextureFormat.Indexed:
                     if (!_paletteLut.TryGetValue(color, out var index))
                     {
                         _paletteLut.Add(color, index = _palette.Count);
@@ -386,33 +430,36 @@ namespace Joonaxii.Image.Texturing
                         var bt = Maths.BytesNeeded(_palette.Count) << 3;
                         if (bt != _bpp)
                         {
-                            ReadjustToNewBpp((byte)bt, _format);
+                            if (!ReadjustToNewBpp((byte)bt, _format))
+                            {
+                                PixelIterationMode = _dataLayout;
+                            }
                             bpp = bt >> 3;
                         }
                     }
                     ind = index;
                     break;
-                case ColorMode.RGB24:
+                case TextureFormat.RGB24:
                     ind = (int)color & 0xFF_FF_FF;
                     break;
-                case ColorMode.RGBA32:
+                case TextureFormat.RGBA32:
                     ind = (int)color;
                     break;
 
-                case ColorMode.RGB565:
+                case TextureFormat.RGB565:
                     ind = ColorExtensions.ToRGB565(color, false);
                     break;
-                case ColorMode.RGB555:
+                case TextureFormat.RGB555:
                     ind = ColorExtensions.ToRGB555(color, false);
                     break;
-                case ColorMode.ARGB555:
+                case TextureFormat.ARGB555:
                     ind = ColorExtensions.ToARGB555(color, false);
                     break;
 
-                case ColorMode.Grayscale:
+                case TextureFormat.Grayscale:
                     ptr[iD] = ColorExtensions.ToGrayscale(color);
                     return;
-                case ColorMode.GrayscaleAlpha:
+                case TextureFormat.GrayscaleAlpha:
                     ptr[iD] = ColorExtensions.ToGrayscale(color);
                     ptr[iD + 1] = color.a;
                     return;
@@ -426,9 +473,9 @@ namespace Joonaxii.Image.Texturing
 
         public void CopyTo(Texture other)
         {
-            if(other.Format == Format)
+            if (other.Format == Format)
             {
-                if(Format == ColorMode.Indexed)
+                if (Format == TextureFormat.Indexed)
                 {
                     other.SetPalette(_palette, _paletteLut);
                 }
@@ -453,17 +500,16 @@ namespace Joonaxii.Image.Texturing
         public void SetPixel(int x, int y, FastColor color) => SetPixel(y * _width + x, color);
         public void SetPixel(int i, FastColor color)
         {
-            if (i < 0 | i >= _width * _height)
+            if (i < 0 | i >= _data.Length)
             {
                 throw new IndexOutOfRangeException("Index is out of range of the pixel array!");
             }
 
             unsafe
             {
-                int bpp = _bpp >> 3;
                 fixed (byte* ptr = _data)
                 {
-                    SetColor(ptr, i * bpp, bpp, color, _format);
+                    ColorExtensions.SetColor(ptr, i * _bytesPerPix, _bytesPerPix, color, _format, GetColorIndex);
                 }
             }
         }
@@ -481,7 +527,7 @@ namespace Joonaxii.Image.Texturing
 
                     while (l-- > 0)
                     {
-                        SetColor(ptrPix++, 0, bpp, pixel, _format);
+                        ColorExtensions.SetColor(ptrPix++, 0, bpp, pixel, _format, GetColorIndex);
                     }
                 }
             }
@@ -501,23 +547,23 @@ namespace Joonaxii.Image.Texturing
                 {
                     for (int i = 0; i < pixels.Length; i++)
                     {
-                        SetColor(ptr, i * bpp, bpp, pixels[i], _format);
+                        ColorExtensions.SetColor(ptr, i * bpp, bpp, pixels[i], _format, GetColorIndex);
                     }
                 }
             }
         }
 
-        public void Resize(int width, int height, ResizeMode mode)
-        {
-            if (width == _width & height == _height) { return; }
+        //public void Resize(int width, int height, ResizeMode mode)
+        //{
+        //    if (width == _width & height == _height) { return; }
 
-            _mode = mode;
+        //    _mode = mode;
 
-            _pW = (ushort)Maths.Clamp(width, 0, ushort.MaxValue);
-            _pH = (ushort)Maths.Clamp(height, 0, ushort.MaxValue);
+        //    _pW = (ushort)Maths.Clamp(width, 0, ushort.MaxValue);
+        //    _pH = (ushort)Maths.Clamp(height, 0, ushort.MaxValue);
 
-            _pendingMods |= TextureModification.Resize;
-        }
+        //    _pendingMods |= TextureModification.Resize;
+        //}
 
         public IntPtr LockBits()
         {
@@ -569,11 +615,60 @@ namespace Joonaxii.Image.Texturing
                 _paletteLut.Add(c, _palette.Count);
                 _palette.Add(c);
             }
+
+            ValidatePalette();
         }
 
         public void SetPalette(IList<FastColor> colors, IDictionary<FastColor, int> paletteLut)
         {
+            _paletteLut = new Dictionary<FastColor, int>(paletteLut);
+            _palette = new List<FastColor>(colors);
 
+            ValidatePalette();
+        }
+
+        public void GeneratePalette()
+        {
+            if (HasPalette)
+            {
+                _palette.Clear();
+                _paletteLut.Clear();
+            }
+            else
+            {
+                _palette = new List<FastColor>();
+                _paletteLut = new Dictionary<FastColor, int>();
+            }
+
+            for (int y = 0; y < _height; y++)
+            {
+                int yP = y * _width;
+                for (int x = 0; x < _width; x++)
+                {
+                    FastColor clr = GetPixel(yP + x);
+                    if (_paletteLut.ContainsKey(clr)) { continue; }
+                    _paletteLut.Add(clr, _palette.Count);
+                    _palette.Add(clr);
+                }
+            }
+        }
+
+        public void GeneratePalette(IList<FastColor> palette, IDictionary<FastColor, int> paletteLut, out bool hasAlpha)
+        {
+            hasAlpha = false;
+            for (int y = 0; y < _height; y++)
+            {
+                int yP = y * _width;
+                for (int x = 0; x < _width; x++)
+                {
+                    FastColor clr = GetPixel(yP + x);
+                    if (paletteLut.ContainsKey(clr)) { continue; }
+
+                    hasAlpha |= clr.a < 255;
+                    paletteLut.Add(clr, _palette.Count);
+                    palette.Add(clr);
+                }
+            }
         }
 
         public bool AddColor(FastColor color)
@@ -634,7 +729,7 @@ namespace Joonaxii.Image.Texturing
 
         public void TrimPalette()
         {
-            if (_palette != null && _format == ColorMode.Indexed)
+            if (_palette != null && _format == TextureFormat.Indexed)
             {
                 unsafe
                 {
@@ -682,9 +777,76 @@ namespace Joonaxii.Image.Texturing
             }
         }
 
+        public void Setup(int width, int height, TextureFormat format, byte bpp)
+        {
+            if (_width == width & height == _height & _format == format & _bpp == bpp) { return; }
+            UnlockBits();
+
+            _palette.Clear();
+            _paletteLut.Clear();
+
+            _width = (ushort)Maths.Clamp(width, 1, ushort.MaxValue);
+            _height = (ushort)Maths.Clamp(height, 1, ushort.MaxValue);
+
+            _bpp = bpp;
+            _format = format;
+            _bytesPerPix = (byte)(_bpp >> 3);
+            _scanSize = _bytesPerPix * _width;
+
+            _data = new byte[_scanSize * _height];
+            ValidatePalette();
+            SetPixels(_fillColor);
+        }
+
+        public void ConvertTo(Texture source, TextureFormat format, byte bpp)
+        {
+            bool changed = false;
+
+            if(source._width != _width | source._height != _height)
+            {
+                changed = true;
+                _width = source._width;
+                _height = source._height;
+            }
+
+            _bpp = bpp;
+            _format = format;
+
+            _bytesPerPix = (byte)(_bpp >> 3);
+            _scanSize = _bytesPerPix * _width;
+
+            UnlockBits();
+            _data = new byte[_scanSize * _height];
+            PixelIterationMode = _dataLayout;
+
+            //If source texture's format & bpp are the same as the target format & bpp,
+            //just copy the pixel data.
+            if (!changed && (source.Format == format & source._bpp == bpp))
+            {
+                if (format == TextureFormat.Indexed)
+                {
+                    SetPalette(source._palette, source._paletteLut);
+                }
+
+                BufferUtils.Memcpy(_data, source._data);
+                return;
+            }
+
+            //Else convert
+            for (int y = 0; y < _height; y++)
+            {
+                int yP = y * _width;
+                for (int x = 0; x < _width; x++)
+                {
+                    int p = yP + x;
+                    SetPixel(p, source.GetPixel(p));
+                }
+            }
+        }
+
         public void SetResolution(int width, int height)
         {
-            if(width == _width & height == _height) { return; }
+            if (width == _width & height == _height) { return; }
 
             width = Maths.Clamp(width, 1, ushort.MaxValue);
             height = Maths.Clamp(height, 1, ushort.MaxValue);
@@ -692,7 +854,11 @@ namespace Joonaxii.Image.Texturing
             int newResolution = width * height * _bytesPerPix;
             int currentRes = _data.Length;
 
-            if(newResolution == currentRes) { return; }
+            _width = (ushort)width;
+            _height = (ushort)height;
+            PixelIterationMode = _dataLayout;
+
+            if (newResolution == currentRes) { return; }
 
             bool alloc = _handle.IsAllocated;
             if (alloc)
@@ -701,7 +867,7 @@ namespace Joonaxii.Image.Texturing
             }
             Array.Resize(ref _data, newResolution);
 
-            if(newResolution > currentRes)
+            if (newResolution > currentRes)
             {
                 int diff = newResolution - currentRes;
                 unsafe
@@ -710,7 +876,7 @@ namespace Joonaxii.Image.Texturing
                     {
                         switch (_format)
                         {
-                            case ColorMode.Indexed:
+                            case TextureFormat.Indexed:
                                 if (!_paletteLut.TryGetValue(_fillColor, out var index))
                                 {
                                     _paletteLut.Add(_fillColor, index = _palette.Count);
@@ -719,7 +885,10 @@ namespace Joonaxii.Image.Texturing
                                     var bt = Maths.BytesNeeded(_palette.Count) << 3;
                                     if (bt != _bpp)
                                     {
-                                        ReadjustToNewBpp((byte)bt, _format);
+                                        if (!ReadjustToNewBpp((byte)bt, _format))
+                                        {
+                                            PixelIterationMode = _dataLayout;
+                                        }
                                     }
                                 }
                                 BufferUtils.Memset(bb, index, _bytesPerPix, currentRes, diff);
@@ -727,7 +896,7 @@ namespace Joonaxii.Image.Texturing
                             default:
                                 FastColor* pixPtr = (FastColor*)bb;
                                 pixPtr += currentRes;
-                                while(diff-- > 0)
+                                while (diff-- > 0)
                                 {
                                     *pixPtr++ = _fillColor;
                                 }
@@ -787,10 +956,10 @@ namespace Joonaxii.Image.Texturing
             Marshal.FreeHGlobal((IntPtr)temp);
         }
 
-        private unsafe bool ReadjustToNewBpp(byte newBpp, ColorMode newFormat)
+        private unsafe bool ReadjustToNewBpp(byte newBpp, TextureFormat newFormat)
         {
             bool isSame = _format == newFormat;
-            if (isSame & (_format != ColorMode.Indexed | _bpp == newBpp)) { return false; }
+            if (isSame & (_format != TextureFormat.Indexed | _bpp == newBpp)) { return false; }
 
             int reso = _width * _height;
 
@@ -820,13 +989,13 @@ namespace Joonaxii.Image.Texturing
                 //Readjust/Convert data
                 switch (_format)
                 {
-                    case ColorMode.Indexed:
+                    case TextureFormat.Indexed:
                         switch (newFormat)
                         {
-                            case ColorMode.Indexed4:
-                            case ColorMode.Indexed8:
-                            case ColorMode.OneBit:
-                            case ColorMode.Indexed:
+                            case TextureFormat.Indexed4:
+                            case TextureFormat.Indexed8:
+                            case TextureFormat.OneBit:
+                            case TextureFormat.Indexed:
                                 int newMask = (1 << newBpp) - 1;
                                 for (int i = 0; i < reso; i++)
                                 {
@@ -847,7 +1016,8 @@ namespace Joonaxii.Image.Texturing
                                     int iD = i * nBpp;
 
                                     var c = ColorExtensions.GetColor(temp + iDP, bpp, _format, _palette);
-                                    SetColor(ptr, iD, nBpp, c, newFormat);
+                                    if (c.a < 255) { _hasAlpha = true; }
+                                    ColorExtensions.SetColor(ptr, iD, nBpp, c, newFormat, GetColorIndex);
                                 }
                                 break;
                         }
@@ -859,7 +1029,8 @@ namespace Joonaxii.Image.Texturing
                             int iD = i * nBpp;
 
                             var c = ColorExtensions.GetColor(temp + iDP, bpp, _format, _palette);
-                            SetColor(ptr, iD, nBpp, c, newFormat);
+                            if (c.a < 255) { _hasAlpha = true; }
+                            ColorExtensions.SetColor(ptr, iD, nBpp, c, newFormat, GetColorIndex);
                         }
                         break;
                 }
@@ -869,28 +1040,58 @@ namespace Joonaxii.Image.Texturing
             _bpp = newBpp;
             _scanSize = _width * nBpp;
             _bytesPerPix = (byte)(bpp >> 3);
+            PixelIterationMode = _dataLayout;
 
-            ValidatePalette();
+            if (ValidatePalette())
+            {
+                foreach (var item in _palette)
+                {
+                    if (item.a < 255) { _hasAlpha = true; break; }
+                }
+            }
             //Free temp
             Marshal.FreeHGlobal((IntPtr)temp);
             return true;
         }
 
-        private void ValidatePalette()
+        private int GetColorIndex(FastColor color)
+        {
+            if (!HasPalette) { return 0; }
+            if (!_paletteLut.TryGetValue(color, out var index))
+            {
+                _paletteLut.Add(color, index = _palette.Count);
+                _palette.Add(color);
+
+                var bt = Maths.BytesNeeded(_palette.Count) << 3;
+                if (bt != _bpp)
+                {
+                    if (!ReadjustToNewBpp((byte)bt, _format))
+                    {
+                        PixelIterationMode = _dataLayout;
+                    }
+                }
+            }
+            return index;
+        }
+
+        private bool ValidatePalette()
         {
             switch (_format)
             {
-                case ColorMode.Indexed:
+                case TextureFormat.Indexed:
                     if (_palette == null || _palette.Count < 1)
                     {
                         _palette = new List<FastColor>();
-                        _palette.Add(FastColor.black);
+                        _palette.Add(_fillColor);
 
                         _paletteLut = new Dictionary<FastColor, int>();
-                        _paletteLut.Add(FastColor.black, 0);
+                        _paletteLut.Add(_fillColor, 0);
+                        return false;
                     }
-                    break;
+                    return true;
             }
+
+            return false;
         }
     }
 }

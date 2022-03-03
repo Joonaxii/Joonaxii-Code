@@ -9,8 +9,8 @@ namespace Joonaxii.Image.Codecs.DXT
     {
         public static void Interpolate(BinaryReader br, FastColor[] colors, bool isDXT1)
         {
-            FastColor colA = br.ReadColor(ColorMode.RGB565, true);
-            FastColor colB = br.ReadColor(ColorMode.RGB565, true);
+            FastColor colA = br.ReadColor(TextureFormat.RGB565, true);
+            FastColor colB = br.ReadColor(TextureFormat.RGB565, true);
 
             colors[0] = colA;
             colors[1] = colB;

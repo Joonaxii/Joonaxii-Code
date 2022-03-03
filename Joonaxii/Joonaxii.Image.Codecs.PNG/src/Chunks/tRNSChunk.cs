@@ -11,7 +11,7 @@ namespace Joonaxii.Image.Codecs.PNG
 
         public tRNSChunk(int len, uint crc, long pos) : base(len, PNGChunkType.tRNS, crc, pos)  { }
 
-        public static void Write(BinaryWriter bw, IList<ColorContainer> palette)
+        public static void Write(BinaryWriter bw, IList<FastColor> palette)
         {
             var length = palette.Count;
             unsafe
@@ -22,7 +22,7 @@ namespace Joonaxii.Image.Codecs.PNG
                     IOExtensions.WriteToByteArray(alpha, 0, (int)PNGChunkType.tRNS, 4, true);
                     for (int i = 0, j = 4; i < length; i++, j++)
                     {
-                        alpha[j] = palette[i].color.a;
+                        alpha[j] = palette[i].a;
                     }
                     Write(bw, alph, length);
                 }

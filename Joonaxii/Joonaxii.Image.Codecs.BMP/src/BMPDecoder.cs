@@ -64,7 +64,7 @@ namespace Joonaxii.Image.Codecs.BMP
             int colors = br.ReadInt32();
             int impColors = br.ReadInt32();
 
-            ColorMode mode;
+            TextureFormat mode;
 
             switch (bpp)
             {
@@ -82,14 +82,12 @@ namespace Joonaxii.Image.Codecs.BMP
                     break;
             }
 
-            _texture = new Texture(width, height, mode);
+            GenerateTexture(width, width, mode, bpp);
 
-            int bytesPerP = bpp >> 3;
-            int padding = IOExtensions.NextDivBy(width * bytesPerP, 4) - (width * bytesPerP);
+            int padding = IOExtensions.NextDivBy(_texture.ScanSize, 4) - _texture.ScanSize;
 
             unsafe
             {
-               // byte* ptrPix = (byte*)_texture.LockBits();
                 for (int y = 0; y < height; y++)
                 {
                     int yP = topToBot ? y : height - 1 - y;
@@ -98,12 +96,10 @@ namespace Joonaxii.Image.Codecs.BMP
                     {
                         _texture.SetPixel(scan + x, br.ReadColor(mode, true));
                     }
-                    br.ReadBytes(padding);
+
+                    _stream.Seek(padding, SeekOrigin.Current);
                 }
-               // _texture.UnlockBits();
             }
-
-
             return ImageDecodeResult.Success;
         }
     }

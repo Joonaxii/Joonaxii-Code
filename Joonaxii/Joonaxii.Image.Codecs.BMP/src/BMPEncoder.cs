@@ -9,18 +9,18 @@ namespace Joonaxii.Image.Codecs.BMP
         private const float INCH_TO_METER = 1.0f / 39.3701f;
 
         public BMPEncoder(int width, int height, byte bPP) : base(width, height, bPP) { }
-        public BMPEncoder(int width, int height, ColorMode mode) : base(width, height, mode) { }
+        public BMPEncoder(int width, int height, TextureFormat mode) : base(width, height, mode) { }
 
         public override ImageEncodeResult Encode(Stream stream, bool leaveStreamOpen)
         {
             ValidateFormat();
             switch (_colorMode)
             {
-                case ColorMode.Indexed4:
-                case ColorMode.Indexed8:
-                case ColorMode.RGB555:
-                case ColorMode.RGB565:
-                case ColorMode.ARGB555: return ImageEncodeResult.NotSupported;
+                case TextureFormat.Indexed4:
+                case TextureFormat.Indexed8:
+                case TextureFormat.RGB555:
+                case TextureFormat.RGB565:
+                case TextureFormat.ARGB555: return ImageEncodeResult.NotSupported;
             }
 
             int bmpSize = 0;
@@ -34,27 +34,27 @@ namespace Joonaxii.Image.Codecs.BMP
             int cmpMode = 0;
             switch (_colorMode) //Generate Masks
             {
-                case ColorMode.RGBA32:
+                case TextureFormat.RGBA32:
                     rMask = 0x00_FF_00_00;
                     gMask = 0x00_00_FF_00;
                     bMask = 0x00_00_00_FF;
                     aMask = 0xFF_00_00_00;
                     startOfData += 16;
                     break;
-                case ColorMode.RGB565:
+                case TextureFormat.RGB565:
                     rMask = 0x1F;
                     gMask = 0x7E0;
                     bMask = 0xF800;
                     startOfData += 16;
                     break;
-                case ColorMode.RGB555:
+                case TextureFormat.RGB555:
                     rMask = 0x1F;
                     gMask = 0x3E0;
                     bMask = 0x7C00;
                     aMask = 0x00000;
                     startOfData += 16;
                     break;
-                case ColorMode.ARGB555:
+                case TextureFormat.ARGB555:
                     rMask = 0x1F;
                     gMask = 0x3E0;
                     bMask = 0x7C00;
@@ -67,18 +67,18 @@ namespace Joonaxii.Image.Codecs.BMP
             int padding = IOExtensions.NextDivBy(_width * bytesPerP, 4) - (_width * bytesPerP);
             switch (_colorMode) //Calculate Data Size
             {
-                case ColorMode.RGB24:
+                case TextureFormat.RGB24:
                     bmpSize += _pixels.Length * 3 + _height * padding;
                     break; 
                 
-                case ColorMode.RGBA32:
+                case TextureFormat.RGBA32:
                     bmpSize += _pixels.Length * 4;
                     cmpMode = 3;
                     break;
 
-                case ColorMode.RGB565:
-                case ColorMode.RGB555:
-                case ColorMode.ARGB555:
+                case TextureFormat.RGB565:
+                case TextureFormat.RGB555:
+                case TextureFormat.ARGB555:
                     bmpSize += _pixels.Length * 2;
                     cmpMode = 3;
                     break;
@@ -118,10 +118,10 @@ namespace Joonaxii.Image.Codecs.BMP
 
                 switch (_colorMode)
                 {
-                    case ColorMode.RGBA32:
-                    case ColorMode.RGB555:
-                    case ColorMode.ARGB555:
-                    case ColorMode.RGB565:
+                    case TextureFormat.RGBA32:
+                    case TextureFormat.RGB555:
+                    case TextureFormat.ARGB555:
+                    case TextureFormat.RGB565:
                         bw.Write(rMask);
                         bw.Write(gMask);
                         bw.Write(bMask);
@@ -138,29 +138,29 @@ namespace Joonaxii.Image.Codecs.BMP
             base.ValidateFormat();
             switch (_colorMode)
             {
-                case ColorMode.ARGB555:
-                    _colorMode = _hasAlpha ? _colorMode : ColorMode.RGB555;
+                case TextureFormat.ARGB555:
+                    _colorMode = _hasAlpha ? _colorMode : TextureFormat.RGB555;
                     break;
 
-                case ColorMode.RGBA32:
+                case TextureFormat.RGBA32:
                     if (_hasAlpha)
                     {
                         break;
                     }
-                    _colorMode =  ColorMode.RGB24;
+                    _colorMode =  TextureFormat.RGB24;
                     _bpp = 24;
                     break;
 
-                case ColorMode.OneBit:
-                case ColorMode.Grayscale:
-                    _colorMode = ColorMode.RGB24;
+                case TextureFormat.OneBit:
+                case TextureFormat.Grayscale:
+                    _colorMode = TextureFormat.RGB24;
                     _bpp = 24;
                     break;
-                case ColorMode.GrayscaleAlpha:
-                case ColorMode.Indexed4:
-                case ColorMode.Indexed8:
-                case ColorMode.Indexed:
-                    _colorMode = ColorMode.RGBA32;
+                case TextureFormat.GrayscaleAlpha:
+                case TextureFormat.Indexed4:
+                case TextureFormat.Indexed8:
+                case TextureFormat.Indexed:
+                    _colorMode = TextureFormat.RGBA32;
                     _bpp = 32;
                     break;
             }

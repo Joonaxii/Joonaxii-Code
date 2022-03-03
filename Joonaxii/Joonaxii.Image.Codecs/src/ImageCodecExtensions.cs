@@ -18,42 +18,42 @@ namespace Joonaxii.Image.Codecs
         public const float USHORT_TO_FLOAT = 1.0f / ushort.MaxValue;
         public const float USHORT_TO_BYTE = USHORT_TO_FLOAT * 255;
 
-        public static ColorMode GetColorMode(byte bpp, int r = 0xFFFFFF, int g = 0xFFFFFF, int b = 0xFFFFFF, int a = 0x0)
+        public static TextureFormat GetColorMode(byte bpp, int r = 0xFFFFFF, int g = 0xFFFFFF, int b = 0xFFFFFF, int a = 0x0)
         {
             switch (bpp)
             {
-                default: return ColorMode.RGBA32;
+                default: return TextureFormat.RGBA32;
 
-                case 4: return ColorMode.Indexed4;
-                case 8: return ColorMode.Indexed8;
+                case 4: return TextureFormat.Indexed4;
+                case 8: return TextureFormat.Indexed8;
 
                 case 16:
-                    if(g == 0x7E0) { return ColorMode.RGB565; }
-                    return a != 0 ? ColorMode.ARGB555 : ColorMode.RGB555;
-                case 24: return ColorMode.RGB24;
-                case 32: return ColorMode.RGBA32;
+                    if(g == 0x7E0) { return TextureFormat.RGB565; }
+                    return a != 0 ? TextureFormat.ARGB555 : TextureFormat.RGB555;
+                case 24: return TextureFormat.RGB24;
+                case 32: return TextureFormat.RGBA32;
             }
         }
 
-        public static byte GetBPP(this ColorMode cmd)
+        public static byte GetBPP(this TextureFormat cmd)
         {
             switch (cmd)
             {
                 default: return 32;
 
-                case ColorMode.Indexed4: return 4;
+                case TextureFormat.Indexed4: return 4;
 
-                case ColorMode.Indexed: 
-                case ColorMode.Indexed8: return 8;
+                case TextureFormat.Indexed: 
+                case TextureFormat.Indexed8: return 8;
 
-                case ColorMode.OneBit:   return 1;
+                case TextureFormat.OneBit:   return 1;
 
-                case ColorMode.RGB555:
-                case ColorMode.ARGB555:
-                case ColorMode.RGB565:   return 16;
+                case TextureFormat.RGB555:
+                case TextureFormat.ARGB555:
+                case TextureFormat.RGB565:   return 16;
 
-                case ColorMode.RGB24:    return 24;
-                case ColorMode.RGBA32:   return 32;
+                case TextureFormat.RGB24:    return 24;
+                case TextureFormat.RGBA32:   return 32;
             }
         }
 
@@ -63,18 +63,18 @@ namespace Joonaxii.Image.Codecs
         public static byte From5Bit(byte b) => (byte)Math.Round(255.0f * (b * BIT_5_TO_FLOAT));
         public static byte From6Bit(byte b) => (byte)Math.Round(255.0f * (b * BIT_6_TO_FLOAT));
 
-        public static bool RequiresBits(this ColorMode cmd)
+        public static bool RequiresBits(this TextureFormat cmd)
         {
             switch (cmd)
             {
                 default: return false;
-                case ColorMode.Indexed4:
-                case ColorMode.Indexed8:
+                case TextureFormat.Indexed4:
+                case TextureFormat.Indexed8:
                     return true;
             }
         }
 
-        public static byte[] ToBytes(this FastColor[] colors, PixelByteOrder byteOrder, bool invertY, int width, int height, ColorMode mode)
+        public static byte[] ToBytes(this FastColor[] colors, PixelByteOrder byteOrder, bool invertY, int width, int height, TextureFormat mode)
         {
             byte bPP = mode.GetBPP();
             if(bPP < 8)
@@ -129,7 +129,7 @@ namespace Joonaxii.Image.Codecs
 
                     }
                     break;
-                case ColorMode.Indexed8:
+                case TextureFormat.Indexed8:
                     for (int i = 0; i < colors.Length; i++)
                     {
                         pI = i;
@@ -144,7 +144,7 @@ namespace Joonaxii.Image.Codecs
                         data[ii++] = c.r;
                     }
                     break;
-                case ColorMode.RGB24:
+                case TextureFormat.RGB24:
                     for (int i = 0; i < colors.Length; i++)
                     {
                         pI = i;
@@ -173,7 +173,7 @@ namespace Joonaxii.Image.Codecs
                         }
                     }
                     break;
-                case ColorMode.RGB565:
+                case TextureFormat.RGB565:
                     for (int i = 0; i < colors.Length; i++)
                     {
                         pI = i;
@@ -196,8 +196,8 @@ namespace Joonaxii.Image.Codecs
                         data[ii++] = hi;
                     }
                     break;
-                case ColorMode.ARGB555:
-                case ColorMode.RGB555:
+                case TextureFormat.ARGB555:
+                case TextureFormat.RGB555:
                     for (int i = 0; i < colors.Length; i++)
                     {
                         pI = i;
@@ -226,7 +226,7 @@ namespace Joonaxii.Image.Codecs
             return data;
         }
 
-        public static FastColor[] ToFastColor(byte[] bytes, ColorMode mode)
+        public static FastColor[] ToFastColor(byte[] bytes, TextureFormat mode)
         {
             byte bPP = mode.GetBPP();
             if (bPP < 8)
@@ -245,19 +245,19 @@ namespace Joonaxii.Image.Codecs
                         pix[ii++] = new FastColor(bytes[i], bytes[i + 1], bytes[i + 2], bytes[i + 3]);
                     }
                     break;
-                case ColorMode.Indexed8:
+                case TextureFormat.Indexed8:
                     for (int i = 0; i < bytes.Length; i++)
                     {
                         pix[ii++] = new FastColor(bytes[i]);
                     }
                     break;
-                case ColorMode.RGB24:
+                case TextureFormat.RGB24:
                     for (int i = 0; i < bytes.Length; i += bPP)
                     {
                         pix[ii++] = new FastColor(bytes[i], bytes[i + 1], bytes[i + 2], 255);
                     }
                     break;
-                case ColorMode.RGB565:
+                case TextureFormat.RGB565:
                     for (int i = 0; i < bytes.Length; i += bPP)
                     {
                         byte lo = bytes[i];
@@ -269,8 +269,8 @@ namespace Joonaxii.Image.Codecs
                             From5Bit((byte)((hi & 0b11111000) >> 3)), 255);
                     }
                     break;
-                case ColorMode.ARGB555:
-                case ColorMode.RGB555:
+                case TextureFormat.ARGB555:
+                case TextureFormat.RGB555:
                     for (int i = 0; i < bytes.Length; i += bPP)
                     {
                         byte lo = bytes[i];
@@ -287,10 +287,10 @@ namespace Joonaxii.Image.Codecs
             return pix;
         }
 
-        public static void WriteColors(this BinaryWriter bw, IList<FastColor> colors) => WriteColors(bw, colors, colors.Count, ColorMode.RGBA32, false);
-        public static void WriteColors(this BinaryWriter bw, IList<FastColor> colors, int count) => WriteColors(bw, colors, count, ColorMode.RGBA32, false);
-        public static void WriteColors(this BinaryWriter bw, IList<FastColor> colors, ColorMode pFmt) => WriteColors(bw, colors, colors.Count, pFmt, false);
-        public static void WriteColors(this BinaryWriter bw, IList<FastColor> colors, int count, ColorMode pFmt, bool reverse)
+        public static void WriteColors(this BinaryWriter bw, IList<FastColor> colors) => WriteColors(bw, colors, colors.Count, TextureFormat.RGBA32, false);
+        public static void WriteColors(this BinaryWriter bw, IList<FastColor> colors, int count) => WriteColors(bw, colors, count, TextureFormat.RGBA32, false);
+        public static void WriteColors(this BinaryWriter bw, IList<FastColor> colors, TextureFormat pFmt) => WriteColors(bw, colors, colors.Count, pFmt, false);
+        public static void WriteColors(this BinaryWriter bw, IList<FastColor> colors, int count, TextureFormat pFmt, bool reverse)
         {
             if(pFmt.RequiresBits() && bw is BitWriter bwI)
             {
@@ -304,7 +304,7 @@ namespace Joonaxii.Image.Codecs
             }
         }
 
-        public static void WriteColors(this BinaryWriter bw, IList<FastColor> colors, int width, int height, ColorMode pFmt, bool reverse, int bytePadding = 0)
+        public static void WriteColors(this BinaryWriter bw, IList<FastColor> colors, int width, int height, TextureFormat pFmt, bool reverse, int bytePadding = 0)
         {
             if(bytePadding < 1) { WriteColors(bw, colors, width * height, pFmt, reverse); return; }
             if (pFmt.RequiresBits() && bw is BitWriter bwI)
@@ -326,18 +326,18 @@ namespace Joonaxii.Image.Codecs
             }
         }
 
-        public static FastColor[] ReadColors(this BinaryReader br, int count, bool reverse = false) => ReadColors(br, count, ColorMode.RGBA32, reverse);
-        public static FastColor[] ReadColors(this BinaryReader br, int count, ColorMode pFmt, bool reverse = false)
+        public static FastColor[] ReadColors(this BinaryReader br, int count, bool reverse = false) => ReadColors(br, count, TextureFormat.RGBA32, reverse);
+        public static FastColor[] ReadColors(this BinaryReader br, int count, TextureFormat pFmt, bool reverse = false)
         {
             FastColor[] colors = new FastColor[count];
             ReadColors(br, colors, count, pFmt);
             return colors;
         }
 
-        public static int ReadColors(this BinaryReader br, IList<FastColor> colors, bool reverse = false) => ReadColors(br, colors, colors.Count, ColorMode.RGBA32, reverse);
-        public static int ReadColors(this BinaryReader br, IList<FastColor> colors, ColorMode pFmt, bool reverse = false) => ReadColors(br, colors, colors.Count, pFmt, reverse);
-        public static int ReadColors(this BinaryReader br, IList<FastColor> colors, int count, bool reverse = false) => ReadColors(br, colors, count, ColorMode.RGBA32, reverse);
-        public static int ReadColors(this BinaryReader br, IList<FastColor> colors, int count, ColorMode pFmt, bool reverse = false)
+        public static int ReadColors(this BinaryReader br, IList<FastColor> colors, bool reverse = false) => ReadColors(br, colors, colors.Count, TextureFormat.RGBA32, reverse);
+        public static int ReadColors(this BinaryReader br, IList<FastColor> colors, TextureFormat pFmt, bool reverse = false) => ReadColors(br, colors, colors.Count, pFmt, reverse);
+        public static int ReadColors(this BinaryReader br, IList<FastColor> colors, int count, bool reverse = false) => ReadColors(br, colors, count, TextureFormat.RGBA32, reverse);
+        public static int ReadColors(this BinaryReader br, IList<FastColor> colors, int count, TextureFormat pFmt, bool reverse = false)
         {
             if (pFmt.RequiresBits() && br is BitReader brI) { return ReadColors(brI, colors, count, pFmt, reverse); }
             count = colors.Count < count ? colors.Count : count;
@@ -348,10 +348,10 @@ namespace Joonaxii.Image.Codecs
             return count;
         }
 
-        public static void WriteColors(this BitWriter bw, IList<FastColor> colors) => WriteColors(bw, colors, colors.Count, ColorMode.RGBA32, false);
-        public static void WriteColors(this BitWriter bw, IList<FastColor> colors, int count) => WriteColors(bw, colors, count, ColorMode.RGBA32, false);
-        public static void WriteColors(this BitWriter bw, IList<FastColor> colors, ColorMode pFmt) => WriteColors(bw, colors, colors.Count, pFmt, false);
-        public static void WriteColors(this BitWriter bw, IList<FastColor> colors, int count, ColorMode pFmt, bool reverse)
+        public static void WriteColors(this BitWriter bw, IList<FastColor> colors) => WriteColors(bw, colors, colors.Count, TextureFormat.RGBA32, false);
+        public static void WriteColors(this BitWriter bw, IList<FastColor> colors, int count) => WriteColors(bw, colors, count, TextureFormat.RGBA32, false);
+        public static void WriteColors(this BitWriter bw, IList<FastColor> colors, TextureFormat pFmt) => WriteColors(bw, colors, colors.Count, pFmt, false);
+        public static void WriteColors(this BitWriter bw, IList<FastColor> colors, int count, TextureFormat pFmt, bool reverse)
         {
             count = colors.Count < count ? colors.Count : count;
             for (int i = 0; i < count; i++)
@@ -360,7 +360,7 @@ namespace Joonaxii.Image.Codecs
             }
         }
 
-        public static void WriteColors(this BitWriter bw, FastColor[] colors, int width, int height, ColorMode pFmt, bool reverse, int bytePadding)
+        public static void WriteColors(this BitWriter bw, FastColor[] colors, int width, int height, TextureFormat pFmt, bool reverse, int bytePadding)
         {
             if (bytePadding < 1) { WriteColors(bw, colors, width * height, pFmt, reverse); return; }
 
@@ -377,18 +377,18 @@ namespace Joonaxii.Image.Codecs
             }
         }
 
-        public static FastColor[] ReadColors(this BitReader br, int count, bool reverse = false) => ReadColors(br, count, ColorMode.RGBA32, reverse);
-        public static FastColor[] ReadColors(this BitReader br, int count, ColorMode pFmt, bool reverse = false)
+        public static FastColor[] ReadColors(this BitReader br, int count, bool reverse = false) => ReadColors(br, count, TextureFormat.RGBA32, reverse);
+        public static FastColor[] ReadColors(this BitReader br, int count, TextureFormat pFmt, bool reverse = false)
         {
             FastColor[] colors = new FastColor[count];
             ReadColors(br, colors, count, pFmt, reverse);
             return colors;
         }
 
-        public static int ReadColors(this BitReader br, IList<FastColor> colors, int count, bool reverse = false) => ReadColors(br, colors, count, ColorMode.RGBA32, reverse);
-        public static int ReadColors(this BitReader br, IList<FastColor> colors, ColorMode pFmt, bool reverse = false) => ReadColors(br, colors, colors.Count, pFmt, reverse);
-        public static int ReadColors(this BitReader br, IList<FastColor> colors, bool reverse = false) => ReadColors(br, colors, colors.Count, ColorMode.RGBA32, reverse);
-        public static int ReadColors(this BitReader br, IList<FastColor> colors, int count, ColorMode pFmt, bool reverse = false)
+        public static int ReadColors(this BitReader br, IList<FastColor> colors, int count, bool reverse = false) => ReadColors(br, colors, count, TextureFormat.RGBA32, reverse);
+        public static int ReadColors(this BitReader br, IList<FastColor> colors, TextureFormat pFmt, bool reverse = false) => ReadColors(br, colors, colors.Count, pFmt, reverse);
+        public static int ReadColors(this BitReader br, IList<FastColor> colors, bool reverse = false) => ReadColors(br, colors, colors.Count, TextureFormat.RGBA32, reverse);
+        public static int ReadColors(this BitReader br, IList<FastColor> colors, int count, TextureFormat pFmt, bool reverse = false)
         {
             count = colors.Count < count ? colors.Count : count;
             for (int i = 0; i < count; i++)
@@ -420,12 +420,12 @@ namespace Joonaxii.Image.Codecs
         }
         public static void WriteColor(this BinaryWriter bw, FastColor color) => bw.Write((uint)color);
 
-        public static FastColor ReadColor(this BinaryReader br, ColorMode pFmt, bool reverse)
+        public static FastColor ReadColor(this BinaryReader br, TextureFormat pFmt, bool reverse)
         {
             if (pFmt.RequiresBits()) { return br is BitReader brI ? ReadColor(brI, pFmt, reverse) : FastColor.clear; }
             return ReadColorInternal(br, pFmt, reverse);
         }
-        public static void WriteColor(this BinaryWriter bw, FastColor color, ColorMode pFmt)
+        public static void WriteColor(this BinaryWriter bw, FastColor color, TextureFormat pFmt)
         {
             if (pFmt.RequiresBits() && bw is BitWriter bwI) 
             {
@@ -442,7 +442,7 @@ namespace Joonaxii.Image.Codecs
 
             fixed(byte* scanBuf = scanBuffer)
             {
-                if (orderSrc == PixelByteOrder.RGBA | texture.Format == ColorMode.ARGB555 | (texture.Format == ColorMode.Indexed))
+                if (orderSrc == PixelByteOrder.RGBA | texture.Format == TextureFormat.ARGB555 | (texture.Format == TextureFormat.Indexed))
                 {
                     for (int i = 0; i < texture.Height; i++)
                     {
@@ -506,19 +506,19 @@ namespace Joonaxii.Image.Codecs
             }
         }
 
-        public static FastColor ReadColor(this BitReader br, ColorMode pFmt, bool reverse)
+        public static FastColor ReadColor(this BitReader br, TextureFormat pFmt, bool reverse)
         {
             byte r, g, b, a;
             switch (pFmt)
             {
                 default: return new FastColor(br.ReadInt32());
-                case ColorMode.RGBA32: return new FastColor(br.ReadInt32());
+                case TextureFormat.RGBA32: return new FastColor(br.ReadInt32());
 
-                case ColorMode.Indexed4:
+                case TextureFormat.Indexed4:
                     return new FastColor(br.ReadByte(4));
-                case ColorMode.Indexed8:
+                case TextureFormat.Indexed8:
                     return new FastColor(br.ReadByte(8));
-                case ColorMode.RGB565:
+                case TextureFormat.RGB565:
                     if (reverse)
                     {
                         b = From5Bit(br.ReadByte(5));
@@ -529,9 +529,9 @@ namespace Joonaxii.Image.Codecs
                     return new FastColor(From5Bit(br.ReadByte(5)), 
                                          From6Bit(br.ReadByte(6)), 
                                          From5Bit(br.ReadByte(5)), 255);
-                case ColorMode.RGB555:
-                case ColorMode.ARGB555:
-                    bool bA = pFmt == ColorMode.RGB555;
+                case TextureFormat.RGB555:
+                case TextureFormat.ARGB555:
+                    bool bA = pFmt == TextureFormat.RGB555;
                     if (reverse)
                     {
                         b = From5Bit(br.ReadByte(5));
@@ -547,7 +547,7 @@ namespace Joonaxii.Image.Codecs
                         b = From5Bit(br.ReadByte(5));
                     }
                     return new FastColor(r, g, b, (byte)(bA ? 255 : 0));
-                case ColorMode.RGB24:
+                case TextureFormat.RGB24:
                     if (reverse)
                     {
                         b = br.ReadByte();
@@ -564,18 +564,18 @@ namespace Joonaxii.Image.Codecs
                 //    (byte)(br.ReadUInt16() * USHORT_TO_BYTE));
             }
         }
-        public static void WriteColor(this BitWriter bw, FastColor color, ColorMode pFmt, bool reverse = false)
+        public static void WriteColor(this BitWriter bw, FastColor color, TextureFormat pFmt, bool reverse = false)
         {
             switch (pFmt)
             {
                 default: bw.Write((uint)color, 32); break;
-                case ColorMode.Indexed4:
+                case TextureFormat.Indexed4:
                     bw.Write(color.r, 4);
                     break;
-                case ColorMode.Indexed8:
+                case TextureFormat.Indexed8:
                     bw.Write(color.r);
                     break;
-                case ColorMode.RGB565:
+                case TextureFormat.RGB565:
                     if (reverse)
                     {
                         bw.Write(To5Bit(color.b), 5);
@@ -588,22 +588,22 @@ namespace Joonaxii.Image.Codecs
                     bw.Write(To6Bit(color.g), 6);
                     bw.Write(To5Bit(color.b), 5);
                     break;
-                case ColorMode.RGB555:
-                case ColorMode.ARGB555:
+                case TextureFormat.RGB555:
+                case TextureFormat.ARGB555:
                     if (reverse)
                     {
                         bw.Write(To5Bit(color.b), 5);
                         bw.Write(To6Bit(color.g), 5);
                         bw.Write(To5Bit(color.r), 5);
-                        bw.Write(pFmt != ColorMode.ARGB555 | color.a > 127);
+                        bw.Write(pFmt != TextureFormat.ARGB555 | color.a > 127);
                         break;
                     }
-                    bw.Write(pFmt != ColorMode.ARGB555 | color.a > 127);
+                    bw.Write(pFmt != TextureFormat.ARGB555 | color.a > 127);
                     bw.Write(To5Bit(color.r), 5);
                     bw.Write(To5Bit(color.g), 5);
                     bw.Write(To5Bit(color.b), 5);
                     break;
-                case ColorMode.RGB24:
+                case TextureFormat.RGB24:
                     if (reverse)
                     {
                         bw.Write(color.b);
@@ -615,7 +615,7 @@ namespace Joonaxii.Image.Codecs
                     bw.Write(color.g);
                     bw.Write(color.b);
                     break;
-                case ColorMode.RGBA32:
+                case TextureFormat.RGBA32:
                     if (reverse)
                     {
                         bw.Write(color.b);
@@ -635,17 +635,17 @@ namespace Joonaxii.Image.Codecs
             }
         }
 
-        private static FastColor ReadColorInternal(BinaryReader br, ColorMode pFmt, bool reverse)
+        private static FastColor ReadColorInternal(BinaryReader br, TextureFormat pFmt, bool reverse)
         {
             ushort val;
             switch (pFmt)
             {
                 default: return ReadColor(br, reverse ? 1 : 0);
-                case ColorMode.Indexed8:
+                case TextureFormat.Indexed8:
                     return new FastColor(br.ReadByte());
-                case ColorMode.RGB555:
-                case ColorMode.ARGB555:
-                    bool hasA = pFmt == ColorMode.RGB555;
+                case TextureFormat.RGB555:
+                case TextureFormat.ARGB555:
+                    bool hasA = pFmt == TextureFormat.RGB555;
 
                     val = br.ReadUInt16();
                     if (reverse)
@@ -665,7 +665,7 @@ namespace Joonaxii.Image.Codecs
                          From5Bit((byte)((val & 0xF800) >> 11)), 
                          (byte)(hasA ? 255 : 0));
 
-                case ColorMode.RGB565:
+                case TextureFormat.RGB565:
                     val = br.ReadUInt16();
                     if (reverse)
                     {
@@ -679,7 +679,7 @@ namespace Joonaxii.Image.Codecs
                          From6Bit((byte)((val & 0x7E0) >> 6)),
                          From5Bit((byte)((val & 0xF800) >> 11)), 255);
 
-                case ColorMode.RGB24:
+                case TextureFormat.RGB24:
                     if (reverse)
                     {
                         byte b = br.ReadByte();
@@ -688,7 +688,7 @@ namespace Joonaxii.Image.Codecs
                         return new FastColor(r, g, b, 255);
                     }
                     return new FastColor(br.ReadByte(), br.ReadByte(), br.ReadByte(), 255);
-                case ColorMode.RGBA32: return ReadColor(br, reverse ? 1 : 0);
+                case TextureFormat.RGBA32: return ReadColor(br, reverse ? 1 : 0);
                 //case 64:
                 //    return new FastColor(
                 //    (byte)(br.ReadUInt16() * USHORT_TO_BYTE),
@@ -697,16 +697,16 @@ namespace Joonaxii.Image.Codecs
                 //    (byte)(br.ReadUInt16() * USHORT_TO_BYTE));
             }
         }
-        private static void WriteColorInternal(BinaryWriter bw, FastColor color, ColorMode pFmt, bool reverse = false)
+        private static void WriteColorInternal(BinaryWriter bw, FastColor color, TextureFormat pFmt, bool reverse = false)
         {
             switch (pFmt)
             {
                 default: WriteColor(bw, color); break;
-                case ColorMode.Indexed8:
+                case TextureFormat.Indexed8:
                     bw.Write(color.r);
                     break;
-                case ColorMode.RGB555:
-                case ColorMode.RGB565:
+                case TextureFormat.RGB555:
+                case TextureFormat.RGB565:
                     if (reverse)
                     {
                         bw.Write(color.g);
@@ -716,7 +716,7 @@ namespace Joonaxii.Image.Codecs
                     bw.Write(color.r);
                     bw.Write(color.g);
                     break;
-                case ColorMode.RGB24:
+                case TextureFormat.RGB24:
                     if (reverse)
                     {
                         bw.Write(color.b);
@@ -728,7 +728,7 @@ namespace Joonaxii.Image.Codecs
                     bw.Write(color.g);
                     bw.Write(color.b);
                     break;
-                case ColorMode.RGBA32:
+                case TextureFormat.RGBA32:
                     if (reverse)
                     {
                         bw.Write(color.a);

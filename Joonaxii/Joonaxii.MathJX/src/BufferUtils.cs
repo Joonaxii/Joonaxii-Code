@@ -1,4 +1,6 @@
 ﻿
+using System;
+
 namespace Joonaxii.MathJX
 {
     public unsafe class BufferUtils
@@ -126,6 +128,21 @@ namespace Joonaxii.MathJX
                     *buffer++ = *v++;
                 }
                 size -= byteCount;
+            }
+        }
+
+        public static void Memset<T>(T[] data, T val, byte byteCount) where T : unmanaged => Memset(data, val, byteCount, 0, data.Length);
+        public static void Memset<T>(T[] data, T val, byte byteCount, int start, int size) where T : unmanaged
+        {
+            fixed (T* buf = data) { Memset(buf, val, byteCount, start, size); }
+        }
+        public static void Memset<T>(T* buffer, T val, byte byteCount, int start, int size) where T : unmanaged
+        {
+            buffer += start;
+
+            while(size-- > 0)
+            {
+                *buffer++ = val;
             }
         }
 

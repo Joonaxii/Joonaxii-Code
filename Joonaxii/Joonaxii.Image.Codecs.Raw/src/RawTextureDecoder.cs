@@ -37,7 +37,7 @@ namespace Joonaxii.Image.Codecs.Raw
                 stamp.Stamp();
             }
 
-            var format = (ColorMode)_brI.ReadByte();
+            var format = (TextureFormat)_brI.ReadByte();
             byte bpp = format.GetBPP();
             RawTextureCompressMode compressMode = (RawTextureCompressMode)_brI.ReadByte(7);
             bool compressPixels = _brI.ReadBoolean();

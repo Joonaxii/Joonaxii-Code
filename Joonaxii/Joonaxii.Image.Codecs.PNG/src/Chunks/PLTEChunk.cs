@@ -27,7 +27,7 @@ namespace Joonaxii.Image.Codecs.PNG
             }
         }
 
-        public static void Write(BinaryWriter bw, IList<ColorContainer> palette)
+        public static void Write(BinaryWriter bw, IList<FastColor> palette)
         {
             var length = palette.Count * 3;
             unsafe
@@ -41,7 +41,7 @@ namespace Joonaxii.Image.Codecs.PNG
 
                     for (int i = 0; i < palette.Count; i++)
                     {
-                        var c = palette[i].color;
+                        var c = palette[i];
                         IOExtensions.WriteToByteArray(plt, pos, (int)c, 3, false);
                         pos += 3;
                     }

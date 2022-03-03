@@ -178,7 +178,7 @@ namespace Joonaxii.Image.Codecs.PNG
                 }
                 paletteChnk?.ApplyGamma(gammaTable);
 
-                if (_texture.Format == ColorMode.Indexed)
+                if (_texture.Format == TextureFormat.Indexed)
                 {
                     _texture.SetPalette(paletteChnk.pixels);
                 }
@@ -359,15 +359,15 @@ namespace Joonaxii.Image.Codecs.PNG
         {
             _header = chunk as IHDRChunk;
             var bpp = _header.bitDepth;
-            ColorMode format = ColorMode.RGBA32;
+            TextureFormat format = TextureFormat.RGBA32;
             switch (_header.colorType)
             {
                 case PNGColorType.GRAYSCALE:
                     bpp = 8;
-                    format = ColorMode.Grayscale;
+                    format = TextureFormat.Grayscale;
                     break;
                 case PNGColorType.PALETTE_IDX:
-                    format = ColorMode.Indexed;
+                    format = TextureFormat.Indexed;
                     bpp = _header.bitDepth;
                     break;
 

@@ -1,4 +1,5 @@
 ﻿using Joonaxii.MathJX;
+using System;
 using System.Collections.Generic;
 
 namespace Joonaxii.Image
@@ -204,22 +205,70 @@ namespace Joonaxii.Image
             return val;
         }
 
-        public static unsafe FastColor GetColor(byte* ptr, int bpp, ColorMode format, IList<FastColor> palette)
+        public static unsafe FastColor GetColor(byte* ptr, int bpp, TextureFormat format, IList<FastColor> palette)
         {
             switch (format)
             {
-                case ColorMode.Indexed:        return GetIndexed(ptr, bpp, palette);
-                case ColorMode.RGB24:          return GetRGB24(ptr, bpp, palette);
-                case ColorMode.RGBA32:         return GetRGBA32(ptr, bpp, palette);
+                case TextureFormat.Indexed:        return GetIndexed(ptr, bpp, palette);
+                case TextureFormat.RGB24:          return GetRGB24(ptr, bpp, palette);
+                case TextureFormat.RGBA32:         return GetRGBA32(ptr, bpp, palette);
 
-                case ColorMode.RGB565:         return GetRGB565(ptr, bpp, palette);
-                case ColorMode.RGB555:         return GetRGB555(ptr, bpp, palette);
-                case ColorMode.ARGB555:        return GetARGB555(ptr, bpp, palette);
+                case TextureFormat.RGB565:         return GetRGB565(ptr, bpp, palette);
+                case TextureFormat.RGB555:         return GetRGB555(ptr, bpp, palette);
+                case TextureFormat.ARGB555:        return GetARGB555(ptr, bpp, palette);
 
-                case ColorMode.Grayscale:      return GetGrayscale(ptr, bpp, palette);
-                case ColorMode.GrayscaleAlpha: return GetGrayscaleAlpha(ptr, bpp, palette);
+                case TextureFormat.Grayscale:      return GetGrayscale(ptr, bpp, palette);
+                case TextureFormat.GrayscaleAlpha: return GetGrayscaleAlpha(ptr, bpp, palette);
             }
             return FastColor.clear;
+        }
+
+        public static unsafe void SetColor(byte* ptr, int iD, int bpp, FastColor color, TextureFormat format, Func<FastColor, int> getPaletteIndex)
+        {
+            ptr += iD;
+            int ind = 0;
+            switch (format)
+            {
+                case TextureFormat.Indexed:
+                    ind = getPaletteIndex.Invoke(color);
+                    break;
+                case TextureFormat.RGB24:
+                    ptr[0] = color.r;
+                    ptr[1] = color.g;
+                    ptr[2] = color.b;
+                    break;
+                case TextureFormat.RGBA32:
+                    ptr[0] = color.r;
+                    ptr[1] = color.g;
+                    ptr[2] = color.b;
+                    ptr[3] = color.a;
+                    return;
+
+                case TextureFormat.RGB565:
+                    ind = ColorExtensions.ToRGB565(color, false);
+                    break;
+                case TextureFormat.RGB555:
+                    ind = ColorExtensions.ToRGB555(color, false);
+                    break;
+                case TextureFormat.ARGB555:
+                    ind = ColorExtensions.ToARGB555(color, false);
+                    break;
+
+                case TextureFormat.Grayscale:
+                    ptr[0] = ColorExtensions.ToGrayscale(color);
+                    return;
+                case TextureFormat.GrayscaleAlpha:
+                    ptr[0] = ColorExtensions.ToGrayscale(color);
+                    ptr[1] = color.a;
+                    return;
+            }
+
+            while(bpp-- > 0)
+            {
+                *ptr++ = (byte)(ind & 0xFF);
+                ind >>= 8;
+            }
+            
         }
     }
 }
