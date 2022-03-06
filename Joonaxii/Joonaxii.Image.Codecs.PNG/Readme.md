@@ -10,7 +10,7 @@ Only uses libraries already included in .NET Framework and other solutions from 
   -Joonaxii.Image.Codecs <br>
   -Joonaxii.Image.Texturing <br>
   -Joonaxii.IO <br>
-  -Joonaxii.MahtJX <br>
+  -Joonaxii.MathJX <br>
 
 # Decoder
 ### Supports
