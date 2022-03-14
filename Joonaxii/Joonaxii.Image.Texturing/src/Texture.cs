@@ -927,7 +927,6 @@ namespace Joonaxii.Image.Texturing
 
             //Free current & allocate new with the new size
             _data = new byte[sizeNew];
-
             if (_handle.IsAllocated)
             {
                 _handle.Free();

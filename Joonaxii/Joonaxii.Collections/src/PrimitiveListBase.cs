@@ -42,7 +42,7 @@ namespace Joonaxii.Collections
         {
             if (index < 0 | index >= _count) { return; }
             if(index == _count) { Add(item); return; }
-            ValidateBuffer();
+            ValidateBuffer(_count);
 
             int len = _count - index;
             Buffer.BlockCopy(_items, index * _size, _items, (index + 1) * _size, len * _size);
@@ -66,13 +66,29 @@ namespace Joonaxii.Collections
 
         public void Add(T item)
         {
-            ValidateBuffer();
+            ValidateBuffer(_count);
             _items[_count++] = item;
         }
 
         public void Clear()
         {
             _count = 0;
+        }
+
+        public void RemoveRange(int start, int length)
+        {
+            int startOfDataToPres = length + start;
+            Buffer.BlockCopy(_items, startOfDataToPres, _items, start, length);
+            _count -= length;
+        }
+
+        public void AddRange(T[] data) => AddRange(data, 0, data.Length);
+        public void AddRange(T[] data, int startSrc, int length)
+        {
+            int start = _count;
+            _count += length;
+            ValidateBuffer(_count);
+            Buffer.BlockCopy(data, startSrc, _items, start, length);
         }
 
         public bool Contains(T item) => IndexOf(item) > -1;
@@ -102,10 +118,14 @@ namespace Joonaxii.Collections
         }
         IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
 
-        private void ValidateBuffer()
+        private void ValidateBuffer(int count)
         {
-            if(_count < _capacity) { return; }
-            _capacity <<= 1;
+            if(count < _capacity) { return; }
+            while(count >= _capacity) 
+            {
+                _capacity <<= 1;
+            }
+           
             Array.Resize(ref _items, _capacity);
         }
     }

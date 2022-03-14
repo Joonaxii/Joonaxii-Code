@@ -82,6 +82,7 @@
     <Compile Include="src\PNGGammaReadMode.cs" />
     <Compile Include="src\Chunks\SPLTChunk.cs" />
     <Compile Include="src\UnitSpecifier.cs" />
+    <Compile Include="src\ZLibCompressionMode.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Joonaxii.Collections\Joonaxii.Collections.csproj">
@@ -95,10 +96,6 @@
     <ProjectReference Include="..\Joonaxii.Data\Joonaxii.Data.csproj">
       <Project>{b74db02e-ed4d-4fd2-9011-8262f560db59}</Project>
       <Name>Joonaxii.Data</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Joonaxii.Debugging\Joonaxii.Debugging.csproj">
-      <Project>{17ad5d61-4e53-4f6b-81ca-6c206631afd0}</Project>
-      <Name>Joonaxii.Debugging</Name>
     </ProjectReference>
     <ProjectReference Include="..\Joonaxii.Image.Codecs\Joonaxii.Image.Codecs.csproj">
       <Project>{aebfedb7-0836-4e95-b9c9-13e9dfed9507}</Project>

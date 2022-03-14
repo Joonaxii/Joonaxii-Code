@@ -1,4 +1,4 @@
-﻿using Joonaxii.Data;
+﻿using Joonaxii.Collections;
 using Joonaxii.Data.Coding;
 using Joonaxii.Image.Texturing;
 using Joonaxii.IO;
@@ -34,6 +34,8 @@ namespace Joonaxii.Image.Codecs.PNG
 
         private int _posWriteBuf = 0;
         private byte[] _writeBuffer = new byte[BUFFER_SIZE];
+
+        private ZLibCompressionMode _compressionMode;
 
         public PNGEncoder(TextureFormat mode) : base(mode)
         {
@@ -137,137 +139,156 @@ namespace Joonaxii.Image.Codecs.PNG
                 }
                 GenerateTexture(format, bppOut);
                 IHDRChunk.Write(bw, _texture.Width, _texture.Height, bps, pngType);
-
-                int dataPos = 0;
-                byte[] dataBuf = new byte[BUFFER_SIZE];
-
-                int tempBufPos = 0;
-                byte[] tempBuf = new byte[BUFFER_SIZE];
-
                 unsafe
                 {
-                    fixed (byte* writePtr = _writeBuffer)
+                    byte[] cmpBuf = new byte[BUFFER_SIZE << 2];
+                    int cmpPos = 0;
+
+                    byte[] writeBuf = new byte[BUFFER_SIZE];
+                    int writePos = 0;
+                    
+                    byte[] scanBuf = new byte[_texture.ScanSize];
+                    int scanBPos = 0;
+
+                    fixed (byte* wBuf = writeBuf)
+                    fixed (byte* cBuf = cmpBuf)
+                    fixed (byte* sBuf = scanBuf)
                     {
-                        fixed (byte* dataBufP = dataBuf)
+                        byte* writePtr = wBuf;
+                        byte* cmpPtr = cBuf;
+                        byte* scanPtr = sBuf;
+
+                        byte* dataPtr = (byte*)_texture.LockBits();
+                        int totalBytes = _texture.ScanSize * _texture.Height; 
+
+                        int ogCrc = Adler32Checksum.Calculate(dataPtr, _texture.Height * _texture.ScanSize);
+                        ushort zLibHeader = 0x89DA;
+
+                        ByteList buffer = new ByteList(BUFFER_SIZE << 1);
+
+                        bool forceFilter = _pngFlags.HasFlag(PNGFlags.ForceFilter);
+                        if (hasPalette)
                         {
-                            fixed (byte* tempBufP = tempBuf)
+                            PLTEChunk.Write(bw, _palette);
+                            if (_hasAlpha) { tRNSChunk.Write(bw, _palette); }
+
+                            WriteIDATStart(bw, writePtr, zLibHeader);
+                            writePtr += 2;
+
+                            if (!forceFilter)
                             {
-                                byte* writeDataPtr = writePtr;
-                                byte* dataBufPtr = dataBufP;
-                                byte* rempBufPtr = tempBufP;
-
-                                byte* dataPtr = (byte*)_texture.LockBits();
-                                int ogCrc = Adler32Checksum.Calculate(dataPtr, _texture.Height * _texture.ScanSize);
-                                ushort zLibHeader = 0x89DA;
-
-                                bool forceFilter = _pngFlags.HasFlag(PNGFlags.ForceFilter);
-                                if (hasPalette)
+                                using (UnmanagedMemoryStream ms = new UnmanagedMemoryStream(cBuf, 0, BUFFER_SIZE << 2, FileAccess.ReadWrite))
+                                using (DeflateStream defStream = new DeflateStream(ms, CompressionLevel.Optimal))
                                 {
-                                    PLTEChunk.Write(bw, _palette);
-                                    if (_hasAlpha) { tRNSChunk.Write(bw, _palette); }
-
-                                    WriteIDATStart(bw, writeDataPtr, zLibHeader);
-                                    writeDataPtr += 2;
-
-                                    int len = BUFFER_SIZE - writeDataPtr;
-                                    if (!forceFilter)
+                                    for (int y = 0; y < _texture.Height; y++)
                                     {
-                                        using (MemoryStream ms = new MemoryStream())
-                                        using (DeflateStream defStream = new DeflateStream(ms, CompressionLevel.Optimal))
+                                        scanPtr = sBuf;
+                                        defStream.WriteByte(0);
+
+                                        for (int i = 0; i < _texture.ScanSize; i++)
                                         {
-                                            byte* texPtr = (byte*)_texture.LockBits();
-                                            for (int y = 0; y < _texture.Height; y++)
-                                            {
-                                                *dataBufPtr++ = 0;
-                                       
-                                                int off = BUFFER_SIZE - (int)defStream.Position;
-                                                if (off < _texture.ScanSize)
-                                                {
-                                                    int left = _texture.ScanSize - off;
-                                                    for (int i = 0; i < off; i++)
-                                                    {
-                                                        *dataBufPtr++ = *texPtr++;
-                                                    }
-                                                    defStream.Write(dataBuf, 0, BUFFER_SIZE);
-
-                                                    dataBufPtr = dataBufP;
-
-                                                    for (int i = 0; i < left; i++)
-                                                    {
-                                                        *dataBufPtr++ = *texPtr++;
-                                                    }
-
-                                                    continue;
-                                                }
-                                            }
-                                            _texture.UnlockBits();
+                                            *scanPtr++ = *dataPtr++;
                                         }
-
-                                        for (int y = 0; y < _texture.Height; y++)
+                                        defStream.Write(scanBuf, 0, _texture.ScanSize);
+                                        while(ms.Position > BUFFER_SIZE)
                                         {
-                                            int yP = y * _texture.Width;
-                                            finalBuf[posInBuf++] = 0;
-                                            for (int x = 0; x < _texture.Width; x++)
-                                            {
-                                                int i = yP + x;
-                                                int index = _paletteLut[_texture.GetPixel(i)];
+                                            int len = BUFFER_SIZE - _posWriteBuf;
+                                            WriteIDATData(bw, writePtr, cBuf, len);
 
-                                                IOExtensions.WriteToByteArray(finalBuf, posInBuf, index, bpp, false);
-                                                posInBuf += bpp;
-                                            }
+                                            int lOff = (BUFFER_SIZE << 2) - len;
+                                            BufferUtils.Memcpy(cBuf, cBuf + len, lOff);
+                                            ms.Seek(lOff, SeekOrigin.Begin);
+
+                                            writePtr = wBuf;
+                                            _posWriteBuf = 0;
+
                                         }
                                     }
-                                    WriteIDATEnd(bw, writeDataPtr, ogCrc);
+                                    _texture.UnlockBits();
 
+                                    while (ms.Position > 0)
+                                    {
+                                        long pos = ms.Position;
+                                        bool small = pos < BUFFER_SIZE;
 
-                                    PNGChunk.Write(bw, PNGChunkType.IEND, new byte[0], 0, 0);
-                                    return ImageEncodeResult.Success;
+                                        int len = BUFFER_SIZE - _posWriteBuf;
+                                        WriteIDATData(bw, writePtr, cBuf, len);
+
+                                        int lOff = (BUFFER_SIZE << 2) - len;
+                                        BufferUtils.Memcpy(cBuf, cBuf + len, lOff);
+                                        ms.Seek(lOff, SeekOrigin.Begin);
+
+                                        writePtr = wBuf;
+                                        _posWriteBuf = 0;
+                                    }
+                                    WriteIDATEnd(bw, writePtr, ogCrc);
                                 }
 
-                                WriteIDATStart(bw, writeDataPtr, zLibHeader);
-                                writeDataPtr += 2;
+                                //for (int y = 0; y < _texture.Height; y++)
+                                //{
+                                //    int yP = y * _texture.Width;
+                                //    finalBuf[posInBuf++] = 0;
+                                //    for (int x = 0; x < _texture.Width; x++)
+                                //    {
+                                //        int i = yP + x;
+                                //        int index = _paletteLut[_texture.GetPixel(i)];
 
-                                if (!hasPalette | forceFilter)
-                                {
+                                //        IOExtensions.WriteToByteArray(finalBuf, posInBuf, index, bpp, false);
+                                //        posInBuf += bpp;
+                                //    }
+                                //}
+                            }
+                            //WriteIDATEnd(bw, writeDataPtr, ogCrc);
+
+
+                            PNGChunk.Write(bw, PNGChunkType.IEND, new byte[0], 0, 0);
+                            return ImageEncodeResult.Success;
+                        }
+
+                        WriteIDATStart(bw, writePtr, zLibHeader);
+                        writePtr += 2;
+
+                        if (!hasPalette | forceFilter)
+                        {
 #if DEBUG
                     Dictionary<PNGFilterMethod, int> filterCounts = new Dictionary<PNGFilterMethod, int>();
                     int totalFilters = 0;
 #endif
 
-                                    posInBuf = 0;
-                                    dataBuf = dataBuf == null ? _pixels.ToBytes(PixelByteOrder.RGBA, false, _width, _height, _colorMode) : dataBuf;
+                            posInBuf = 0;
+                            dataBuf = dataBuf == null ? _pixels.ToBytes(PixelByteOrder.RGBA, false, _width, _height, _colorMode) : dataBuf;
 
-                                    int bytesPerPix = (_bpp >> 3);
-                                    int wW = _width * bytesPerPix;
+                            int bytesPerPix = (_bpp >> 3);
+                            int wW = _width * bytesPerPix;
 
-                                    int fScn = (_height - 1) * wW;
+                            int fScn = (_height - 1) * wW;
 
-                                    byte[] writeBuf = new byte[wW];
-                                    byte[] lowestSoFar = new byte[wW];
+                            byte[] writeBuf = new byte[wW];
+                            byte[] lowestSoFar = new byte[wW];
 
-                                    finalBuf = new byte[dataBuf.Length + _height];
+                            finalBuf = new byte[dataBuf.Length + _height];
 
-                                    int lowestVariation;
-                                    PNGFilterMethod lowFilter = PNGFilterMethod.None;
+                            int lowestVariation;
+                            PNGFilterMethod lowFilter = PNGFilterMethod.None;
 
-                                    for (int y = 0; y < _height; y++)
-                                    {
-                                        int scanline = y * wW;
-                                        lowFilter = _pngFlags.HasFlag(PNGFlags.OverrideFilter) ? _overrideFilter : PNGFilterMethod.None;
-                                        ApplyFilter(lowFilter, y, scanline, bytesPerPix, dataBuf, lowestSoFar, wW);
+                            for (int y = 0; y < _height; y++)
+                            {
+                                int scanline = y * wW;
+                                lowFilter = _pngFlags.HasFlag(PNGFlags.OverrideFilter) ? _overrideFilter : PNGFilterMethod.None;
+                                ApplyFilter(lowFilter, y, scanline, bytesPerPix, dataBuf, lowestSoFar, wW);
 
-                                        if (!_pngFlags.HasFlag(PNGFlags.OverrideFilter))
-                                        {
-                                            lowestVariation = GetByteVariation(lowestSoFar, 0, lowestSoFar.Length);
-                                            ApplyFilter(ref lowestVariation, ref lowFilter, PNGFilterMethod.Sub, y, scanline, bytesPerPix, dataBuf, writeBuf, lowestSoFar, wW);
-                                            ApplyFilter(ref lowestVariation, ref lowFilter, PNGFilterMethod.Up, y, scanline, bytesPerPix, dataBuf, writeBuf, lowestSoFar, wW);
-                                            ApplyFilter(ref lowestVariation, ref lowFilter, PNGFilterMethod.Average, y, scanline, bytesPerPix, dataBuf, writeBuf, lowestSoFar, wW);
-                                            ApplyFilter(ref lowestVariation, ref lowFilter, PNGFilterMethod.Paeth, y, scanline, bytesPerPix, dataBuf, writeBuf, lowestSoFar, wW);
-                                        }
+                                if (!_pngFlags.HasFlag(PNGFlags.OverrideFilter))
+                                {
+                                    lowestVariation = GetByteVariation(lowestSoFar, 0, lowestSoFar.Length);
+                                    ApplyFilter(ref lowestVariation, ref lowFilter, PNGFilterMethod.Sub, y, scanline, bytesPerPix, dataBuf, writeBuf, lowestSoFar, wW);
+                                    ApplyFilter(ref lowestVariation, ref lowFilter, PNGFilterMethod.Up, y, scanline, bytesPerPix, dataBuf, writeBuf, lowestSoFar, wW);
+                                    ApplyFilter(ref lowestVariation, ref lowFilter, PNGFilterMethod.Average, y, scanline, bytesPerPix, dataBuf, writeBuf, lowestSoFar, wW);
+                                    ApplyFilter(ref lowestVariation, ref lowFilter, PNGFilterMethod.Paeth, y, scanline, bytesPerPix, dataBuf, writeBuf, lowestSoFar, wW);
+                                }
 
-                                        finalBuf[posInBuf++] = (byte)lowFilter;
-                                        Buffer.BlockCopy(lowestSoFar, 0, finalBuf, posInBuf, wW);
-                                        posInBuf += wW;
+                                finalBuf[posInBuf++] = (byte)lowFilter;
+                                Buffer.BlockCopy(lowestSoFar, 0, finalBuf, posInBuf, wW);
+                                posInBuf += wW;
 #if DEBUG
                         totalFilters++;
                         if (filterCounts.ContainsKey(lowFilter))
@@ -277,7 +298,7 @@ namespace Joonaxii.Image.Codecs.PNG
                         }
                         filterCounts.Add(lowFilter, 1);
 #endif
-                                    }
+                            }
 
 #if DEBUG
                     foreach (var filters in filterCounts)
@@ -287,28 +308,26 @@ namespace Joonaxii.Image.Codecs.PNG
                     System.Diagnostics.Debug.Print(new string('=', 32));
                     System.Diagnostics.Debug.Print("");
 #endif
-                                }
-
-                                {
-                                    const int CHUNK_MAX_SIZE = 8192;
-                                    GetCompressedData(bw, finalBuf, CompressionLevel.Optimal);
-
-                                    //int finBufPos = 0;
-                                    //using (MemoryStream ms = new MemoryStream(finalBuf))
-                                    //{
-                                    //    while (finBufPos < finalBuf.Length)
-                                    //    {
-                                    //        int len = Math.Min(CHUNK_MAX_SIZE, finalBuf.Length - finBufPos);
-                                    //        PNGChunk.Write(bw, PNGChunkType.IDAT, finalBuf, finBufPos, len);
-                                    //        finBufPos += len;
-                                    //    }
-                                    //}
-                                }
-
-                                //IEND Chunk
-                                PNGChunk.Write(bw, PNGChunkType.IEND, new byte[0], 0, 0);
-                            }
                         }
+
+                        {
+                            const int CHUNK_MAX_SIZE = 8192;
+                            GetCompressedData(bw, finalBuf, CompressionLevel.Optimal);
+
+                            //int finBufPos = 0;
+                            //using (MemoryStream ms = new MemoryStream(finalBuf))
+                            //{
+                            //    while (finBufPos < finalBuf.Length)
+                            //    {
+                            //        int len = Math.Min(CHUNK_MAX_SIZE, finalBuf.Length - finBufPos);
+                            //        PNGChunk.Write(bw, PNGChunkType.IDAT, finalBuf, finBufPos, len);
+                            //        finBufPos += len;
+                            //    }
+                            //}
+                        }
+
+                        //IEND Chunk
+                        PNGChunk.Write(bw, PNGChunkType.IEND, new byte[0], 0, 0);
                     }
                 }
             }
@@ -322,25 +341,27 @@ namespace Joonaxii.Image.Codecs.PNG
             _posWriteBuf += 2;
         }
 
-        private unsafe void WriteIDATData(BinaryWriter bw, byte* buffer, byte* data, int len)
+        private unsafe bool WriteIDATData(BinaryWriter bw, byte* buffer, byte* data, int len)
         {
+            bool end = false;
             int left = BUFFER_SIZE - _posWriteBuf;
             int lenA = left < len ? left : len;
             int lenB = lenA != len ? len - lenA : 0;
 
             _posWriteBuf += lenA;
-            while(lenA-- > 0)
+            while (lenA-- > 0)
             {
                 *buffer++ = *data++;
             }
 
-            if(_posWriteBuf >= BUFFER_SIZE)
+            if (_posWriteBuf >= BUFFER_SIZE)
             {
                 PNGChunk.Write(bw, PNGChunkType.IDAT, _writeBuffer, 0, _posWriteBuf);
                 _posWriteBuf = 0;
+                end = true;
             }
 
-            if(lenB > 0)
+            if (lenB > 0)
             {
                 _posWriteBuf += lenB;
                 while (lenB-- > 0)
@@ -352,13 +373,15 @@ namespace Joonaxii.Image.Codecs.PNG
                 {
                     PNGChunk.Write(bw, PNGChunkType.IDAT, _writeBuffer, 0, _posWriteBuf);
                     _posWriteBuf = 0;
+                    end = true;
                 }
             }
+            return end;
         }
 
         private unsafe void WriteIDATEnd(BinaryWriter bw, byte* buffer, int crc)
         {
-            if(_posWriteBuf <= 4)
+            if (_posWriteBuf <= 4)
             {
                 *buffer++ = (byte)((crc >> 24) & 0xFF);
                 *buffer++ = (byte)((crc >> 16) & 0xFF);
@@ -381,7 +404,7 @@ namespace Joonaxii.Image.Codecs.PNG
             }
             PNGChunk.Write(bw, PNGChunkType.IDAT, _writeBuffer, 0, BUFFER_SIZE);
 
-            fixed(byte* ptr = _writeBuffer)
+            fixed (byte* ptr = _writeBuffer)
             {
                 buffer = ptr;
                 for (int i = 0; i < lHi; i++)
