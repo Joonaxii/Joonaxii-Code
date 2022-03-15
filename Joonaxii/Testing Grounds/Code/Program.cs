@@ -306,7 +306,7 @@ namespace Testing_Grounds
                         using (FileStream fsEncFilt = new FileStream($"{dirP}/{namP}_PAL_Filter.png", FileMode.Create))
                         using (FileStream fsEncFiltF = new FileStream($"{dirP}/{namP}_PAL_Forced_Filter.png", FileMode.Create))
                         using (FileStream fsEncBroken = new FileStream($"{dirP}/{namP}_PAL_Broken.png", FileMode.Create))
-                        using (PNGEncoder encPNG = new PNGEncoder(decPNG.Width, decPNG.Height, decPNG.ColorMode))
+                        using (PNGEncoder encPNG = new PNGEncoder(decPNG.ColorMode))
                         {
                             //var pix = decPNG.GetPixelsRef();
                            // encPNG.SetPixelsRef(ref pix);
