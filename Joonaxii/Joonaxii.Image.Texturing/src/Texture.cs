@@ -653,6 +653,21 @@ namespace Joonaxii.Image.Texturing
             }
         }
 
+        public void GetPalette(IList<FastColor> palette, IDictionary<FastColor, int> paletteLut, out bool hasAlpha)
+        {
+            hasAlpha = _hasAlpha;
+
+            foreach (var item in _palette)
+            {
+                palette.Add(item);
+            }
+
+            foreach (var item in _paletteLut)
+            {
+                paletteLut.Add(item);
+            }
+        }
+
         public void GeneratePalette(IList<FastColor> palette, IDictionary<FastColor, int> paletteLut, out bool hasAlpha)
         {
             hasAlpha = false;
@@ -665,7 +680,7 @@ namespace Joonaxii.Image.Texturing
                     if (paletteLut.ContainsKey(clr)) { continue; }
 
                     hasAlpha |= clr.a < 255;
-                    paletteLut.Add(clr, _palette.Count);
+                    paletteLut.Add(clr, palette.Count);
                     palette.Add(clr);
                 }
             }

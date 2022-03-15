@@ -77,6 +77,17 @@ namespace Joonaxii.Image.Codecs.PNG
             }
         }
 
+        internal static unsafe void Write(BinaryWriter bw, PNGChunkType type, byte* data, int length)
+        {
+            unsafe
+            {
+                bw.WriteBigEndian(length);
+                bw.WriteBigEndian((uint)type);
+                for (int i = 0; i < length; i++) { bw.Write(data[i]); }
+                bw.WriteBigEndian(CRC.Calculate(IOExtensions.ReverseBytes((uint)type), 4, data, 0, length));
+            }
+        }
+
         internal static unsafe void Write(BinaryWriter bw, byte* data, int length)
         {
             bw.WriteBigEndian(length);

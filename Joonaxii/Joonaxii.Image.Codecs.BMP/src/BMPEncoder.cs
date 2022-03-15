@@ -1,4 +1,5 @@
 ﻿using Joonaxii.Data;
+using Joonaxii.Image.Texturing;
 using Joonaxii.IO;
 using System.IO;
 
@@ -8,13 +9,13 @@ namespace Joonaxii.Image.Codecs.BMP
     {
         private const float INCH_TO_METER = 1.0f / 39.3701f;
 
-        public BMPEncoder(int width, int height, byte bPP) : base(width, height, bPP) { }
-        public BMPEncoder(int width, int height, TextureFormat mode) : base(width, height, mode) { }
+        public BMPEncoder(TextureFormat mode) : base(mode) { }
+        public BMPEncoder(Texture original, TextureFormat mode) : base(original, mode) { }
 
         public override ImageEncodeResult Encode(Stream stream, bool leaveStreamOpen)
         {
-            ValidateFormat();
-            switch (_colorMode)
+            ValidateFormat(ref _format, ref _bpp);
+            switch (_format)
             {
                 case TextureFormat.Indexed4:
                 case TextureFormat.Indexed8:
@@ -32,7 +33,7 @@ namespace Joonaxii.Image.Codecs.BMP
             uint aMask = 0;
 
             int cmpMode = 0;
-            switch (_colorMode) //Generate Masks
+            switch (_format) //Generate Masks
             {
                 case TextureFormat.RGBA32:
                     rMask = 0x00_FF_00_00;
@@ -64,28 +65,28 @@ namespace Joonaxii.Image.Codecs.BMP
             }
 
             int bytesPerP = _bpp / 8;
-            int padding = IOExtensions.NextDivBy(_width * bytesPerP, 4) - (_width * bytesPerP);
-            switch (_colorMode) //Calculate Data Size
+            int padding = IOExtensions.NextDivBy(_texture.Width * bytesPerP, 4) - (_texture.Width * bytesPerP);
+            switch (_format) //Calculate Data Size
             {
                 case TextureFormat.RGB24:
-                    bmpSize += _pixels.Length * 3 + _height * padding;
+                    bmpSize += (_texture.Width * _texture.Height) * 3 + _texture.Height * padding;
                     break; 
                 
                 case TextureFormat.RGBA32:
-                    bmpSize += _pixels.Length * 4;
+                    bmpSize += (_texture.Width * _texture.Height) * 4;
                     cmpMode = 3;
                     break;
 
                 case TextureFormat.RGB565:
                 case TextureFormat.RGB555:
                 case TextureFormat.ARGB555:
-                    bmpSize += _pixels.Length * 2;
+                    bmpSize += (_texture.Width * _texture.Height) * 2;
                     cmpMode = 3;
                     break;
             }
 
-            int pxPerMX = (int)(_width * 96 * INCH_TO_METER);
-            int pxPerMY = (int)(_height * 96 * INCH_TO_METER);
+            int pxPerMX = (int)(_texture.Width * 96 * INCH_TO_METER);
+            int pxPerMY = (int)(_texture.Height * 96 * INCH_TO_METER);
 
             ///bmpSize += startOfData;
             using (BitWriter bw = new BitWriter(stream, leaveStreamOpen))
@@ -101,8 +102,8 @@ namespace Joonaxii.Image.Codecs.BMP
                 //DIB Header
                 bw.Write(40);
 
-                bw.Write(_width);
-                bw.Write(-_height);
+                bw.Write(_texture.Width);
+                bw.Write(-_texture.Height);
 
                 bw.Write((ushort)1);
                 bw.Write((ushort)_bpp);
@@ -116,7 +117,7 @@ namespace Joonaxii.Image.Codecs.BMP
                 bw.Write(0);
                 bw.Write(0);
 
-                switch (_colorMode)
+                switch (_format)
                 {
                     case TextureFormat.RGBA32:
                     case TextureFormat.RGB555:
@@ -128,39 +129,39 @@ namespace Joonaxii.Image.Codecs.BMP
                         bw.Write(aMask);
                         break;
                 }
-                bw.WriteColors(_pixels, _width, _height, _colorMode, true, padding);
+               // bw.WriteColors(_pixels, _width, _height, _colorMode, true, padding);
             }
             return ImageEncodeResult.Success;
         }
 
-        public override void ValidateFormat()
+        protected override void ValidateFormat(ref TextureFormat format, ref byte bpp)
         {
-            base.ValidateFormat();
-            switch (_colorMode)
+            base.ValidateFormat(ref format, ref bpp);
+            switch (format)
             {
                 case TextureFormat.ARGB555:
-                    _colorMode = _hasAlpha ? _colorMode : TextureFormat.RGB555;
+                    format = _texture.HasAlpha ? format : TextureFormat.RGB555;
                     break;
 
                 case TextureFormat.RGBA32:
-                    if (_hasAlpha)
+                    if (_texture.HasAlpha)
                     {
                         break;
                     }
-                    _colorMode =  TextureFormat.RGB24;
+                    format =  TextureFormat.RGB24;
                     _bpp = 24;
                     break;
 
                 case TextureFormat.OneBit:
                 case TextureFormat.Grayscale:
-                    _colorMode = TextureFormat.RGB24;
+                    format = TextureFormat.RGB24;
                     _bpp = 24;
                     break;
                 case TextureFormat.GrayscaleAlpha:
                 case TextureFormat.Indexed4:
                 case TextureFormat.Indexed8:
                 case TextureFormat.Indexed:
-                    _colorMode = TextureFormat.RGBA32;
+                    format = TextureFormat.RGBA32;
                     _bpp = 32;
                     break;
             }

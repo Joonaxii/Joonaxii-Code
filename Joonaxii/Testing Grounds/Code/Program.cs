@@ -82,129 +82,146 @@ namespace Testing_Grounds
 
                 if (res == ImageDecodeResult.Success)
                 {
-                    Texture tex = png.GetTexture();
-                    FastColor[] temp = new FastColor[tex.Width * tex.Height];
-
-                    TextureDataMode[] all = Enum.GetValues(typeof(TextureDataMode)) as TextureDataMode[];
-                    const int TEST_COUNT = 256;
-
-                    long min = long.MaxValue;
-                    long max = 0;
-                    long total = 0;
-                    double avg = 0;
-                    int y = Console.CursorTop;
-
-                    foreach (var mode in all)
+                    using(FileStream testOut = new FileStream($"{Path.GetDirectoryName(path)}/{Path.GetFileNameWithoutExtension(path)}_OUT.png", FileMode.Create))
+                    using(PNGEncoder enc = new PNGEncoder(png.GetTexture(), TextureFormat.Indexed))
                     {
-                        min = long.MaxValue;
-                        max = 0;
-                        total = 0;
+                        enc.Flags = ImageDecoderFlags.ForcePalette | ImageDecoderFlags.AllowBigIndices;
 
-                        y = Console.CursorTop;
-
-                        tex.PixelIterationMode = mode;
-                        if (tex.PixelIterationMode != mode) { continue; }
-
-                        Console.SetCursorPosition(0, y);
-                        Console.Write($"-|Test[{tex.PixelIterationMode }] {0}/{TEST_COUNT}".PadRight(64, ' '));
-                        for (int i = 0; i < TEST_COUNT; i++)
+                        var encR = enc.Encode(testOut, false);
+                        switch (encR)
                         {
-                            sw.Restart();
-                            tex.GetPixels(temp);
-                            sw.Stop();
-                            var l = sw.ElapsedTicks;
-                            min = l < min ? l : min;
-                            max = l > max ? l : max;
-                            total += l;
-
-                            Console.SetCursorPosition(0, y);
-                            Console.Write($"-|Test[{tex.PixelIterationMode }] {i + 1}/{TEST_COUNT}".PadRight(64, ' '));
+                            default: Console.WriteLine($"Encode Failed! [{encR}]"); break;
+                            case ImageEncodeResult.Success:
+                                Console.WriteLine($"Encode Success!");
+                                break;
                         }
-                        Console.SetCursorPosition(0, y);
-
-                        avg = total / (double)TEST_COUNT;
-                        Console.WriteLine($"-|-Copy Pixels to FastColor Array VIA '{tex.PixelIterationMode}' [{TEST_COUNT} times]:".PadRight(64, ' '));
-                        Console.WriteLine($"-|   -Max: {((max / 10000.0) / 1000.0):F4} sec, {(long)((max / 10000.0))} ms, {max} ticks");
-                        Console.WriteLine($"-|   -Min: {((min / 10000.0) / 1000.0):F4} sec, {(long)((min / 10000.0))} ms, {min} ticks");
-                        Console.WriteLine($"-|   -Avg: {((avg / 10000.0) / 1000.0):F4} sec, {(long)((avg / 10000.0))} ms, {avg} ticks");
-                        Console.WriteLine($"-|-----------------------------------------------------");
                     }
+
+                    Console.ReadKey();
+
+                    //Texture tex = png.GetTexture();
+                    //FastColor[] temp = new FastColor[tex.Width * tex.Height];
+
+                    //TextureDataMode[] all = Enum.GetValues(typeof(TextureDataMode)) as TextureDataMode[];
+                    //const int TEST_COUNT = 256;
+
+                    //long min = long.MaxValue;
+                    //long max = 0;
+                    //long total = 0;
+                    //double avg = 0;
+                    //int y = Console.CursorTop;
+
+                    //foreach (var mode in all)
+                    //{
+                    //    min = long.MaxValue;
+                    //    max = 0;
+                    //    total = 0;
+
+                    //    y = Console.CursorTop;
+
+                    //    tex.PixelIterationMode = mode;
+                    //    if (tex.PixelIterationMode != mode) { continue; }
+
+                    //    Console.SetCursorPosition(0, y);
+                    //    Console.Write($"-|Test[{tex.PixelIterationMode }] {0}/{TEST_COUNT}".PadRight(64, ' '));
+                    //    for (int i = 0; i < TEST_COUNT; i++)
+                    //    {
+                    //        sw.Restart();
+                    //        tex.GetPixels(temp);
+                    //        sw.Stop();
+                    //        var l = sw.ElapsedTicks;
+                    //        min = l < min ? l : min;
+                    //        max = l > max ? l : max;
+                    //        total += l;
+
+                    //        Console.SetCursorPosition(0, y);
+                    //        Console.Write($"-|Test[{tex.PixelIterationMode }] {i + 1}/{TEST_COUNT}".PadRight(64, ' '));
+                    //    }
+                    //    Console.SetCursorPosition(0, y);
+
+                    //    avg = total / (double)TEST_COUNT;
+                    //    Console.WriteLine($"-|-Copy Pixels to FastColor Array VIA '{tex.PixelIterationMode}' [{TEST_COUNT} times]:".PadRight(64, ' '));
+                    //    Console.WriteLine($"-|   -Max: {((max / 10000.0) / 1000.0):F4} sec, {(long)((max / 10000.0))} ms, {max} ticks");
+                    //    Console.WriteLine($"-|   -Min: {((min / 10000.0) / 1000.0):F4} sec, {(long)((min / 10000.0))} ms, {min} ticks");
+                    //    Console.WriteLine($"-|   -Avg: {((avg / 10000.0) / 1000.0):F4} sec, {(long)((avg / 10000.0))} ms, {avg} ticks");
+                    //    Console.WriteLine($"-|-----------------------------------------------------");
+                    //}
                   
-                    try
-                    {
-                        //using (FileStream fsP = new FileStream($"{Path.GetDirectoryName(path)}/{Path.GetFileNameWithoutExtension(path)}_PNG.png", FileMode.Create))
-                        //using (PNGEncoder pngEnc = new PNGEncoder(png.Width, png.Height, png.ColorMode))
-                        //{
-                        //    //pngEnc.Flags = ImageDecoderFlags.ForceRGB;
-                        //    var pix = png.GetPixelsRef();
-                        //    pngEnc.SetPixelsRef(ref pix);
+                    //try
+                    //{
+                    //    //using (FileStream fsP = new FileStream($"{Path.GetDirectoryName(path)}/{Path.GetFileNameWithoutExtension(path)}_PNG.png", FileMode.Create))
+                    //    //using (PNGEncoder pngEnc = new PNGEncoder(png.Width, png.Height, png.ColorMode))
+                    //    //{
+                    //    //    //pngEnc.Flags = ImageDecoderFlags.ForceRGB;
+                    //    //    var pix = png.GetPixelsRef();
+                    //    //    pngEnc.SetPixelsRef(ref pix);
 
-                        //    var pngRes = pngEnc.Encode(fsP, true);
-                        //    Console.WriteLine($"PNG Encode Done [{pngRes}]");
+                    //    //    var pngRes = pngEnc.Encode(fsP, true);
+                    //    //    Console.WriteLine($"PNG Encode Done [{pngRes}]");
 
-                        //    //sw = new Stopwatch();
-                        //    //sw.Start();
-                        //    //unsafe
-                        //    //{
-                        //    //    byte* ptr = (byte*)tex.LockBits();
-                        //    //    int bpp = tex.BitsPerPixel >> 3;
-                        //    //    for (int y = 0; y < tex.Height; y++)
-                        //    //    {
-                        //    //        int yP = y * tex.ScanSize;
-                        //    //        ptr = (byte*)(tex.Scan + yP);
-                        //    //        byte yS = (byte)Maths.Lerp(0, 255, (y / (tex.Height - 1.0f)));
-                        //    //        for (int x = 0; x < tex.Width; x++)
-                        //    //        {
-                        //    //            FastColor cc = new FastColor(yS, (byte)Maths.Lerp(0, 255, (x / (tex.Width - 1.0f))), 0);
-                        //    //            for (int i = 0; i < bpp; i++)
-                        //    //            {
-                        //    //                *ptr = cc[i];
-                        //    //                ptr++;
-                        //    //            }
-                        //    //        }
-                        //    //    }
-                        //    //    tex.UnlockBits();
-                        //    //}
-                        //    //sw.Stop();
-                        //    //Console.WriteLine($"{sw.Elapsed} sec, {sw.ElapsedMilliseconds} ms, {sw.ElapsedTicks} ticks");
+                    //    //    //sw = new Stopwatch();
+                    //    //    //sw.Start();
+                    //    //    //unsafe
+                    //    //    //{
+                    //    //    //    byte* ptr = (byte*)tex.LockBits();
+                    //    //    //    int bpp = tex.BitsPerPixel >> 3;
+                    //    //    //    for (int y = 0; y < tex.Height; y++)
+                    //    //    //    {
+                    //    //    //        int yP = y * tex.ScanSize;
+                    //    //    //        ptr = (byte*)(tex.Scan + yP);
+                    //    //    //        byte yS = (byte)Maths.Lerp(0, 255, (y / (tex.Height - 1.0f)));
+                    //    //    //        for (int x = 0; x < tex.Width; x++)
+                    //    //    //        {
+                    //    //    //            FastColor cc = new FastColor(yS, (byte)Maths.Lerp(0, 255, (x / (tex.Width - 1.0f))), 0);
+                    //    //    //            for (int i = 0; i < bpp; i++)
+                    //    //    //            {
+                    //    //    //                *ptr = cc[i];
+                    //    //    //                ptr++;
+                    //    //    //            }
+                    //    //    //        }
+                    //    //    //    }
+                    //    //    //    tex.UnlockBits();
+                    //    //    //}
+                    //    //    //sw.Stop();
+                    //    //    //Console.WriteLine($"{sw.Elapsed} sec, {sw.ElapsedMilliseconds} ms, {sw.ElapsedTicks} ticks");
 
-                        //    //pix = tex.GetPixels();
-                        //    //pngEnc.SetPixelsRef(ref pix);
+                    //    //    //pix = tex.GetPixels();
+                    //    //    //pngEnc.SetPixelsRef(ref pix);
 
-                        //    //var pngRes = pngEnc.Encode(fsPGR, true);
-                        //    //Console.WriteLine($"PNG Lock Bits Done [{pngRes}]");
+                    //    //    //var pngRes = pngEnc.Encode(fsPGR, true);
+                    //    //    //Console.WriteLine($"PNG Lock Bits Done [{pngRes}]");
 
 
-                        //    //sw.Restart();
-                        //    //for (int y = 0; y < tex.Height; y++)
-                        //    //{
-                        //    //    int yP = y * tex.ScanSize;
-                        //    //    byte yS = (byte)Maths.Lerp(0, 255, (y / (tex.Height - 1.0f)));
-                        //    //    for (int x = 0; x < tex.Width; x+=2)
-                        //    //    {
-                        //    //        FastColor cc = new FastColor(yS, (byte)Maths.Lerp(0, 255, (x / (tex.Width - 1.0f))), 0);
-                        //    //        tex.SetPixel(yS + x, cc);
+                    //    //    //sw.Restart();
+                    //    //    //for (int y = 0; y < tex.Height; y++)
+                    //    //    //{
+                    //    //    //    int yP = y * tex.ScanSize;
+                    //    //    //    byte yS = (byte)Maths.Lerp(0, 255, (y / (tex.Height - 1.0f)));
+                    //    //    //    for (int x = 0; x < tex.Width; x+=2)
+                    //    //    //    {
+                    //    //    //        FastColor cc = new FastColor(yS, (byte)Maths.Lerp(0, 255, (x / (tex.Width - 1.0f))), 0);
+                    //    //    //        tex.SetPixel(yS + x, cc);
 
-                        //    //        if(!isEven && x==tex.Width - 1) { continue; }
+                    //    //    //        if(!isEven && x==tex.Width - 1) { continue; }
 
-                        //    //        cc = new FastColor(yS, (byte)Maths.Lerp(0, 255, ((x + 1) / (tex.Width - 1.0f))), 0);
-                        //    //        tex.SetPixel(yS + x + 1, cc);
-                        //    //    }
-                        //    //}
-                        //    //sw.Stop();
-                        //    //Console.WriteLine($"{sw.Elapsed} sec, {sw.ElapsedMilliseconds} ms, {sw.ElapsedTicks} ticks");
+                    //    //    //        cc = new FastColor(yS, (byte)Maths.Lerp(0, 255, ((x + 1) / (tex.Width - 1.0f))), 0);
+                    //    //    //        tex.SetPixel(yS + x + 1, cc);
+                    //    //    //    }
+                    //    //    //}
+                    //    //    //sw.Stop();
+                    //    //    //Console.WriteLine($"{sw.Elapsed} sec, {sw.ElapsedMilliseconds} ms, {sw.ElapsedTicks} ticks");
 
-                        //    //pix = tex.GetPixels();
-                        //    //pngEnc.SetPixelsRef(ref pix);
+                    //    //    //pix = tex.GetPixels();
+                    //    //    //pngEnc.SetPixelsRef(ref pix);
 
-                        //    //pngRes = pngEnc.Encode(fsP, true);
-                        //    //Console.WriteLine($"PNG SetPixel Done [{pngRes}]");
-                        //}
-                    }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine(e.Message);
-                    }
+                    //    //    //pngRes = pngEnc.Encode(fsP, true);
+                    //    //    //Console.WriteLine($"PNG SetPixel Done [{pngRes}]");
+                    //    //}
+                    //}
+                    //catch (Exception e)
+                    //{
+                    //    Console.WriteLine(e.Message);
+                    //}
                 }
                 Console.ReadKey();
             }
@@ -302,7 +319,7 @@ namespace Testing_Grounds
                     default: Console.WriteLine($"PNG Decode Failed: [{res}]"); break;
                     case ImageDecodeResult.Success:
                         Console.WriteLine($"PNG Decode {res}!");
-                        using (FileStream fsEnc = new FileStream($"{dirP}/{namP}_PAL.png", FileMode.Create))
+                        using (FileStream fsEnc    = new FileStream($"{dirP}/{namP}_PAL.png", FileMode.Create))
                         using (FileStream fsEncFilt = new FileStream($"{dirP}/{namP}_PAL_Filter.png", FileMode.Create))
                         using (FileStream fsEncFiltF = new FileStream($"{dirP}/{namP}_PAL_Forced_Filter.png", FileMode.Create))
                         using (FileStream fsEncBroken = new FileStream($"{dirP}/{namP}_PAL_Broken.png", FileMode.Create))

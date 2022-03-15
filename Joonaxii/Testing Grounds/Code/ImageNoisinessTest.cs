@@ -65,25 +65,25 @@ namespace Testing_Grounds
                 Console.WriteLine($"{name} Debug Statistics: ");
                 Console.WriteLine($"    -Bits Per RMS: {deb.GetBitsPerRMS}");
 
-                using(BMPEncoder bmp = new BMPEncoder(bm.Width, bm.Height, (byte)(hasAlpha ? 32 : 24)))
-                {
-                    bmp.SetPixels(temp);
-                    using(MemoryStream ms = new MemoryStream())
-                    {
-                        var result = bmp.Encode(ms, true);
-                        switch (result)
-                        {
-                            case ImageEncodeResult.Success:
-                                ms.Flush();
-                                File.WriteAllBytes($"{Path.GetDirectoryName(path)}/{name}_DEBUG.bmp", ms.ToArray());
-                                Console.WriteLine($"Saved Debug BMP of '{name}'!");
-                                break;
-                            default:
-                                Console.WriteLine($"BMP encode failed! [{result}]");
-                                break;
-                        }
-                    }     
-                }
+                //using(BMPEncoder bmp = new BMPEncoder(bm.Width, bm.Height, (byte)(hasAlpha ? 32 : 24)))
+                //{
+                //    bmp.SetPixels(temp);
+                //    using(MemoryStream ms = new MemoryStream())
+                //    {
+                //        var result = bmp.Encode(ms, true);
+                //        switch (result)
+                //        {
+                //            case ImageEncodeResult.Success:
+                //                ms.Flush();
+                //                File.WriteAllBytes($"{Path.GetDirectoryName(path)}/{name}_DEBUG.bmp", ms.ToArray());
+                //                Console.WriteLine($"Saved Debug BMP of '{name}'!");
+                //                break;
+                //            default:
+                //                Console.WriteLine($"BMP encode failed! [{result}]");
+                //                break;
+                //        }
+                //    }     
+                //}
             }
 
             Console.WriteLine($"\nPress enter to go back to the menu.");

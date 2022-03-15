@@ -8,6 +8,7 @@ using System;
 using Joonaxii.Debugging;
 using Joonaxii.Data;
 using Joonaxii.MathJX;
+using Joonaxii.Image.Texturing;
 
 namespace Joonaxii.Image.Codecs.Raw
 {
@@ -16,15 +17,9 @@ namespace Joonaxii.Image.Codecs.Raw
         private RawTextureCompressMode _compressMode;
         private bool _compressPixelData;
 
-        public RawTextureEncoder(int width, int height, byte bPP) : this(RawTextureCompressMode.None, false, width, height, bPP) { }
-        public RawTextureEncoder(RawTextureCompressMode compress, bool compressPixelData, int width, int height, byte bPP) : base(width, height, bPP)
-        {
-            _compressMode = compress;
-            _compressPixelData = compressPixelData;
-        }
-
-        public RawTextureEncoder(int width, int height, TextureFormat pFmt) : this(RawTextureCompressMode.None, false, width, height, pFmt) { }
-        public RawTextureEncoder(RawTextureCompressMode compress, bool compressPixelData, int width, int height, TextureFormat pFmt) : base(width, height, pFmt)
+        public RawTextureEncoder(TextureFormat pFmt) : this(null, RawTextureCompressMode.None, false, pFmt) { }
+        public RawTextureEncoder(Texture original, TextureFormat pFmt) : this(original, RawTextureCompressMode.None, false, pFmt) { }
+        public RawTextureEncoder(Texture original, RawTextureCompressMode compress, bool compressPixelData, TextureFormat pFmt) : base(original, pFmt)
         {
             _compressMode = compress;
             _compressPixelData = compressPixelData;
@@ -64,18 +59,18 @@ namespace Joonaxii.Image.Codecs.Raw
                 if (res == RawTextureCompressMode.Auto)
                 {
                     stamp.Start("Automatic Noisiness Detection");
-                    res = NoiseLevelToCompressMode(new ImageNoiseDetector().Process(new PixelArray(_pixels), _width, _height, _bpp));
+                   // res = NoiseLevelToCompressMode(new ImageNoiseDetector().Process(new PixelArray(_pixels), _width, _height, _bpp));
                     stamp.Stamp();
                 }
 
                 bool writePalette = true;
-                var palMode = _colorMode;
+                var palMode = _format;
                 switch (res)
                 {
                     case RawTextureCompressMode.aRLE:
                         writePalette = false;
 
-                        switch (_colorMode)
+                        switch (_format)
                         {
                             case TextureFormat.ARGB555:
                             case TextureFormat.RGBA32: break;
@@ -83,7 +78,7 @@ namespace Joonaxii.Image.Codecs.Raw
                         }
                         break;
                     case RawTextureCompressMode.IdxaRLE:
-                        switch (_colorMode)
+                        switch (_format)
                         {
                             case TextureFormat.ARGB555:
                             case TextureFormat.RGBA32: break;
@@ -105,29 +100,29 @@ namespace Joonaxii.Image.Codecs.Raw
                 stamp.Start("Header Writing");
                 hdr.WriteHeader(bw);
 
-                bw.Write((byte)_colorMode);
-                bw.Write((byte)res, 7);
-                bw.Write(_compressPixelData);
-
-                bw.Write((ushort)Math.Min(_width, ushort.MaxValue));
-                bw.Write((ushort)Math.Min(_height, ushort.MaxValue));
+               //bw.Write((byte)_colorMode);
+               //bw.Write((byte)res, 7);
+               //bw.Write(_compressPixelData);
+               //
+               //bw.Write((ushort)Math.Min(_width, ushort.MaxValue));
+               //bw.Write((ushort)Math.Min(_height, ushort.MaxValue));
                 stamp.Stamp();
 
                 //Write Uncompressed Raw Colors if compression mode is 0
                 if (res == RawTextureCompressMode.None)
                 {
-                    _compressPixelData &= (_width * _height) >= RawTextureDecoder.PIXEL_COMPRESS_THRESHOLD;
+                    //_compressPixelData &= (_width * _height) >= RawTextureDecoder.PIXEL_COMPRESS_THRESHOLD;
                     if (_compressPixelData)
                     {
                         stamp.Start("Huffman Compress pixel bytes");
-                        byte[] data = _pixels.ToBytes(PixelByteOrder.RGBA, false, _width, _height, _colorMode);
-                        Huffman.CompressToStream(bw, data, true, out byte bbb);
+                        //byte[] data = _pixels.ToBytes(PixelByteOrder.RGBA, false, _width, _height, _colorMode);
+                        //Huffman.CompressToStream(bw, data, true, out byte bbb);
                         stamp.Stamp();
                     }
                     else
                     {
                         stamp.Start("Write Raw Pixel Data");
-                        bw.WriteColors(_pixels, _colorMode);
+                       // bw.WriteColors(_pixels, _colorMode);
                         stamp.Stamp();
                     }
  
@@ -141,12 +136,12 @@ namespace Joonaxii.Image.Codecs.Raw
                     stamp.Start("Palette Gen");
                     //Generate palette and save it to the stream 
                     List<FastColor> paletteL = new List<FastColor>();
-                    foreach (var c in _pixels)
-                    {
-                        if (palette.ContainsKey(c)) { continue; }
-                        palette.Add(c, palette.Count);
-                        paletteL.Add(c);
-                    }
+                    //foreach (var c in _pixels)
+                    //{
+                    //    if (palette.ContainsKey(c)) { continue; }
+                    //    palette.Add(c, palette.Count);
+                    //    paletteL.Add(c);
+                    //}
 
                     int enc = Maths.Encode7Bit(paletteL.Count);
                     int dec = Maths.Decode7Bit(enc);
@@ -166,49 +161,49 @@ namespace Joonaxii.Image.Codecs.Raw
                 {
                     case RawTextureCompressMode.aRLE:
                         stamp.Start("Alpha Splitting");
-                        alph = new byte[_pixels.Length];
-                        for (int i = 0; i < _pixels.Length; i++)
-                        {
-                            alph[i] = _pixels[i].a;
-                        }
+                        //alph = new byte[_pixels.Length];
+                        //for (int i = 0; i < _pixels.Length; i++)
+                        //{
+                        //    alph[i] = _pixels[i].a;
+                        //}
                         stamp.Stamp();
 
                         stamp.Start("Alpha RLE");
-                        RLE.CompressToStream(bw, alph);
+                      //  RLE.CompressToStream(bw, alph);
                         stamp.Stamp();
 
-                        bw.WriteColors(_pixels, TextureFormat.RGB24);
+                       // bw.WriteColors(_pixels, TextureFormat.RGB24);
                         break;
 
                     case RawTextureCompressMode.IdxaRLE:
                         stamp.Start("Alpha Splitting");
-                        alph = new byte[_pixels.Length];
-                        for (int i = 0; i < _pixels.Length; i++)
-                        {
-                            alph[i] = _pixels[i].a;
-                        }
+                        //alph = new byte[_pixels.Length];
+                        //for (int i = 0; i < _pixels.Length; i++)
+                        //{
+                        //    alph[i] = _pixels[i].a;
+                        //}
                         stamp.Stamp();
 
                         stamp.Start("Alpha RLE");
-                        RLE.CompressToStream(bw, alph);
+                        //RLE.CompressToStream(bw, alph);
                         stamp.Stamp();
 
                         stamp.Start("RLE Index Compression");
-                        for (int i = 0; i < _pixels.Length; i++)
-                        {
-                            paletteIndices.Add(palette[_pixels[i]]);
-                        }
+                        //for (int i = 0; i < _pixels.Length; i++)
+                        //{
+                        //    paletteIndices.Add(palette[_pixels[i]]);
+                        //}
 
-                        RLE.CompressToStream(bw, paletteIndices);
+                       // RLE.CompressToStream(bw, paletteIndices);
                         stamp.Stamp();
                         break;
 
                     case RawTextureCompressMode.IdxHuffman:
                         stamp.Start("Huffman Compression");
-                        for (int i = 0; i < _pixels.Length; i++)
-                        {
-                            paletteIndices.Add(palette[_pixels[i]]);
-                        }
+                        //for (int i = 0; i < _pixels.Length; i++)
+                        //{
+                        //    paletteIndices.Add(palette[_pixels[i]]);
+                        //}
 
                         Huffman.CompressToStream(bw, paletteIndices, true, out byte padded);
                         stamp.Stamp();
@@ -216,10 +211,10 @@ namespace Joonaxii.Image.Codecs.Raw
 
                     case RawTextureCompressMode.IdxRLE:
                         stamp.Start("RLE Compression");
-                        for (int i = 0; i < _pixels.Length; i++)
-                        {
-                            paletteIndices.Add(palette[_pixels[i]]);
-                        }
+                        //for (int i = 0; i < _pixels.Length; i++)
+                        //{
+                        //    paletteIndices.Add(palette[_pixels[i]]);
+                        //}
 
                         RLE.CompressToStream(bw, paletteIndices);
                         stamp.Stamp();
@@ -229,10 +224,10 @@ namespace Joonaxii.Image.Codecs.Raw
 
                         stamp.Start("RLE Index Gen");
                         List<int> indices = new List<int>();
-                        for (int i = 0; i < _pixels.Length; i++)
-                        {
-                            indices.Add(palette[_pixels[i]]);
-                        }
+                        //for (int i = 0; i < _pixels.Length; i++)
+                        //{
+                        //    indices.Add(palette[_pixels[i]]);
+                        //}
                         stamp.Stamp();
 
                         stamp.Start("RLE LUT Gen");
@@ -267,19 +262,19 @@ namespace Joonaxii.Image.Codecs.Raw
             }
         }
 
-        public override void ValidateFormat()
+        protected override void ValidateFormat(ref TextureFormat format, ref byte bpp)
         {
-            base.ValidateFormat();
-            switch (_colorMode)
+            base.ValidateFormat(ref format, ref bpp);
+            switch (format)
             {
                 case TextureFormat.ARGB555:
-                    _colorMode = TextureFormat.RGBA32;
+                    format = TextureFormat.RGBA32;
                     _bpp = 32;
                     break;
 
                 case TextureFormat.RGB555:
                 case TextureFormat.RGB565:
-                    _colorMode = TextureFormat.RGB24;
+                    format = TextureFormat.RGB24;
                     _bpp = 24;
                     break;
 
@@ -287,7 +282,7 @@ namespace Joonaxii.Image.Codecs.Raw
                 case TextureFormat.Indexed4:
                 case TextureFormat.Indexed8:
                 case TextureFormat.Grayscale:
-                    _colorMode = TextureFormat.RGB24;
+                    format = TextureFormat.RGB24;
                     _bpp = 24;
                     break;
             }

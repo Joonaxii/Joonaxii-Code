@@ -1,7 +1,6 @@
 ﻿using Joonaxii.Collections;
 using Joonaxii.Data;
 using Joonaxii.Data.Coding;
-using Joonaxii.Debugging;
 using Joonaxii.Image.Texturing;
 using Joonaxii.IO;
 using Joonaxii.MathJX;

@@ -42,6 +42,23 @@ namespace Joonaxii.Data.Coding
             return c ^ 0xFFFFFFFF;
         }
 
+        public static unsafe uint Calculate(long hdr, int hdrLen, byte* bytes, int start, int len)
+        {
+            uint c;
+            c = 0xFFFFFFFF;
+
+            for (int i = 0; i < hdrLen; i++)
+            {
+                c = _crcTable[(c ^ ((hdr >> (i << 3)) & 0xff)) & 0xFF] ^ (c >> 8);
+            }
+
+            for (int i = start; i < start + len; i++)
+            {
+                c = _crcTable[(c ^ bytes[i]) & 0xFF] ^ (c >> 8);
+            }
+            return c ^ 0xFFFFFFFF;
+        }
+
         public static uint Calculate(byte[] bytes, int start, int len)
         {
             uint c;

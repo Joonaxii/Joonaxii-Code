@@ -39,15 +39,15 @@ namespace Testing_Grounds
                         string file = $"{Path.GetFileNameWithoutExtension(path)}_DECODED.bmp";
 
                         using(FileStream fs = new FileStream($"{pth}/{file}", FileMode.Create))
-                        using(BMPEncoder bmp = new BMPEncoder(png.Width, png.Height, png.ColorMode))
-                        {
-                            bmp.Encode(png, fs, true);
-                        }
+                        //using(BMPEncoder bmp = new BMPEncoder(png.Width, png.Height, png.ColorMode))
+                        //{
+                        //    bmp.Encode(png, fs, true);
+                        //}
 
                         using (FileStream fsRLEA = new FileStream($"{pth}/{Path.GetFileNameWithoutExtension(path)}_DECODED RLEa.raw", FileMode.Create))
-                        using (BMPEncoder rawRLEA = new BMPEncoder(png.Width, png.Height, png.ColorMode))
+                        using (BMPEncoder rawRLEA = new BMPEncoder(png.GetTexture(), png.ColorMode))
                         using (FileStream fsRLEAID = new FileStream($"{pth}/{Path.GetFileNameWithoutExtension(path)}_DECODED IDXRLEa.raw", FileMode.Create))
-                        using (RawTextureEncoder rawRLEAA = new RawTextureEncoder(png.Width, png.Height, png.ColorMode))
+                        using (RawTextureEncoder rawRLEAA = new RawTextureEncoder(png.GetTexture(),  png.ColorMode))
                         {
                             rawRLEAA.CopyFrom(png);
                             rawRLEAA.SetCompressionMode(RawTextureCompressMode.aRLE, true);

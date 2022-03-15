@@ -91,7 +91,7 @@ namespace Testing_Grounds
                                 $"{relativeName}_RLEHuff.raw",
                                 $"{relativeName}_Auto.raw",
                             };
-                            using (RawTextureEncoder encRaw = new RawTextureEncoder(0, 0, 32))
+                            using (RawTextureEncoder encRaw = new RawTextureEncoder(TextureFormat.RGBA32))
                             using (FileStream streamRaw = new FileStream(allRaw[0], FileMode.Create))
                             //using (FileStream streamHuff = new FileStream(allRaw[1], FileMode.Create))
                             using (FileStream streamRLE = new FileStream(allRaw[2], FileMode.Create))

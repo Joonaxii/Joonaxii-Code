@@ -14,6 +14,5 @@
         ForceRGB = 16,
 
         AllowBigIndices = 32,
-        ForceRegenPalette = 64,
     }
 }
