@@ -29,6 +29,8 @@ namespace Joonaxii.Collections
             _count = 0;
         }
 
+        public T[] GetItems() => _items;
+
         public int IndexOf(T item)
         {
             for (int i = 0; i < _count; i++)

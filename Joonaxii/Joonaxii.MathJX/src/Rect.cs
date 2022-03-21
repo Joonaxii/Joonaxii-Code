@@ -29,9 +29,14 @@
         {
             _min = new Vector2(x, y);
             _size = new Vector2(w, h);
-            _sizeHalf = _size * 0.5f;
-            _center = _min + _sizeHalf;
-            _max = _min + _size;
+            _sizeHalf.x = _size.x * 0.5f;
+            _sizeHalf.y = _size.y * 0.5f;
+
+            _center.x = _min.x + _sizeHalf.x;
+            _center.y = _min.y + _sizeHalf.y;
+
+            _max.x = _min.x + _size.x;
+            _max.y = _min.y + _size.y;
         }
 
         public Rect(Vector2 min, Vector2 max)
@@ -40,8 +45,11 @@
             _max = max;
             _size = _max - _min;
 
-            _sizeHalf = _size * 0.5f;
-            _center = _min + _sizeHalf;
+            _sizeHalf.x = _size.x * 0.5f;
+            _sizeHalf.y = _size.y * 0.5f;
+
+            _center.x = _min.x + _sizeHalf.x;
+            _center.y = _min.y + _sizeHalf.y;
         }
 
         public void Set(Vector2 pos)
@@ -49,14 +57,18 @@
             _min.x = pos.x;
             _min.y = pos.y;
 
-            _center = pos + _sizeHalf;
-            _max = pos + _size;
+            _center.x = _min.x + _sizeHalf.x;
+            _center.y = _min.y + _sizeHalf.y;
+
+            _max.x = _min.x + _size.x;
+            _max.y = _min.y + _size.y;
         }
 
         public void Set(Vector2 pos, Vector2 size)
         {
             _size = size;
-            _sizeHalf = _size * 0.5f;
+            _sizeHalf.x = _size.x * 0.5f;
+            _sizeHalf.y = _size.y * 0.5f;
             Set(pos);
         }
 
@@ -68,11 +80,17 @@
             _max.x = max.x;
             _max.y = max.y;
 
-            _size = _max - _min;
-            _sizeHalf = _size * 0.5f;
+            _size.x = _max.x - _min.x;
+            _size.y = _max.y - _min.y;
 
-            _center = _min + _sizeHalf;
-            _max = _min + _size;
+            _sizeHalf.x = _size.x * 0.5f;
+            _sizeHalf.y = _size.y * 0.5f;
+
+            _center.x = _min.x + _sizeHalf.x;
+            _center.y = _min.y + _sizeHalf.y;
+
+            _max.x = _min.x + _size.x;
+            _max.y = _min.y + _size.y;
         }
 
         public bool Overlaps(Rect rect) => !(_min.x > rect._max.x | _min.y > rect._max.y | _max.x < rect._min.x | _max.y < rect._min.y);
