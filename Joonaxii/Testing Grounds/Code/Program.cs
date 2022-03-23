@@ -53,6 +53,32 @@ namespace Testing_Grounds
             Console.InputEncoding = Encoding.UTF8;
             Console.OutputEncoding = Encoding.UTF8;
 
+            Console.WriteLine($"Testing Unamanged Heap");
+
+            int heapRegs = 4;
+            UnmanagedHeap<int> testHeap = new UnmanagedHeap<int>(heapRegs, 8);
+            unsafe
+            {
+                int ii = 0;
+                for (int i = 0; i < heapRegs; i++)
+                {
+                    var reg = testHeap.GetRegion(i);
+                    int* ptr = (int*)reg->Pointer;
+                    for (int j = 0; j < reg->Capacity; j++)
+                    {
+                        *ptr++ = ii++;
+                    }
+                }
+
+                var ptrH = testHeap.HeapPtr;
+                for (int i = 0; i < testHeap.Capacity; i++)
+                {
+                    Console.WriteLine(*ptrH++);
+                }
+            }
+
+            Console.ReadKey();
+
             Stopwatch sw = new Stopwatch();
             string path = "";
 
@@ -98,7 +124,6 @@ namespace Testing_Grounds
                     }
 
                     Console.ReadKey();
-
                     //Texture tex = png.GetTexture();
                     //FastColor[] temp = new FastColor[tex.Width * tex.Height];
 
@@ -146,7 +171,7 @@ namespace Testing_Grounds
                     //    Console.WriteLine($"-|   -Avg: {((avg / 10000.0) / 1000.0):F4} sec, {(long)((avg / 10000.0))} ms, {avg} ticks");
                     //    Console.WriteLine($"-|-----------------------------------------------------");
                     //}
-                  
+
                     //try
                     //{
                     //    //using (FileStream fsP = new FileStream($"{Path.GetDirectoryName(path)}/{Path.GetFileNameWithoutExtension(path)}_PNG.png", FileMode.Create))

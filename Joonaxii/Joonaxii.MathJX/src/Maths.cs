@@ -245,6 +245,18 @@ namespace Joonaxii.MathJX
             return input &= (sbyte)~(1 << bitIndex);
         }
 
+        public static int NextPowerOf2Bitwise(int value)
+        {
+            value--;
+
+            value |= value >> 1;
+            value |= value >> 2;
+            value |= value >> 4;
+            value |= value >> 8;
+            value |= value >> 16;
+            return value++;
+        }
+
         public static int NextPowerOf2(int value)
         {
             int power = 1;
