@@ -1,7 +1,7 @@
 ﻿using Joonaxii.Collections;
 using System;
 
-namespace Joonaxii.Audio
+namespace Joonaxii.Audio.Generators
 {
     public class ToneGenerator
     {

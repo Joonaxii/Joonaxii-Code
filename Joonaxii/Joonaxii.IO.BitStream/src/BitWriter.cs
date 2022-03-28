@@ -3,7 +3,7 @@ using System;
 using System.IO;
 using System.Text;
 
-namespace Joonaxii.IO
+namespace Joonaxii.IO.BitStream
 {
     public class BitWriter : BinaryWriter
     {

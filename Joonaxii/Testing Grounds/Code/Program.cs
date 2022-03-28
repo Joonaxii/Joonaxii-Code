@@ -5,6 +5,7 @@ using Joonaxii.Image.Codecs.PNG;
 using Joonaxii.Debugging;
 using Joonaxii.IO;
 using Joonaxii.MathJX;
+using Joonaxii.Audio.Codecs.OGG;
 using Joonaxii.Radio;
 using Joonaxii.Radio.RTTY;
 using System;
@@ -19,6 +20,7 @@ using Joonaxii.Image.Codecs.VTF;
 using Joonaxii.Image.Codecs.Raw;
 using Joonaxii.Image.Texturing;
 using Joonaxii.Data.Coding;
+using Joonaxii.Audio.Codecs.WAV;
 
 namespace Testing_Grounds
 {
@@ -53,34 +55,33 @@ namespace Testing_Grounds
             Console.InputEncoding = Encoding.UTF8;
             Console.OutputEncoding = Encoding.UTF8;
 
-            Console.WriteLine($"Testing Unamanged Heap");
+            Stopwatch sw = new Stopwatch();
+            string path = "";
 
-            int heapRegs = 4;
-            UnmanagedHeap<int> testHeap = new UnmanagedHeap<int>(heapRegs, 8);
-            unsafe
+            startOgg:
+            Console.Clear();
+            Console.WriteLine("Enter the full path of the OGG file");
+            path = Console.ReadLine().Replace("\"", "");
+
+            if (!File.Exists(path)) { goto startOgg; }
+
+            using(FileStream stream = new FileStream(path, FileMode.Open))
+            using(OggDecoder oggDec = new OggDecoder(stream))
             {
-                int ii = 0;
-                for (int i = 0; i < heapRegs; i++)
+                var res = oggDec.Decode();
+                switch (res)
                 {
-                    var reg = testHeap.GetRegion(i);
-                    int* ptr = (int*)reg->Pointer;
-                    for (int j = 0; j < reg->Capacity; j++)
-                    {
-                        *ptr++ = ii++;
-                    }
-                }
-
-                var ptrH = testHeap.HeapPtr;
-                for (int i = 0; i < testHeap.Capacity; i++)
-                {
-                    Console.WriteLine(*ptrH++);
+                    case AudioDecodeResult.Success:
+                        Console.WriteLine($"Ogg Decode Successful!");
+                        break;
+                    default:
+                        Console.WriteLine($"Ogg Decode Failed [{res}]!");
+                        break;
                 }
             }
 
             Console.ReadKey();
 
-            Stopwatch sw = new Stopwatch();
-            string path = "";
 
             startTEXTURE:
             Console.Clear();

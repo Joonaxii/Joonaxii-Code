@@ -1,5 +1,6 @@
 ﻿using Joonaxii.Image.Texturing;
 using Joonaxii.IO;
+using Joonaxii.IO.BitStream;
 using Joonaxii.MathJX;
 using System;
 using System.Collections.Generic;

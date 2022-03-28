@@ -59,13 +59,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="src\AudioDecoderBase.cs" />
-    <Compile Include="src\AudioEncoderBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="src\AudioDecoderBase.cs" />
+    <Compile Include="src\AudioDecodeResult.cs" />
+    <Compile Include="src\AudioEncoderBase.cs" />
+    <Compile Include="src\AudioExtensions.cs" />
     <Compile Include="src\SampleConversionMode.cs" />
-    <Compile Include="src\MultiToneGenerator.cs" />
-    <Compile Include="src\ToneGenerator.cs" />
-    <Compile Include="src\WavEncoder.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Joonaxii.Collections\Joonaxii.Collections.csproj">

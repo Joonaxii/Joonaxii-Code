@@ -1,4 +1,5 @@
 ﻿using Joonaxii.IO;
+using Joonaxii.IO.BitStream;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;

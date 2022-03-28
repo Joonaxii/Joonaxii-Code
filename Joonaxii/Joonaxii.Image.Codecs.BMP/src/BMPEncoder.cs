@@ -1,6 +1,7 @@
 ﻿using Joonaxii.Data;
 using Joonaxii.Image.Texturing;
 using Joonaxii.IO;
+using Joonaxii.IO.BitStream;
 using System.IO;
 
 namespace Joonaxii.Image.Codecs.BMP

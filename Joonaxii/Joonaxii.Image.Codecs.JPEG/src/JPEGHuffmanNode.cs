@@ -1,4 +1,5 @@
 ﻿using Joonaxii.IO;
+using Joonaxii.IO.BitStream;
 using Joonaxii.MathJX;
 using System.Collections.Generic;
 using System.Text;

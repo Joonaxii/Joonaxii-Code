@@ -313,7 +313,7 @@ namespace Joonaxii.Image.Codecs.PNG
             _stream.Seek(pos, SeekOrigin.Begin);
 
             var hdr = HeaderManager.GetFileType(_br, false);
-            BufferList crcList = new BufferList(4);
+            PinnableList<uint> crcList = new PinnableList<uint>(16);
             if (hdr == HeaderType.PNG)
             {
                 PNGChunk dummy = new PNGChunk();
@@ -341,15 +341,10 @@ namespace Joonaxii.Image.Codecs.PNG
                 }
             }
             _stream.Seek(cur, SeekOrigin.Begin);
-
-            byte[] data = new byte[crcList.ByteSize];
-            crcList.CopyTo(data, 0);
             unsafe
             {
-                fixed (byte* b = data)
-                {
-                    crc = (int)CRC.Calculate(b, 0, data.Length);
-                }
+                byte* b = (byte*)crcList.Pin();
+                crc = (int)CRC.Calculate(b, 0, crcList.Count * sizeof(uint));
             }
             return crc;
         }

@@ -4,6 +4,7 @@ using Joonaxii.Image.Codecs.GIF;
 using Joonaxii.Image.Codecs.PNG;
 using Joonaxii.Image.Codecs.Raw;
 using Joonaxii.IO;
+using Joonaxii.IO.BitStream;
 using System;
 using System.Diagnostics;
 using System.IO;

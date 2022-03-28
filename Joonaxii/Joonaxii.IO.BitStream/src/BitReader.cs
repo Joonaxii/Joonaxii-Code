@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 
-namespace Joonaxii.IO
+namespace Joonaxii.IO.BitStream
 {
     public class BitReader : BinaryReader
     {

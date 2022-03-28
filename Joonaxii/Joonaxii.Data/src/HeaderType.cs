@@ -16,8 +16,9 @@
         RAW_TEXTURE             = 128,
 
         WAVE                    = 256,
+        OGG                     = 512,
    
         IMAGE_FORMAT            = JPEG | PNG | GIF87 | GIF89 | WEBP | BMP | RAW_TEXTURE,
-        AUDIO_FORMAT            = WAVE,
+        AUDIO_FORMAT            = WAVE | OGG,
     }
 }

@@ -3,6 +3,7 @@ using Joonaxii.Data.Compression.Huffman;
 using Joonaxii.Data.Compression.RLE;
 using Joonaxii.Debugging;
 using Joonaxii.IO;
+using Joonaxii.IO.BitStream;
 using System;
 using System.Collections.Generic;
 using System.IO;

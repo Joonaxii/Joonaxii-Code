@@ -7,6 +7,7 @@ using Joonaxii.Data.Compression.Huffman;
 using Joonaxii.IO;
 using Joonaxii.MathJX;
 using Joonaxii.Data.Compression.RLE;
+using Joonaxii.IO.BitStream;
 
 namespace Joonaxii.Text.Compression
 {

@@ -4,6 +4,8 @@ namespace Joonaxii.MathJX
 {
     public static class Maths
     {
+        public const int UINT24_MAX = 0xFF_FF_FF;
+
         public const float PI = (float)Math.PI;
         public const float TWO_PI = PI * 2.0f;
         public const float Epsilon = 1E-15f;

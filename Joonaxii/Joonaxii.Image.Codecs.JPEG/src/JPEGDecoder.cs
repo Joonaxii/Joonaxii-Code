@@ -1,5 +1,6 @@
 ﻿using Joonaxii.Data;
 using Joonaxii.IO;
+using Joonaxii.IO.BitStream;
 using Joonaxii.MathJX;
 using Joonaxii.Pooling;
 using System;

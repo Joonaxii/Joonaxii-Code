@@ -1,4 +1,4 @@
-﻿namespace Joonaxii.IO
+﻿namespace Joonaxii.IO.BitStream
 {
     public interface IBitIO
     {

@@ -14,7 +14,7 @@ namespace Joonaxii.Collections
         private int _originalCapacity;
 
         public HeapRegion[] Regions { get => _heapRegions.GetItems(); }
-        private StructList<HeapRegion> _heapRegions;
+        private PinnableList<HeapRegion> _heapRegions;
         private readonly int _size;
 
         public T this[int i]
@@ -32,7 +32,7 @@ namespace Joonaxii.Collections
         public Heap() : this(DEFAULT_INIT_SIZE) { }
         public Heap(int capacity)
         {
-            _heapRegions = new StructList<HeapRegion>(256);
+            _heapRegions = new PinnableList<HeapRegion>(256);
             _heap = new T[_originalCapacity = capacity];
             _size = Marshal.SizeOf<T>();
         }
@@ -66,34 +66,32 @@ namespace Joonaxii.Collections
         {
             unsafe
             {
-                fixed (HeapRegion* hPtr = _heapRegions.GetItems())
+                _heapRegions.Pin();
+                var reg = _heapRegions.RawPointer + at;
+                if (reg->Capacity >= count)
                 {
-                    var reg = hPtr + at;
-                    if (reg->Capacity >= count)
-                    {
-                        reg->Length = count;
-                        return at;
-                    }
-
-                    int cap;
-                    cap = reg->Capacity;
-                    while (cap < count)
-                    {
-                        cap <<= 1;
-                    }
-                    int from = reg->Start + reg->Capacity;
-
-                    ValidateBuffer(_heapPos + (cap - reg->Capacity));
-                    if (at < _heapRegions.Count - 1)
-                    {
-                        Buffer.BlockCopy(_heap, from * _size, _heap, (reg->Start + cap) * _size, (_heapPos - from) * _size);
-                    }
-
-                    reg->Capacity = cap;
                     reg->Length = count;
                     return at;
                 }
 
+                int cap;
+                cap = reg->Capacity;
+                while (cap < count)
+                {
+                    cap <<= 1;
+                }
+                int from = reg->Start + reg->Capacity;
+
+                ValidateBuffer(_heapPos + (cap - reg->Capacity));
+                if (at < _heapRegions.Count - 1)
+                {
+                    Buffer.BlockCopy(_heap, from * _size, _heap, (reg->Start + cap) * _size, (_heapPos - from) * _size);
+                }
+
+                reg->Capacity = cap;
+                reg->Length = count;
+                _heapRegions.UnPin();
+                return at;
             }
         }
 
@@ -108,14 +106,13 @@ namespace Joonaxii.Collections
             if (_heapRegions.Count < 1) { return; }
             unsafe
             {
-                fixed (HeapRegion* heap = _heapRegions.GetItems())
+                _heapRegions.Pin();
+                HeapRegion* hPtr = _heapRegions.RawPointer;
+                for (int i = 0; i < _heapRegions.Count; i++, hPtr++)
                 {
-                    HeapRegion* hPtr = heap;
-                    for (int i = 0; i < _heapRegions.Count; i++, hPtr++)
-                    {
-                        hPtr->Length = 0;
-                    }
+                    hPtr->Length = 0;
                 }
+                _heapRegions.UnPin();
             }
         }
 

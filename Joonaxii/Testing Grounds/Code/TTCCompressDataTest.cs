@@ -1,4 +1,5 @@
 ﻿using Joonaxii.IO;
+using Joonaxii.IO.BitStream;
 using Joonaxii.Text.Compression;
 using System;
 using System.IO;

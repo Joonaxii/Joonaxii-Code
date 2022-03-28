@@ -10,6 +10,9 @@ namespace Joonaxii.Data
         new MagicHeader(HeaderType.BMP,
             new MagicByte[] { 0x42, 0x4D, } ),
 
+        new MagicHeader(HeaderType.OGG,
+            new MagicByte[] { 0x4F, 0x67, 0x67, 0x53, } ),
+
         new MagicHeader(HeaderType.PNG,
             new MagicByte[] { 0x89, 0x50, 0x4E, 0x47, 
                               0xFFF, 0xFFF, 0xFFF, 0xFFF }),

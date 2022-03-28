@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using Joonaxii.Data.Compression.Huffman;
 using Joonaxii.IO;
+using Joonaxii.IO.BitStream;
 
 namespace Testing_Grounds
 {

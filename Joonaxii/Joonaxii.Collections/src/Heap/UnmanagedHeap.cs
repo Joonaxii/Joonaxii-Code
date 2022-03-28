@@ -57,6 +57,7 @@ namespace Joonaxii.Collections
         }
         ~UnmanagedHeap() { Free(); }
 
+        public T* GetValuePtr(int i) => (_heapPtr + i);
         public UnmanagedHeapRegion* GetRegion(int i) => &_heapRegions[i];
 
         public void AddToRegion(int region, T value)

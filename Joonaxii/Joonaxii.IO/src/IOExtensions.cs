@@ -32,6 +32,60 @@ namespace Joonaxii.IO
             }
         }
 
+        public static long IndexOf(this Stream stream, int value) => IndexOf(stream, (uint)value);
+        public static long IndexOf(this Stream stream, uint value)
+        {
+            long pos = stream.Position;
+
+            byte[] temp = new byte[4];
+            unsafe
+            {
+                fixed(byte* ptr = temp)
+                {
+                    uint* iPtr = (uint*)ptr;
+                    while (true)
+                    {
+                        int len = stream.Read(temp, 0, 4);
+                        if (len < 4) { break; }
+
+                        if(*iPtr == value)
+                        {
+                            stream.Seek(pos, SeekOrigin.Begin);
+                            return stream.Position - 4;
+                        }
+                    }
+                }
+            }
+           
+            stream.Seek(pos, SeekOrigin.Begin);
+            return -1;
+        }
+
+        public static long IndexOf(this Stream stream, byte[] data)
+        {
+            if (data == null || data.Length < 1) { return stream.Position; }
+            long pos = stream.Position;
+            long outPos = -1;
+
+            int inARow = 0;
+
+            while (true)
+            {
+                int b = stream.ReadByte();
+                if (b < 0) { break; }
+
+                if (data[inARow++] != b)
+                {
+                    inARow = 0;
+                    continue;
+                }
+                if (inARow >= data.Length) { break; }
+            }
+
+            stream.Seek(pos, SeekOrigin.Begin);
+            return inARow < data.Length ? -1 : outPos;
+        }
+
         public static byte ConvertToLongList(List<long> longs, IEnumerable<byte> values)
         {
             byte padding = 0;
@@ -361,7 +415,7 @@ namespace Joonaxii.IO
             byte val = br.ReadByte();
             for (long i = 0; i < bitCount; i++)
             {
-                if(bI >= 8)
+                if (bI >= 8)
                 {
                     val = br.ReadByte();
                     bI = 0;
@@ -375,12 +429,12 @@ namespace Joonaxii.IO
             byte val = 0;
             byte bI = 0;
 
-            while(bits.Count > 0)
+            while (bits.Count > 0)
             {
                 val = val.SetBit(bI, bits.Pop());
 
                 bI++;
-                if(bI >= 8)
+                if (bI >= 8)
                 {
                     bI = 0;
                     bw.Write(val);
@@ -414,7 +468,5 @@ namespace Joonaxii.IO
             }
             return val;
         }
-
-
     }
 }

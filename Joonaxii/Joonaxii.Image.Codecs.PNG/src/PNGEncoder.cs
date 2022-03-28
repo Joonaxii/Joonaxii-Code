@@ -167,7 +167,7 @@ namespace Joonaxii.Image.Codecs.PNG
                         int ogCrc = Adler32Checksum.Calculate(dataPtr, _texture.Height * _texture.ScanSize);
                         ushort zLibHeader = 0x89DA;
 
-                        ByteList buffer = new ByteList(BUFFER_SIZE << 1);
+                        PinnableList<byte> buffer = new PinnableList<byte>(BUFFER_SIZE << 1);
 
                         bool forceFilter = _pngFlags.HasFlag(PNGFlags.ForceFilter);
                         if (hasPalette)

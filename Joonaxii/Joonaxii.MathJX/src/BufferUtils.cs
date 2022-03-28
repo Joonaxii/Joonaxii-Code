@@ -203,6 +203,19 @@ namespace Joonaxii.MathJX
             }
         }
 
+        public static void Memcpy<T>(T[] src, T[] dst, int length) where T : unmanaged => Memcpy(src, 0, dst, 0, length);
+        public static void Memcpy<T>(T[] src, int srcOffset, T[] dst, int dstOffset, int length) where T : unmanaged
+        {
+            unsafe
+            {
+                fixed(T* srcPtr = src)
+                fixed(T* dstPtr = dst)
+                {
+                    Memcpy(srcPtr + srcOffset, dstPtr + dstOffset, length);
+                }
+            }
+        }
+
         public static void Memcpy<T>(T* src, int srcOffset, T* dst, int dstOffset, int length) where T : unmanaged => Memcpy(src + srcOffset, dst + dstOffset, length);
         public static void Memcpy<T>(T* src, T* dst, int length) where T : unmanaged
         {

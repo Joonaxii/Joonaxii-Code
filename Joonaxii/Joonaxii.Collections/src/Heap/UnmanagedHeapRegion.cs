@@ -14,11 +14,13 @@ namespace Joonaxii.Collections
         public int Capacity { get => _capacity; }
         public int ByteCapacity { get => _capacityByte; }
 
+        #region Private Fields
         private byte* _ptr;
         private int _index;
         private int _length;
         private int _capacity;
         private int _capacityByte;
+        #endregion
 
         public UnmanagedHeapRegion(byte* start, int index, int length, int capacity, int capacitySize)
         {

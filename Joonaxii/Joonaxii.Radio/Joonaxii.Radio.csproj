@@ -72,6 +72,10 @@
     <Compile Include="src\SSTV\VOXTone.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Joonaxii.Audio.Generators\Joonaxii.Audio.Generators.csproj">
+      <Project>{1b2c2572-fac5-49a3-8893-6b4593e61e68}</Project>
+      <Name>Joonaxii.Audio.Generators</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Joonaxii.Audio\Joonaxii.Audio.csproj">
       <Project>{de097e2b-9d86-4739-b336-c126b215a755}</Project>
       <Name>Joonaxii.Audio</Name>

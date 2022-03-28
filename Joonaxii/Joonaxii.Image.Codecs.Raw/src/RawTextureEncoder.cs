@@ -9,6 +9,7 @@ using Joonaxii.Debugging;
 using Joonaxii.Data;
 using Joonaxii.MathJX;
 using Joonaxii.Image.Texturing;
+using Joonaxii.IO.BitStream;
 
 namespace Joonaxii.Image.Codecs.Raw
 {
