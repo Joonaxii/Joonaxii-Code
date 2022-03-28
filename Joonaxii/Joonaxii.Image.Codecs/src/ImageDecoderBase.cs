@@ -10,9 +10,9 @@ namespace Joonaxii.Image.Codecs
     {
         protected const int MAX_STACK_ALLOC = 128_000; 
 
-        public int Width { get => IsDecoded ? _texture.Width : 0; }
-        public int Height { get => IsDecoded ? _texture.Height : 0; }
-        public byte BitsPerPixel { get => IsDecoded ? _texture.BitsPerPixel : (byte)0; }
+        public int Width { get => IsDecoded ? _texture.Width : _general.width; }
+        public int Height { get => IsDecoded ? _texture.Height : _general.height; }
+        public byte BitsPerPixel { get => IsDecoded ? _texture.BitsPerPixel : _general.bitsPerPixel; }
         public TextureFormat ColorMode { get => IsDecoded ? _texture.Format : TextureFormat.RGBA32; }
 
         public bool IsDecoded { get => _texture != null; }
@@ -21,8 +21,9 @@ namespace Joonaxii.Image.Codecs
         protected BinaryReader _br;
         protected bool _dispose;
         protected bool _releaseTexture;
-
         protected Texture _texture;
+
+        protected GeneralTextureInfo _general = GeneralTextureInfo.Zero;
 
         public ImageDecoderBase(Stream stream) : this(stream, true) { }
         public ImageDecoderBase(Stream stream, bool releaseTexture)
@@ -66,6 +67,7 @@ namespace Joonaxii.Image.Codecs
             _texture = new Texture(width, height, format, bpp);
         }
 
+        protected abstract ImageDecodeResult LoadGeneralTextureInfo(BinaryReader br);
         public override void Dispose()
         {
             if (!_dispose) { return; }
