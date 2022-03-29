@@ -62,6 +62,10 @@
       <Project>{b74db02e-ed4d-4fd2-9011-8262f560db59}</Project>
       <Name>Joonaxii.Data</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.IO\Joonaxii.IO.csproj">
+      <Project>{5bcc1979-54d1-4c35-b402-9520c1734766}</Project>
+      <Name>Joonaxii.IO</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

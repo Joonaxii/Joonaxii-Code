@@ -330,6 +330,11 @@ namespace New.JPEG
             return res;
         }
 
+        protected override ImageDecodeResult LoadGeneralTextureInfo(BinaryReader br)
+        {
+            return ImageDecodeResult.NotSupported;
+        }
+
         public class IDCT
         {
             public double[] baseData = new double[64];

@@ -207,5 +207,10 @@ namespace Joonaxii.Image.Codecs.VTF
                     break;
             }
         }
+
+        protected override ImageDecodeResult LoadGeneralTextureInfo(BinaryReader br)
+        {
+            return ImageDecodeResult.NotSupported;
+        }
     }
 }

@@ -275,19 +275,15 @@ namespace Joonaxii.Image.Codecs.PNG
             return ImageDecodeResult.Success;
         }
 
-        public override void LoadGeneralInformation(long pos)
+        protected override ImageDecodeResult LoadGeneralTextureInfo(BinaryReader br)
         {
-            base.LoadGeneralInformation(pos);
-            long cur = _stream.Position;
-            _stream.Seek(pos, SeekOrigin.Begin);
-
-            var hdr = HeaderManager.GetFileType(_br, false);
+            var hdr = HeaderManager.GetFileType(br, false);
             if (hdr == HeaderType.PNG)
             {
                 PNGChunk dummy = new PNGChunk();
                 while (_header == null)
                 {
-                    var chnk = PNGChunk.Read(_br, _stream, (PNGChunkType curT) =>
+                    var chnk = PNGChunk.Read(br, _stream, (PNGChunkType curT) =>
                     {
                         switch (curT)
                         {
@@ -302,7 +298,17 @@ namespace Joonaxii.Image.Codecs.PNG
                         SetHeaderChunk(chnk);
                     }
                 }
+                return ImageDecodeResult.Success;
             }
+
+            return ImageDecodeResult.InvalidImageFormat;
+        }
+        public override void LoadGeneralInformation(long pos)
+        {
+            base.LoadGeneralInformation(pos);
+            long cur = _stream.Position;
+            _stream.Seek(pos, SeekOrigin.Begin);
+            LoadGeneralTextureInfo(_br);
             _stream.Seek(cur, SeekOrigin.Begin);
         }
 

@@ -64,6 +64,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="src\GeneralTextureInfo.cs" />
     <Compile Include="src\ImageDecoderBase.cs" />
     <Compile Include="src\ImageDecodeResult.cs" />
     <Compile Include="src\ImageEncoderBase.cs" />
@@ -84,6 +85,10 @@
     <ProjectReference Include="..\Joonaxii.Image\Joonaxii.Image.csproj">
       <Project>{3474a9e6-e0bd-4d39-aad1-795198dd4692}</Project>
       <Name>Joonaxii.Image</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.IO.BitStream\Joonaxii.IO.BitStream.csproj">
+      <Project>{eaa2508a-593c-4fb6-8397-062da33ee217}</Project>
+      <Name>Joonaxii.IO.BitStream</Name>
     </ProjectReference>
     <ProjectReference Include="..\Joonaxii.IO\Joonaxii.IO.csproj">
       <Project>{5BCC1979-54D1-4C35-B402-9520C1734766}</Project>

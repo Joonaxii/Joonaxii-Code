@@ -82,6 +82,10 @@
     <Compile Include="src\Steganography.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Joonaxii.IO.BitStream\Joonaxii.IO.BitStream.csproj">
+      <Project>{eaa2508a-593c-4fb6-8397-062da33ee217}</Project>
+      <Name>Joonaxii.IO.BitStream</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Joonaxii.IO\Joonaxii.IO.csproj">
       <Project>{5bcc1979-54d1-4c35-b402-9520c1734766}</Project>
       <Name>Joonaxii.IO</Name>

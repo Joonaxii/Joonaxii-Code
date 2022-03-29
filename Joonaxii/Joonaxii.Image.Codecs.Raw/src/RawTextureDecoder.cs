@@ -233,6 +233,11 @@ namespace Joonaxii.Image.Codecs.Raw
             Console.WriteLine(stamp.ToString());
             indices.Clear();
             return ImageDecodeResult.Success;
-        }       
+        }
+
+        protected override ImageDecodeResult LoadGeneralTextureInfo(BinaryReader br)
+        {
+            return ImageDecodeResult.NotSupported;
+        }
     }
 }

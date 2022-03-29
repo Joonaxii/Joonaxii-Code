@@ -196,5 +196,10 @@ namespace Joonaxii.Image.Codecs.Auto
             base.Dispose();
             _indices = null;
         }
+
+        protected override ImageDecodeResult LoadGeneralTextureInfo(BinaryReader br)
+        {
+            return ImageDecodeResult.NotSupported;
+        }
     }
 }

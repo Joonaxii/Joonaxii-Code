@@ -506,5 +506,10 @@ namespace Joonaxii.Image.Codecs.GIF
             SetActiveFrame(_activeFrame);
             return ImageDecodeResult.Success;
         }
+
+        protected override ImageDecodeResult LoadGeneralTextureInfo(BinaryReader br)
+        {
+            return ImageDecodeResult.NotSupported;
+        }
     }
 }

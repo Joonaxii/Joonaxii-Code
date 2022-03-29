@@ -8,13 +8,14 @@ namespace Joonaxii.Image.Codecs
 
         public ushort width;
         public ushort height;
+
         public byte bitsPerPixel;
 
-        public GeneralTextureInfo(ushort width, ushort height, byte bitsPerPixel)
+        public GeneralTextureInfo(int width, int height, int bitsPerPixel)
         {
-            this.width = width;
-            this.height = height;
-            this.bitsPerPixel = bitsPerPixel;
+            this.width = (ushort)width;
+            this.height = (ushort)height;
+            this.bitsPerPixel = (byte)bitsPerPixel;
         }
 
         public override bool Equals(object obj)

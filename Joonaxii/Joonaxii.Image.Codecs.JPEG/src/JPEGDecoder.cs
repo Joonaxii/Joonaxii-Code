@@ -466,5 +466,10 @@ namespace Joonaxii.Image.Codecs.JPEG
                 }
             }
         }
+
+        protected override ImageDecodeResult LoadGeneralTextureInfo(BinaryReader br)
+        {
+            return ImageDecodeResult.NotSupported;
+        }
     }
 }
