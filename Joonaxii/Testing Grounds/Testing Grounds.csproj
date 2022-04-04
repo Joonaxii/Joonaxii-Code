@@ -109,6 +109,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Joonaxii.Audio.Codecs.MP3\Joonaxii.Audio.Codecs.MP3.csproj">
+      <Project>{c259d192-d5dc-492b-95b5-158766a2c35c}</Project>
+      <Name>Joonaxii.Audio.Codecs.MP3</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Joonaxii.Audio.Codecs.OGG\Joonaxii.Audio.Codecs.OGG.csproj">
       <Project>{8F6D344A-90C0-4891-B8C9-5BC270DBB226}</Project>
       <Name>Joonaxii.Audio.Codecs.OGG</Name>

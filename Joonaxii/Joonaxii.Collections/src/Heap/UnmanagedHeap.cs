@@ -113,6 +113,60 @@ namespace Joonaxii.Collections
             }
         }
 
+        public unsafe void PrepareRegions(int* regionCounts, bool keepPowOf2)
+        {
+            int totalHeap = 0;
+            int* counts = regionCounts;
+            UnmanagedHeapRegion* reg = _heapRegions;
+            bool earlySkip = true;
+
+            //Loop over regions and check calculate the offset to the current
+            //capacity of each region, if all are less or equal to 0, we can
+            //return early becuase nothing is going to happen to the heap
+            for (int i = 0; i < _regionCount; i++, counts++, reg++)
+            {
+                int count = (*counts);
+                totalHeap += count;
+                *counts = count - reg->Capacity;
+
+                earlySkip &= *counts < 0;
+            }
+            if (earlySkip) { return; }
+
+            //Expand heap if necessary, if we keep pow of 2 call ValidateBuffer
+            //which handles rounding to next pow of 2, otherwise, just set 
+            if (keepPowOf2)
+            {
+                ValidateBuffer(totalHeap);
+            }
+            else if(_heapCapacity < totalHeap)
+            {
+                Resize(totalHeap);
+            }
+
+            //Reset pointers to starting values
+            byte* heap = (byte*)_heapPtr;
+            int len = _regionCount;
+            int ind = 0;
+            reg = _heapRegions;
+            counts = regionCounts;
+
+            //Loop over all regions, check if capacity has changed
+            //Set new capacity and readjust the pointer
+            while (len-- > 0)
+            {
+                int count = *counts++;
+                reg->SetIndex(heap, ind);
+                if (count > 0)
+                {
+                    reg->SetCapacity(count, sizeof(T));
+                }
+
+                ind += reg->ByteCapacity;
+                reg++;
+            }
+        }
+
         public void TrimHeap(HeapTrimFlags flags)
         {
             int newCapacity = 0;
@@ -147,6 +201,7 @@ namespace Joonaxii.Collections
                 newCapacity = Maths.NextPowerOf2Bitwise(newCapacity);
             }
             Resize(newCapacity);
+            ReadjustRegionPointers();
         }
 
         private bool ValidateBuffer(int required)

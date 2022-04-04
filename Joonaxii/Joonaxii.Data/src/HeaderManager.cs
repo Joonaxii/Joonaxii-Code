@@ -78,6 +78,21 @@ namespace Joonaxii.Data
             return HeaderType.UNKNOWN;
         }
 
+        public static HeaderType GetFileType(Stream stream, bool resetPositionOnSuccess)
+        {
+            long pos = stream.Position;
+            for (int i = 0; i < _magicHeaders.Length; i++)
+            {
+                var header = _magicHeaders[i];
+                if (header.HasHeader(stream, pos, resetPositionOnSuccess))
+                {
+                    return header.GetHeaderType;
+                }
+                stream.Seek(pos, SeekOrigin.Begin);
+            }
+            return HeaderType.UNKNOWN;
+        }
+
         public static bool TryGetHeader(HeaderType type, out MagicHeader header, int len = -1)
         {
             for (int i = 0; i < _magicHeaders.Length; i++)

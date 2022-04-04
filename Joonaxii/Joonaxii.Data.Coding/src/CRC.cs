@@ -4,6 +4,8 @@ namespace Joonaxii.Data.Coding
 {
     public class CRC
     {
+        public const uint CRC_START_VALUE = 0xFFFFFFFF;
+
         private readonly static uint[] _crcTable;
         static CRC()
         {
@@ -81,28 +83,61 @@ namespace Joonaxii.Data.Coding
             }
         }
 
+        public static unsafe uint ProgAdd(uint crc, byte* ptr, int length)
+        {
+            for (int i = 0; i < length; i++)
+            {
+                crc = _crcTable[(crc ^ *ptr++) & 0xFF] ^ (crc >> 8);
+            }
+            return crc;
+        }
+
+        public static uint ProgAdd(uint crc, Stream stream, int length)
+        {
+            for (int i = 0; i < length; i++)
+            {
+                crc = _crcTable[(crc ^ stream.ReadByte()) & 0xFF] ^ (crc >> 8);
+            }
+            return crc;
+        }
+
+        public static uint ProgAdd(uint crc, byte value) => _crcTable[(crc ^ value) & 0xFF] ^ (crc >> 8);
+        public static uint ProgAdd(uint crc, sbyte value) => _crcTable[(crc ^ value) & 0xFF] ^ (crc >> 8);
+
+        public static uint ProgAdd(uint crc, short value) => _crcTable[(crc ^ value) & 0xFF] ^ (crc >> 8);
+        public static uint ProgAdd(uint crc, ushort value) => _crcTable[(crc ^ value) & 0xFF] ^ (crc >> 8);
+        public static uint ProgAdd(uint crc, char value) => _crcTable[(crc ^ value) & 0xFF] ^ (crc >> 8);
+
+        public static uint ProgAdd(uint crc, int value) => _crcTable[(crc ^ value) & 0xFF] ^ (crc >> 8);
+        public static uint ProgAdd(uint crc, uint value) => _crcTable[(crc ^ value) & 0xFF] ^ (crc >> 8);
+
+        public static uint ProgAdd(uint crc, long value) => _crcTable[(crc ^ value) & 0xFF] ^ (crc >> 8);
+        public static uint ProgAdd(uint crc, ulong value) => _crcTable[(crc ^ value) & 0xFF] ^ (crc >> 8);
+
+        public static uint ProgEnd(uint crc) => crc ^ CRC_START_VALUE;
+
         public static uint Calculate(Stream stream, int length)
         {
             uint c;
-            c = 0xFFFFFFFF;
+            c = CRC_START_VALUE;
             for (int i = 0; i < length; i++)
             {
                 c = _crcTable[(c ^ stream.ReadByte()) & 0xFF] ^ (c >> 8);
             }
-            return c ^ 0xFFFFFFFF;
+            return c ^ CRC_START_VALUE;
         }
 
         public static unsafe uint Calculate(byte* bytes, int start, int len)
         {
             uint c;
-            c = 0xFFFFFFFF;
+            c = CRC_START_VALUE;
             bytes += start;
             while (len-- > 0)
             {
                 c = _crcTable[(c ^ *bytes) & 0xFF] ^ (c >> 8);
                 bytes++;
             }
-            return c ^ 0xFFFFFFFF;
+            return c ^ CRC_START_VALUE;
         }
     }
 }

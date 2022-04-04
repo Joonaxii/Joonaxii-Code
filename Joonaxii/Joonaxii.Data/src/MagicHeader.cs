@@ -49,6 +49,25 @@ namespace Joonaxii.Data
             return -1;
         }
 
+        public bool HasHeader(Stream stream, long originalPos, bool moveBackOnSuccess = false)
+        {
+            for (int i = 0; i < _magicBytes.Length; i++)
+            {
+                int b = stream.ReadByte();
+                if (b < 0 || !_magicBytes[i].IsValid((byte)b))
+                {
+                    stream.Seek(originalPos, SeekOrigin.Begin);
+                    return false;
+                }
+            }
+
+            if (moveBackOnSuccess)
+            {
+                stream.Seek(originalPos, SeekOrigin.Begin);
+            }
+            return true;
+        }
+
         public bool HasHeader(BinaryReader br, long originalPos, bool moveBackOnSuccess = false)
         {
             for (int i = 0; i < _magicBytes.Length; i++)

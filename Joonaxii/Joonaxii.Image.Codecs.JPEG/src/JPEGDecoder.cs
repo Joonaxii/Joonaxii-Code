@@ -1,4 +1,5 @@
 ﻿using Joonaxii.Data;
+using Joonaxii.Data.Coding;
 using Joonaxii.IO;
 using Joonaxii.IO.BitStream;
 using Joonaxii.MathJX;
@@ -92,11 +93,11 @@ namespace Joonaxii.Image.Codecs.JPEG
             return result;
         }
 
-        private bool TryGetLength(out ushort length)
+        private static bool TryGetLength(Stream stream, BinaryReader br, out ushort length)
         {
-            if (_stream.Position < _stream.Length - 2)
+            if (stream.Position < stream.Length - 2)
             {
-                length = _br.ReadUInt16BigEndian();
+                length = br.ReadUInt16BigEndian();
                 return true;
             }
             length = 0;
@@ -125,7 +126,7 @@ namespace Joonaxii.Image.Codecs.JPEG
                 case JPEGMarker.SOF0:
                 case JPEGMarker.SOF1:
                 case JPEGMarker.SOF2:
-                    if (!TryGetLength(out len))
+                    if (!TryGetLength(_stream, _br, out len))
                     {
                         result = ImageDecodeResult.DataCorrupted;
                         return false;
@@ -138,8 +139,8 @@ namespace Joonaxii.Image.Codecs.JPEG
                     }
 
                     byte precision = _br.ReadByte();
-                   // _height = _br.ReadUInt16BigEndian();
-                    //_width = _br.ReadUInt16BigEndian();
+                    _general.height = _br.ReadUInt16BigEndian();
+                    _general.width = _br.ReadUInt16BigEndian();
                     byte components = _br.ReadByte();
 
                     //_pixels = new FastColor[_width * _height];
@@ -150,6 +151,7 @@ namespace Joonaxii.Image.Codecs.JPEG
                         cmp[i] = (uint)(_br.ReadUInt16() + (_br.ReadByte() << 16));
                     }
 
+                    _general.bitsPerPixel = (byte)(components * precision);
                     System.Diagnostics.Debug.Print($"{marker}-->: ");
                     System.Diagnostics.Debug.Print($"   -JPEG Mode: {_mode}");
                     System.Diagnostics.Debug.Print($"   -Precision: {precision}");
@@ -167,6 +169,8 @@ namespace Joonaxii.Image.Codecs.JPEG
                         _quantMapping.Add(c);
                     }
 
+                    result = ImageDecodeResult.Success;
+                    return false;
                     break;
 
                 case JPEGMarker.SOF3:
@@ -180,11 +184,16 @@ namespace Joonaxii.Image.Codecs.JPEG
                 case JPEGMarker.SOF13:
                 case JPEGMarker.SOF14:
                 case JPEGMarker.SOF15:
+                    if (!TryGetLength(_stream, _br, out len))
+                    {
+                        result = ImageDecodeResult.DataCorrupted;
+                        return false;
+                    }
                     result = ImageDecodeResult.NotSupported;
                     return false;
 
                 case JPEGMarker.SOS:
-                    if (!TryGetLength(out len))
+                    if (!TryGetLength(_stream, _br, out len))
                     {
                         result = ImageDecodeResult.DataCorrupted;
                         return false;
@@ -231,7 +240,7 @@ namespace Joonaxii.Image.Codecs.JPEG
                     break;
 
                 case JPEGMarker.DEF_HUFF:
-                    if (!TryGetLength(out len))
+                    if (!TryGetLength(_stream, _br, out len))
                     {
                         result = ImageDecodeResult.DataCorrupted;
                         return false;
@@ -307,7 +316,7 @@ namespace Joonaxii.Image.Codecs.JPEG
                     break;
 
                 case JPEGMarker.DEF_QUANT:
-                    if (!TryGetLength(out len))
+                    if (!TryGetLength(_stream, _br, out len))
                     {
                         result = ImageDecodeResult.DataCorrupted;
                         return false;
@@ -335,6 +344,55 @@ namespace Joonaxii.Image.Codecs.JPEG
             }
 
             return true;
+        }
+
+        public static bool IsJPEG(Stream stream, out GeneralTextureInfo header)
+        {
+            header = new GeneralTextureInfo(0, 0, 0);
+            using (BinaryReader br = new BinaryReader(stream, Encoding.UTF8, true))
+            {
+                ushort len;
+                while (stream.Position < stream.Length)
+                {
+                    var diff = stream.Length - stream.Position;
+                    if(diff < 2) { break; }
+
+                    byte mA = br.ReadByte();
+                    if(mA != 0xFF) { continue; }
+
+                    mA = br.ReadByte();
+                    switch (mA)
+                    {
+                        default: continue;
+                        case 0xC0:
+                        case 0xC1:
+                        case 0xC2:
+                        case 0xC3:
+                        case 0xC5:
+                        case 0xC6:
+                        case 0xC7:
+                        case 0xC8:
+                        case 0xC9:
+                        case 0xCA:
+                        case 0xCB:
+                        case 0xCD:
+                        case 0xCE:
+                        case 0xCF:
+                            break;
+                    }
+
+                    if (!TryGetLength(stream, br, out len)) { continue; }
+
+                    byte precision = br.ReadByte();
+                    header.height = br.ReadUInt16BigEndian();
+                    header.width = br.ReadUInt16BigEndian();
+                    byte components = br.ReadByte();
+
+                    header.bitsPerPixel = (byte)(components * precision);
+                    return true;
+                }
+            }
+            return false;
         }
 
         private FastColor ColorConversion(double y, double cR, double cB)

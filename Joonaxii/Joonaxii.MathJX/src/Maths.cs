@@ -259,6 +259,15 @@ namespace Joonaxii.MathJX
             return value++;
         }
 
+        public static int NextDivisbleBy(int value, int by)
+        {
+            while (value % by != 0)
+            {
+                value++;
+            }
+            return value;
+        }
+
         public static int NextPowerOf2(int value)
         {
             int power = 1;

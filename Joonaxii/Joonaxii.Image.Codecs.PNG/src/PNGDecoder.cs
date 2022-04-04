@@ -275,23 +275,25 @@ namespace Joonaxii.Image.Codecs.PNG
             return ImageDecodeResult.Success;
         }
 
+        private static PNGChunk DUMMY = new PNGChunk();
         protected override ImageDecodeResult LoadGeneralTextureInfo(BinaryReader br)
         {
-            var hdr = HeaderManager.GetFileType(br, false);
+            Func<PNGChunkType, PNGChunk> skipNonHdr = (PNGChunkType curT) =>
+            {
+                switch (curT)
+                {
+                    case PNGChunkType.IHDR:
+                        return _header;
+                    default: return DUMMY;
+                }
+            };
+
+            var hdr = HeaderManager.GetFileType(_stream, false);
             if (hdr == HeaderType.PNG)
             {
-                PNGChunk dummy = new PNGChunk();
                 while (_header == null)
                 {
-                    var chnk = PNGChunk.Read(br, _stream, (PNGChunkType curT) =>
-                    {
-                        switch (curT)
-                        {
-                            case PNGChunkType.IHDR:
-                                return _header;
-                            default: return dummy;
-                        }
-                    });
+                    var chnk = PNGChunk.Read(br, _stream, skipNonHdr);
 
                     if (chnk.chunkType == PNGChunkType.IHDR)
                     {
@@ -300,7 +302,6 @@ namespace Joonaxii.Image.Codecs.PNG
                 }
                 return ImageDecodeResult.Success;
             }
-
             return ImageDecodeResult.InvalidImageFormat;
         }
         public override void LoadGeneralInformation(long pos)
@@ -314,45 +315,37 @@ namespace Joonaxii.Image.Codecs.PNG
 
         public override int GetDataCRC(long pos)
         {
-            int crc = 0;
             long cur = _stream.Position;
             _stream.Seek(pos, SeekOrigin.Begin);
 
+            Func<PNGChunkType, bool> skipChunk = (PNGChunkType curT) =>
+            {
+                switch (curT)
+                {
+                    case PNGChunkType.PLTE:
+                    case PNGChunkType.tRNS:
+                    case PNGChunkType.sPLT:
+                    case PNGChunkType.IHDR:
+                    case PNGChunkType.IDAT:
+                        return false;
+
+                    default: return true;
+                }
+            };
+
             var hdr = HeaderManager.GetFileType(_br, false);
-            PinnableList<uint> crcList = new PinnableList<uint>(16);
+            uint crc = CRC.CRC_START_VALUE;
             if (hdr == HeaderType.PNG)
             {
                 PNGChunk dummy = new PNGChunk();
-
                 while (true)
                 {
-                    uint? crcIn = PNGChunk.ReadCrc(_br, _stream, out PNGChunkType chunkType, (PNGChunkType curT) =>
-                    {
-                        switch (curT)
-                        {
-                            case PNGChunkType.PLTE:
-                            case PNGChunkType.tRNS:
-                            case PNGChunkType.sPLT:
-                            case PNGChunkType.IHDR:
-                            case PNGChunkType.IDAT:
-                                return false;
-
-                            default: return true;
-                        }
-                    });
+                    crc = PNGChunk.ReadCrc(_br, crc, _stream, out PNGChunkType chunkType, skipChunk);
                     if(chunkType == PNGChunkType.IEND) { break; }
-
-                    if (crcIn == null) { continue; }
-                    crcList.Add(crcIn.GetValueOrDefault());
                 }
             }
             _stream.Seek(cur, SeekOrigin.Begin);
-            unsafe
-            {
-                byte* b = (byte*)crcList.Pin();
-                crc = (int)CRC.Calculate(b, 0, crcList.Count * sizeof(uint));
-            }
-            return crc;
+            return (int)CRC.ProgEnd(crc);
         }
 
         private void SetHeaderChunk(PNGChunk chunk)

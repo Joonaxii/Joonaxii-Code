@@ -82,6 +82,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="src\BufferList.cs" />
+    <Compile Include="src\FixedBitArray.cs" />
     <Compile Include="src\Heap\Heap.cs" />
     <Compile Include="src\Heap\HeapRegion.cs" />
     <Compile Include="src\Heap\HeapTrimFlags.cs" />

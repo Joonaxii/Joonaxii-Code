@@ -25,11 +25,12 @@ namespace Joonaxii.MathJX
         {
             fixed (byte* buf = data) { Memset(buf, val, start, size); }
         }
-        public static void Memset(byte* buffer, byte val, int start, int size)
+        public static void Memset(byte* buffer, byte val, int start, int size) => Memset(buffer + start, val, size);
+        public static void Memset(byte* buffer, byte val, int size)
         {
-            for (int i = start; i < start + size; i++)
+            while(size-- > 0)
             {
-                buffer[i] = val;
+                *buffer++ = val;
             }
         }
 

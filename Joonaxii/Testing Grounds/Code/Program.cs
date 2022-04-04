@@ -21,6 +21,7 @@ using Joonaxii.Image.Codecs.Raw;
 using Joonaxii.Image.Texturing;
 using Joonaxii.Data.Coding;
 using Joonaxii.Audio.Codecs.WAV;
+using Joonaxii.Audio.Codecs.MP3;
 
 namespace Testing_Grounds
 {
@@ -56,7 +57,43 @@ namespace Testing_Grounds
             Console.OutputEncoding = Encoding.UTF8;
 
             Stopwatch sw = new Stopwatch();
+
+            FixedBitArray bits = new FixedBitArray(64);
+            bits.SetAll(false);
+
+            for (int i = 0; i < bits.Count; i++)
+            {
+                Console.WriteLine(bits.FindNextOf(false, true));
+            }
+
+            Console.ReadKey();
+
+            Console.ReadKey();
+
             string path = "";
+            startMp3:
+            Console.Clear();
+            Console.WriteLine("Enter the full path of the MP3 file");
+            path = Console.ReadLine().Replace("\"", "");
+
+            if (!File.Exists(path)) { goto startMp3; }
+
+            using (FileStream stream = new FileStream(path, FileMode.Open))
+            {
+                var res = Mp3Decoder.IsFileMp3(stream, out var hdr);
+
+                if (res)
+                {
+                    Console.WriteLine($"Mp3 Decode Successful!\n\n{hdr.ToString()}\n");
+                }
+                else
+                {
+                    Console.WriteLine($"Mp3 Decode Failed!");
+                }
+
+            }
+
+            Console.ReadKey();
 
             startOgg:
             Console.Clear();

@@ -51,7 +51,7 @@ namespace Joonaxii.Image.Codecs.PNG
             return chnk;
         }
 
-        public static uint? ReadCrc(BinaryReader br, Stream stream, out PNGChunkType chunkType, Func<PNGChunkType, bool> skip = null)
+        public static uint ReadCrc(BinaryReader br, uint crc, Stream stream, out PNGChunkType chunkType, Func<PNGChunkType, bool> skip = null)
         {
             int length = br.ReadInt32BigEndian();
             chunkType = (PNGChunkType)br.ReadInt32BigEndian();
@@ -59,11 +59,11 @@ namespace Joonaxii.Image.Codecs.PNG
             if (skip != null && skip.Invoke(chunkType))
             {
                 stream.Seek(length + 4, SeekOrigin.Current);
-                return null;
+                return crc;
             }
 
             stream.Seek(length, SeekOrigin.Current);
-            return br.ReadUInt32BigEndian();
+            return CRC.ProgAdd(crc, br.ReadUInt32BigEndian());
         }
 
         public static void Write(BinaryWriter bw, PNGChunkType type, byte[] data, int offset, int length)

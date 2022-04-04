@@ -50,8 +50,9 @@ namespace Joonaxii.IO
 
                         if(*iPtr == value)
                         {
+                            long ePos = stream.Position;
                             stream.Seek(pos, SeekOrigin.Begin);
-                            return stream.Position - 4;
+                            return ePos - 4;
                         }
                     }
                 }

@@ -8,6 +8,7 @@ namespace Joonaxii.Audio.Codecs.OGG
     public class OggDecoder : AudioDecoderBase
     {
         public override byte BitDepth => 16;
+        public override uint BitRate => (uint)_idHeader.nominalBitRate;
         public override uint SampleRate => _idHeader.sampleRate;
         public override uint Channels => _idHeader.audioChannels;
 

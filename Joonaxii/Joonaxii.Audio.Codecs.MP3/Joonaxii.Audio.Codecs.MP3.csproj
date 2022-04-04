@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{339D00BC-0FE4-47D6-8F60-E255F7E8BF3F}</ProjectGuid>
+    <ProjectGuid>{C259D192-D5DC-492B-95B5-158766A2C35C}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Joonaxii.Image.Codecs.GIF</RootNamespace>
-    <AssemblyName>Joonaxii.Image.Codecs.GIF</AssemblyName>
+    <RootNamespace>Joonaxii.Audio.Codecs.MP3</RootNamespace>
+    <AssemblyName>Joonaxii.Audio.Codecs.MP3</AssemblyName>
     <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -21,6 +21,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -29,24 +30,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\x64\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <LangVersion>7.3</LangVersion>
-    <ErrorReport>prompt</ErrorReport>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <OutputPath>bin\x64\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <LangVersion>7.3</LangVersion>
-    <ErrorReport>prompt</ErrorReport>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -60,30 +44,29 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="src\GIFFrame.cs" />
-    <Compile Include="src\GIFDecoder.cs" />
-    <Compile Include="src\PlainTextData.cs" />
+    <Compile Include="src\Mp3Decoder.cs" />
+    <Compile Include="src\Mp3Info.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Joonaxii.Audio\Joonaxii.Audio.csproj">
+      <Project>{de097e2b-9d86-4739-b336-c126b215a755}</Project>
+      <Name>Joonaxii.Audio</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Joonaxii.Collections\Joonaxii.Collections.csproj">
-      <Project>{68986E7F-1281-485B-941E-FB1D69CC8427}</Project>
+      <Project>{68986e7f-1281-485b-941e-fb1d69cc8427}</Project>
       <Name>Joonaxii.Collections</Name>
     </ProjectReference>
     <ProjectReference Include="..\Joonaxii.Data.Coding\Joonaxii.Data.Coding.csproj">
       <Project>{9518e812-f5ce-4a8a-bfdc-1e850feb6845}</Project>
       <Name>Joonaxii.Data.Coding</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Joonaxii.Image.Texturing\Joonaxii.Image.Texturing.csproj">
-      <Project>{8AA57CC5-4A7A-4789-8DB7-A73B98E76B71}</Project>
-      <Name>Joonaxii.Image.Texturing</Name>
+    <ProjectReference Include="..\Joonaxii.Data\Joonaxii.Data.csproj">
+      <Project>{b74db02e-ed4d-4fd2-9011-8262f560db59}</Project>
+      <Name>Joonaxii.Data</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Joonaxii.Image\Joonaxii.Image.csproj">
-      <Project>{3474a9e6-e0bd-4d39-aad1-795198dd4692}</Project>
-      <Name>Joonaxii.Image</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Joonaxii.Image.Codecs\Joonaxii.Image.Codecs.csproj">
-      <Project>{AEBFEDB7-0836-4E95-B9C9-13E9DFED9507}</Project>
-      <Name>Joonaxii.Image.Codecs</Name>
+    <ProjectReference Include="..\Joonaxii.IO\Joonaxii.IO.csproj">
+      <Project>{5bcc1979-54d1-4c35-b402-9520c1734766}</Project>
+      <Name>Joonaxii.IO</Name>
     </ProjectReference>
     <ProjectReference Include="..\Joonaxii.MathJX\Joonaxii.MathJX.csproj">
       <Project>{0a47274a-b72f-4601-b3f1-beab27216bed}</Project>

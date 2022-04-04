@@ -10,6 +10,7 @@ namespace Joonaxii.Audio
         public virtual int SampleCount { get => _samples != null ? _samples.Count : 0; }
         public abstract uint SampleRate { get; }
         public abstract uint Channels { get; }
+        public abstract uint BitRate { get; }
         public abstract byte BitDepth { get; }
 
         protected BufferList _samples;

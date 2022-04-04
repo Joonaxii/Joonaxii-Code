@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Joonaxii.Collections;
+using Joonaxii.Data.Coding;
 using Joonaxii.MathJX;
 
 namespace Joonaxii.Image.Codecs.GIF
@@ -20,6 +22,9 @@ namespace Joonaxii.Image.Codecs.GIF
         private int _header;
 
         private int _activeFrame;
+
+        private byte _bgIndex;
+        private int _numOfEntries;
 
         public GIFDecoder(Stream stream) : this(stream, false, false) { }
         public GIFDecoder(Stream stream, bool readHeader, bool is89) : base(stream)
@@ -61,83 +66,10 @@ namespace Joonaxii.Image.Codecs.GIF
             if (f == 0x3b || br.BaseStream.Position >= br.BaseStream.Length) { return null; }
 
             bool hasAlpha = false;
-            int alphaInd = 0;
+            byte alphaInd = 0;
             byte dMet = 0;
             GIFFrame frame = null;
-            {
-                while (true)
-                {
-                    if (f == 0x21)
-                    {
-                        f = br.ReadByte();
-                        switch (f)
-                        {
-                            case 0xFE: //Comment Block
-                                string temp = "";
-                                f = br.ReadByte();
-                                int bytesRead = 3;
-
-                                while (true)
-                                {
-                                    for (int i = 0; i < f; i++)
-                                    {
-                                        temp += (char)br.ReadByte(); ;
-                                        bytesRead++;
-                                    }
-
-                                    f = br.ReadByte();
-                                    bytesRead++;
-                                    if (f == 0) { break; }
-                                }
-                                break;
-                            case 0xFF: //Application Extensions
-                                byte auth = br.ReadByte();
-                                var bb = br.ReadBytes(auth);
-
-                                byte bbA = br.ReadByte();
-                                while (bbA != 0)
-                                {
-                                    for (int j = 0; j < bbA; j++)
-                                    {
-                                        br.ReadByte();
-                                    }
-                                    bbA = br.ReadByte();
-                                }
-                                break;
-                            case 0xF9: //GFX Ctrl
-
-                                br.ReadByte();
-                                byte dipos = br.ReadByte();
-                                hasAlpha = Maths.IsBitSet(dipos, 0);
-                                bool userI = Maths.IsBitSet(dipos, 1);
-                                dMet = Maths.GetRange(dipos, 2, 3);
-
-                                ushort delayTime = br.ReadUInt16();
-                                if (hasAlpha)
-                                {
-                                    _hasAlpha = true;
-                                    alphaInd = br.ReadByte();
-                                    palette.Add(FastColor.clear);
-                                }
-
-                                br.ReadByte();
-
-                                frame = new GIFFrame((ushort)width, (ushort)height, delayTime);
-                                break;
-
-                            default:
-                                f = br.ReadByte();
-                                continue;
-                        }
-                    }
-
-                    f = br.ReadByte();
-                    if (f == 0x2C || br.BaseStream.Position >= br.BaseStream.Length)
-                    {
-                        break;
-                    }
-                }
-            }
+            ReadFrameInfo(f, br, palette, (GIFFrame fR) => frame = fR, out hasAlpha, out dMet, out alphaInd, out ushort delay);
 
             if (frame == null) { return null; }
             var tex = frame.GetTexture();
@@ -211,7 +143,6 @@ namespace Joonaxii.Image.Codecs.GIF
                     lzw.Add(br.ReadByte());
                 }
                 b = br.ReadByte();
-
                 if (b == 0) { break; }
             }
 
@@ -278,6 +209,89 @@ namespace Joonaxii.Image.Codecs.GIF
 
             mode = dMet;
             return frame;
+        }
+
+        private void ReadFrameInfo(byte f, BinaryReader br, HashSet<FastColor> palette, Action<GIFFrame> getFrame, out bool hasAlpha, out byte dMet, out byte alphaInd, out ushort delayTime)
+        {
+            hasAlpha = false;
+            dMet = 0;
+            alphaInd = 0;
+            delayTime = 0;
+
+            while (true)
+            {
+                if (f == 0x21)
+                {
+                    f = br.ReadByte();
+                    switch (f)
+                    {
+                        case 0xFE: //Comment Block
+                            string temp = "";
+                            f = br.ReadByte();
+                            int bytesRead = 3;
+
+                            while (true)
+                            {
+                                for (int i = 0; i < f; i++)
+                                {
+                                    temp += (char)br.ReadByte(); ;
+                                    bytesRead++;
+                                }
+
+                                f = br.ReadByte();
+                                bytesRead++;
+                                if (f == 0) { break; }
+                            }
+                            break;
+                        case 0xFF: //Application Extensions
+                            byte auth = br.ReadByte();
+                            var bb = br.ReadBytes(auth);
+
+                            byte bbA = br.ReadByte();
+                            while (bbA != 0)
+                            {
+                                for (int j = 0; j < bbA; j++)
+                                {
+                                    br.ReadByte();
+                                }
+                                bbA = br.ReadByte();
+                            }
+                            break;
+                        case 0xF9: //GFX Ctrl
+
+                            br.ReadByte();
+                            byte dipos = br.ReadByte();
+                            hasAlpha = Maths.IsBitSet(dipos, 0);
+                            bool userI = Maths.IsBitSet(dipos, 1);
+                            dMet = Maths.GetRange(dipos, 2, 3);
+
+                            delayTime = br.ReadUInt16();
+                            if (hasAlpha)
+                            {
+                                _hasAlpha = true;
+                                alphaInd = br.ReadByte();
+                                palette?.Add(FastColor.clear);
+                            }
+                            br.ReadByte();
+
+                            if(getFrame != null)
+                            {
+                                getFrame.Invoke(new GIFFrame((ushort)_general.width, (ushort)_general.height, delayTime));
+                            }
+                            break;
+
+                        default:
+                            f = br.ReadByte();
+                            continue;
+                    }
+                }
+
+                f = br.ReadByte();
+                if (f == 0x2C || br.BaseStream.Position >= br.BaseStream.Length)
+                {
+                    break;
+                }
+            }
         }
 
         private static void Unpack(int lzwSize, List<byte> bytes, int[] indices)
@@ -463,21 +477,12 @@ namespace Joonaxii.Image.Codecs.GIF
                 }
             }
             HashSet<FastColor> palette = new HashSet<FastColor>();
-
-            var width = _br.ReadUInt16();
-            var height = _br.ReadUInt16();
-
-            byte mapInfo = _br.ReadByte();
-            byte bgIndex = _br.ReadByte();
-            byte aspect = _br.ReadByte();
-
-            int numOfEntries = Maths.IsBitSet(mapInfo, 7) ? 1 << (Maths.GetRange(mapInfo, 0, 3) + 1) : 0;
-            int aspectRatio = (aspect + 15) / 64;
+            LoadGeneralTextureInfo(_br);
 
             palette.Add(FastColor.clear);
 
-            globalPalette = numOfEntries < 1 ? new FastColor[0] : new FastColor[numOfEntries];
-            for (int i = 0; i < numOfEntries; i++)
+            globalPalette = _numOfEntries < 1 ? new FastColor[0] : new FastColor[_numOfEntries];
+            for (int i = 0; i < _numOfEntries; i++)
             {
                 var pix = new FastColor(_br.ReadByte(), _br.ReadByte(), _br.ReadByte(), 255);
                 globalPalette[i] = pix;
@@ -491,7 +496,7 @@ namespace Joonaxii.Image.Codecs.GIF
             int mode = 0;
             while (_stream.Position < _stream.Length)
             {
-                var frame = GetFrame(_br, bgIndex, width, height, globalPalette, ref mode, palette, prev, first);
+                var frame = GetFrame(_br, _bgIndex, _general.width, _general.height, globalPalette, ref mode, palette, prev, first);
                 if (frame == null) { break; }
 
                 prev = frame;
@@ -507,9 +512,87 @@ namespace Joonaxii.Image.Codecs.GIF
             return ImageDecodeResult.Success;
         }
 
+        public override void LoadGeneralInformation(long pos)
+        {
+            long posSt = _stream.Position;
+            _stream.Seek(pos, SeekOrigin.Begin);
+            LoadGeneralTextureInfo(_br);
+            _stream.Seek(posSt, SeekOrigin.Begin);
+        }
+
+        public override int GetDataCRC(long pos)
+        {
+            long posSt = _stream.Position;
+            _stream.Seek(pos, SeekOrigin.Begin);
+            LoadGeneralTextureInfo(_br);
+
+            uint crc = CRC.CRC_START_VALUE;
+            crc = CRC.ProgAdd(crc, _stream, _numOfEntries * 3);
+         
+            while(_stream.Position < _stream.Length)
+            {
+                byte bt = _br.ReadByte();
+                if(bt == 0x3b) { break; }
+
+                ReadFrameInfo(bt, _br, null, null, out bool hasAlpha, out byte dMet, out byte alphaInd, out ushort delay);
+         
+                ushort x = _br.ReadUInt16();
+                ushort y = _br.ReadUInt16();
+
+                ushort w = _br.ReadUInt16();
+                ushort h = _br.ReadUInt16();
+
+                byte imgInfo = _br.ReadByte();
+
+                byte sizeLocal = Maths.GetRange(imgInfo, 0, 3);
+                bool hasLocal = Maths.IsBitSet(imgInfo, 7);
+
+                crc = CRC.ProgAdd(crc, x);
+                crc = CRC.ProgAdd(crc, y);
+
+                crc = CRC.ProgAdd(crc, w);
+                crc = CRC.ProgAdd(crc, h);
+                crc = CRC.ProgAdd(crc, imgInfo);
+
+                if (hasLocal)
+                {
+                    int l = 1 << (sizeLocal + 1);
+                    crc = CRC.ProgAdd(crc, _stream, l * 3);
+                }
+
+                byte size = _br.ReadByte();
+                byte b = _br.ReadByte();
+
+                crc = CRC.ProgAdd(crc, size);
+                crc = CRC.ProgAdd(crc, b);
+                while (b != 0x00)
+                {
+                    for (int i = 0; i < b; i++)
+                    {
+                        crc = CRC.ProgAdd(crc, _br.ReadByte());
+                    }
+                    b = _br.ReadByte();
+                    crc = CRC.ProgAdd(crc, b);
+                    if (b == 0) { break; }
+                }
+            }
+            _stream.Seek(posSt, SeekOrigin.Begin);
+            return (int)CRC.ProgEnd(crc);
+        }
+
         protected override ImageDecodeResult LoadGeneralTextureInfo(BinaryReader br)
         {
-            return ImageDecodeResult.NotSupported;
+            _general.width = br.ReadUInt16();
+            _general.height = br.ReadUInt16();
+            _general.bitsPerPixel = 8;
+
+            byte mapInfo = br.ReadByte();
+            _bgIndex = br.ReadByte();
+            byte aspect = br.ReadByte();
+
+            _numOfEntries = Maths.IsBitSet(mapInfo, 7) ? 1 << (Maths.GetRange(mapInfo, 0, 3) + 1) : 0;
+            //int aspectRatio = (aspect + 15) / 64;
+            return ImageDecodeResult.Success;
         }
     }
 }

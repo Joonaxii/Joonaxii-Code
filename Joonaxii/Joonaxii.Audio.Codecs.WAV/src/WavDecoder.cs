@@ -16,10 +16,12 @@ namespace Joonaxii.Audio.Codecs.WAV
 
         public override uint SampleRate => _sampleRate;
         public override uint Channels => _channels;
-        public override byte BitDepth => throw new NotImplementedException();
+        public override byte BitDepth => _bitDepth;
+        public override uint BitRate => _bitRate;
 
         private uint _sampleRate;
         private uint _channels;
+        private uint _bitRate;
         private byte _bitDepth;
         private bool _decoded;
         private long _dataPos = -1;
@@ -105,14 +107,16 @@ namespace Joonaxii.Audio.Codecs.WAV
         private AudioDecodeResult ReadHeader(BinaryReader br, bool skipUnsupported)
         {
             if (!CheckHeader(br, out var chnk)) { return AudioDecodeResult.InvalidFormat; }
-            _stream.Seek(20, SeekOrigin.Current);
-            if (!skipUnsupported & br.ReadByte() != 1) { return AudioDecodeResult.Unsupported; }
+            _stream.Seek(8, SeekOrigin.Current);
+            if (!skipUnsupported & br.ReadUInt16() != 1) { return AudioDecodeResult.Unsupported; }
 
             _channels = br.ReadUInt16();
             _sampleRate = br.ReadUInt32();
 
             _stream.Seek(6, SeekOrigin.Current);
             _bitDepth = (byte)br.ReadUInt16();
+
+            _bitRate = _sampleRate * _bitDepth * _channels;
 
             long index = _stream.IndexOf(DATA_HEX);
             _dataPos = index < 0 ? -1 : index + 4;

@@ -75,6 +75,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Audio", "Audio", "{A4631287
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Joonaxii.IO.BitStream", "Joonaxii.IO.BitStream\Joonaxii.IO.BitStream.csproj", "{EAA2508A-593C-4FB6-8397-062DA33EE217}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Joonaxii.Audio.Codecs.MP3", "Joonaxii.Audio.Codecs.MP3\Joonaxii.Audio.Codecs.MP3.csproj", "{C259D192-D5DC-492B-95B5-158766A2C35C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -469,6 +471,18 @@ Global
 		{EAA2508A-593C-4FB6-8397-062DA33EE217}.Release|x64.Build.0 = Release|Any CPU
 		{EAA2508A-593C-4FB6-8397-062DA33EE217}.Release|x86.ActiveCfg = Release|Any CPU
 		{EAA2508A-593C-4FB6-8397-062DA33EE217}.Release|x86.Build.0 = Release|Any CPU
+		{C259D192-D5DC-492B-95B5-158766A2C35C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C259D192-D5DC-492B-95B5-158766A2C35C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C259D192-D5DC-492B-95B5-158766A2C35C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C259D192-D5DC-492B-95B5-158766A2C35C}.Debug|x64.Build.0 = Debug|Any CPU
+		{C259D192-D5DC-492B-95B5-158766A2C35C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C259D192-D5DC-492B-95B5-158766A2C35C}.Debug|x86.Build.0 = Debug|Any CPU
+		{C259D192-D5DC-492B-95B5-158766A2C35C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C259D192-D5DC-492B-95B5-158766A2C35C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C259D192-D5DC-492B-95B5-158766A2C35C}.Release|x64.ActiveCfg = Release|Any CPU
+		{C259D192-D5DC-492B-95B5-158766A2C35C}.Release|x64.Build.0 = Release|Any CPU
+		{C259D192-D5DC-492B-95B5-158766A2C35C}.Release|x86.ActiveCfg = Release|Any CPU
+		{C259D192-D5DC-492B-95B5-158766A2C35C}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -499,6 +513,7 @@ Global
 		{8F6D344A-90C0-4891-B8C9-5BC270DBB226} = {A4631287-1BCA-4207-8D85-04DE6454EAA1}
 		{D94E7D13-0148-4991-B0EE-1CC9DE4414EA} = {A4631287-1BCA-4207-8D85-04DE6454EAA1}
 		{1B2C2572-FAC5-49A3-8893-6B4593E61E68} = {A4631287-1BCA-4207-8D85-04DE6454EAA1}
+		{C259D192-D5DC-492B-95B5-158766A2C35C} = {A4631287-1BCA-4207-8D85-04DE6454EAA1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {5C455728-0260-4FAE-BF59-81ABFA53EA28}
