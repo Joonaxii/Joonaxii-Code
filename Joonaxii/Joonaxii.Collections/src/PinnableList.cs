@@ -170,7 +170,7 @@ namespace Joonaxii.Collections
             }
         }
 
-        public void Clear() => Clear(false);
+        public virtual void Clear() => Clear(false);
 
         public void Clear(bool keepPinned)
         {

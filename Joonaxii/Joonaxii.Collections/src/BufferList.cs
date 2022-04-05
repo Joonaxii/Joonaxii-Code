@@ -12,7 +12,7 @@ namespace Joonaxii.Collections
         protected override int Padding => 8;
 
         public override int Count { get => _countVal; }
-        public int ByteSize { get => Count * BytesPerValue; }
+        public int ByteSize { get => _count; }
         public byte BytesPerValue { get; private set; }
       
         private int _countVal;
@@ -206,6 +206,12 @@ namespace Joonaxii.Collections
             if (clear) { Clear(); }
         }
 
+        public override void Clear()
+        {
+            base.Clear();
+            _countVal = 0;
+        }
+
         public void Add(double item, bool signed)
         {
             ValidateBuffer(_count + BytesPerValue, true);
@@ -274,7 +280,7 @@ namespace Joonaxii.Collections
             if (index < 0 | index > Count) { throw new IndexOutOfRangeException("Index out of range for buffer!"); }
             int bI = index * BytesPerValue;
 
-            ValidateBuffer((_count + 1) * ByteSize, true);
+            ValidateBuffer((_countVal + 1) * ByteSize, true);
 
             int endHalf = _count - bI;
             unsafe
