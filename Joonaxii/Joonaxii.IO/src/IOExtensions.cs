@@ -62,6 +62,51 @@ namespace Joonaxii.IO
             return -1;
         }
 
+        private static byte[] TEMP_BUFFER_8K = new byte[8192];
+        public static void ShiftData(this Stream stream, long shift) => ShiftData(stream, stream.Position, -1, shift, null);
+        public static void ShiftData(this Stream stream, long shift, long len) => ShiftData(stream, stream.Position, len, shift, null);
+        public static void ShiftData(this Stream stream, long pos, long len, long shift, byte[] buffer = null)
+        {
+            if(pos - shift > 0 || shift == 0 || len == 0) { return; }
+            buffer = buffer == null ? TEMP_BUFFER_8K : buffer;
+
+            long startPos = stream.Position;
+            len = len < 0 ? stream.Length - pos : len;
+
+            if (shift > 0)
+            {         
+                while (len > 0)
+                {
+                    long read = len < buffer.Length ? len : buffer.Length;
+                    long start = pos + len - read;
+                    stream.Seek(start, SeekOrigin.Begin);
+                    int bytes = stream.Read(buffer, 0, buffer.Length);
+
+                    stream.Seek(start + shift, SeekOrigin.Begin);
+                    stream.Write(buffer, 0, bytes);
+                    len -= read;
+                }
+                stream.Seek(startPos, SeekOrigin.Begin);
+                return;
+            }
+            stream.Seek(pos, SeekOrigin.Begin);
+            while (len > 0)
+            {
+                long read = len < buffer.Length ? len : buffer.Length;
+                long readP = stream.Position;
+
+                int bytes = stream.Read(buffer, 0, buffer.Length);
+                stream.Seek(readP + shift, SeekOrigin.Begin);
+                stream.Write(buffer, 0, bytes);
+
+                len -= read;
+                if(len <= 0) { break; }
+                stream.Seek(readP + bytes, SeekOrigin.Begin);
+            }
+            stream.Seek(startPos, SeekOrigin.Begin);
+            stream.SetLength(stream.Length + shift);
+        }
+
         public static long IndexOf(this Stream stream, byte[] data)
         {
             if (data == null || data.Length < 1) { return stream.Position; }
@@ -322,6 +367,54 @@ namespace Joonaxii.IO
                 if (shift >= 5 * 7) { break; }
 
                 b = br.ReadByte();
+                count |= (b & 0x7F) << shift;
+                shift += 7;
+            }
+            return count;
+        }
+
+        public static long SeekIfNeeded(this Stream stream, long pos, SeekOrigin origin)
+        {
+            long curPos = stream.Position;
+            long posOut = 0;
+            switch (origin)
+            {
+                case SeekOrigin.End:
+                    posOut = stream.Length + pos;
+                    break;
+                case SeekOrigin.Begin:
+                    posOut = pos;
+                    break;
+                case SeekOrigin.Current:
+                    posOut = curPos + pos;
+                    break;
+            }
+
+            if(curPos != posOut)
+            {
+                return stream.Seek(posOut, SeekOrigin.Begin);
+            }
+            return curPos;
+        }
+
+        public static int Decode7BitInt(this Stream stream)
+        {
+            int count = 0;
+            int shift = 0;
+
+            int b = stream.ReadByte();
+            if(b < 0) { return 0; }
+
+            count |= (b & 0x7F) << shift;
+            shift += 7;
+
+            while ((b & 0x80) != 0)
+            {
+                if (shift >= 5 * 7) { break; }
+
+                b = stream.ReadByte();
+                if (b < 0) { break; }
+
                 count |= (b & 0x7F) << shift;
                 shift += 7;
             }

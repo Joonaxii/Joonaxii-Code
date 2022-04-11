@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace Joonaxii.Collections
+namespace Joonaxii.Collections.Unmanaged
 {
     [StructLayout(LayoutKind.Sequential, Size = 24)]
     public unsafe struct UnmanagedHeapRegion : IEquatable<UnmanagedHeapRegion>

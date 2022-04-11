@@ -14,7 +14,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using Joonaxii.Image.Codecs.BMP;
-using Joonaxii.Collections;
+using Joonaxii.Collections.Unmanaged;
 using New.JPEG;
 using Joonaxii.Image.Codecs.VTF;
 using Joonaxii.Image.Codecs.Raw;
@@ -27,6 +27,11 @@ namespace Testing_Grounds
 {
     public class Program
     {
+        public class IntComparer : IComparer<int>
+        {
+            public int Compare(int x, int y) => x.CompareTo(y);
+        }
+
         private static MenuItem[] _menu = new MenuItem[]
         {
             new TTCCompressTest("TTC Compression/Decompression"),
@@ -55,18 +60,181 @@ namespace Testing_Grounds
         {
             Console.InputEncoding = Encoding.UTF8;
             Console.OutputEncoding = Encoding.UTF8;
-
             Stopwatch sw = new Stopwatch();
 
-            FixedBitArray bits = new FixedBitArray(64);
-            bits.SetAll(false);
+            const int ARR_SIZE = 1024 << 4;
+            const int TEST_COUNT = 1000;
 
-            for (int i = 0; i < bits.Count; i++)
+            long total = 0;
+            long min = 0;
+            long max = 0;
+            unsafe
             {
-                Console.WriteLine(bits.FindNextOf(false, true));
-            }
+                Random rng = new Random();
+                int* stackArr = stackalloc int[ARR_SIZE];
+                int* stackUMArr = stackalloc int[ARR_SIZE];
+                IntComparer comp = new IntComparer();
 
-            Console.ReadKey();
+                UnmanagedArray<int> umArr = new UnmanagedArray<int>(ARR_SIZE);
+                UnmanagedArray<int> umArrStack = new UnmanagedArray<int>(stackUMArr, ARR_SIZE);
+                int[] arr = new int[ARR_SIZE];
+
+                #region JIT
+                Console.WriteLine("Performing Randomizations & Sorts to run JIT...");
+                for (int i = 0; i < ARR_SIZE; i++)
+                {
+                    umArr[i] = i;
+                    stackUMArr[i] = i;
+                    arr[i] = i;
+                    stackArr[i] = i;
+                }
+
+                Randomize(umArr);
+                Randomize(umArrStack);
+                Randomize(arr);
+                RandomizePtr(stackArr, ARR_SIZE);
+
+                umArr.Sort(comp);
+                umArrStack.Sort(comp);
+                Array.Sort(arr, comp);
+                UnmanagedArray.Sort(stackArr, ARR_SIZE, 0, ARR_SIZE, comp);
+                #endregion
+
+                Console.WriteLine($"Starting Tests [{TEST_COUNT} tests, {ARR_SIZE} elements]...\n");
+                TimeSpan span;
+                total = 0;
+                min = long.MaxValue;
+                max = 0;
+
+                for (int i = 0; i < TEST_COUNT; i++)
+                {
+                    Randomize(umArr);
+                    sw.Restart();
+                    umArr.Sort(comp);
+                    sw.Stop();
+
+                    total += sw.ElapsedTicks;
+                    min = sw.ElapsedTicks < min ? sw.ElapsedTicks : min;
+                    max = sw.ElapsedTicks > max ? sw.ElapsedTicks : max;
+                }
+                WriteTime("Unmanaged Array Sort (Heap)");
+                WriteSummary(umArr, 10);
+
+                total = 0;
+                min = long.MaxValue;
+                max = 0;
+
+                for (int i = 0; i < TEST_COUNT; i++)
+                {
+                    Randomize(umArr);
+                    sw.Restart();
+                    umArrStack.Sort(comp);
+                    sw.Stop();
+
+                    total += sw.ElapsedTicks;
+                    min = sw.ElapsedTicks < min ? sw.ElapsedTicks : min;
+                    max = sw.ElapsedTicks > max ? sw.ElapsedTicks : max;
+                }
+                WriteTime("Unmanaged Array Sort (Stack)");
+                WriteSummary(umArrStack, 10);
+
+                total = 0;
+                min = long.MaxValue;
+                max = 0;
+
+                for (int i = 0; i < TEST_COUNT; i++)
+                {
+                    Randomize(umArr);
+                    sw.Restart();
+                    Array.Sort(arr, comp);
+                    sw.Stop();
+
+                    total += sw.ElapsedTicks;
+                    min = sw.ElapsedTicks < min ? sw.ElapsedTicks : min;
+                    max = sw.ElapsedTicks > max ? sw.ElapsedTicks : max;
+                }
+                WriteTime("Raw Array Sort (Heap)");
+                WriteSummary(arr, 10);
+
+                total = 0;
+                min = long.MaxValue;
+                max = 0;
+
+                for (int i = 0; i < TEST_COUNT; i++)
+                {
+                    Randomize(umArr);
+                    sw.Restart();
+                    UnmanagedArray.Sort(stackArr, ARR_SIZE, 0, ARR_SIZE, comp);
+                    sw.Stop();
+
+                    total += sw.ElapsedTicks;
+                    min = sw.ElapsedTicks < min ? sw.ElapsedTicks : min;
+                    max = sw.ElapsedTicks > max ? sw.ElapsedTicks : max;
+                }
+                WriteTime("Raw Array Sort (Stack)");
+                WriteSummaryPtr(stackArr, 10);
+
+                void WriteTime(string header)
+                {
+                    span = TimeSpan.FromTicks(total);
+                    Console.WriteLine($"|'{header}' [{TEST_COUNT} tests, {ARR_SIZE} elements]");
+                    Console.WriteLine($"|----Tot: {span.TotalSeconds:F4} sec, {span.TotalMilliseconds:F0} ms, {span.Ticks:F0} ticks");
+
+                    span = TimeSpan.FromTicks((total / TEST_COUNT));
+                    Console.WriteLine($"|----Avg: {span.TotalSeconds:F4} sec, {span.TotalMilliseconds:F0} ms, {span.Ticks:F0} ticks");
+
+                    span = TimeSpan.FromTicks((min / TEST_COUNT));
+                    Console.WriteLine($"|----Min: {span.TotalSeconds:F4} sec, {span.TotalMilliseconds:F0} ms, {span.Ticks:F0} ticks");
+
+                    span = TimeSpan.FromTicks((max / TEST_COUNT));
+                    Console.WriteLine($"|----Max: {span.TotalSeconds:F4} sec, {span.TotalMilliseconds:F0} ms, {span.Ticks:F0} ticks");
+                }
+
+                void WriteSummary(IList<int> list, int toPrint)
+                {
+                    Console.WriteLine(new string('=', 48));
+                    for (int i = 0; i < toPrint; i++)
+                    {
+                        Console.WriteLine($"|{list[i].ToString().PadRight(46, ' ')}|");
+                    }
+                    Console.WriteLine(new string('=', 48) + "\n");
+                }
+
+                void WriteSummaryPtr(int* list, int toPrint)
+                {
+                    Console.WriteLine(new string('=', 48));
+                    for (int i = 0; i < toPrint; i++)
+                    {
+                        Console.WriteLine($"|{list++->ToString().PadRight(46, ' ')}|");
+                    }
+                    Console.WriteLine(new string('=', 48) + "\n");
+                }
+
+
+                void Randomize(IList<int> list)
+                {
+                    int n = list.Count;
+                    while (n > 1)
+                    {
+                        int k = rng.Next(n--);
+                        int temp = list[n];
+                        list[n] = list[k];
+                        list[k] = temp;
+                    }
+                }
+
+                void RandomizePtr(int* list, int length)
+                {
+                    int n = length;
+                    while (n > 1)
+                    {
+                        int k = rng.Next(n--);
+                        int temp = list[n];
+                        list[n] = list[k];
+                        list[k] = temp;
+                    }
+                }
+            }
 
             Console.ReadKey();
 

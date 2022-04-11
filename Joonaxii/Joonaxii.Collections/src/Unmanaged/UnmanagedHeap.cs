@@ -2,7 +2,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace Joonaxii.Collections
+namespace Joonaxii.Collections.Unmanaged
 {
     public unsafe class UnmanagedHeap<T> : IDisposable where T : unmanaged
     {

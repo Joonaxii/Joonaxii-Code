@@ -737,7 +737,7 @@ namespace Joonaxii.Image.Texturing
             {
                 fixed (byte* ptr = _data)
                 {
-                    BufferUtils.Memset(ptr, 0, 0, sizeCur);
+                    BufferUtils.Memset(ptr, (byte)0, sizeCur);
                 }
             }
         }

@@ -170,6 +170,14 @@ namespace Joonaxii.Collections
             }
         }
 
+        public void Expand(int length, bool setCount, bool justSet)
+        {
+            if (setCount && _count < length) { _count = length; }
+            if (length < _capacity) { return; }
+            ValidateBuffer(length, true, justSet);
+          
+        }
+
         public void Clear() => Clear(false);
 
         public void Clear(bool keepPinned)
@@ -266,15 +274,22 @@ namespace Joonaxii.Collections
         }
         IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
 
-        protected void ValidateBuffer(int count, bool keepPinned)
+        protected void ValidateBuffer(int count, bool keepPinned, bool justSet = false)
         {
             if (count < _capacity) { return; }
             bool wasPinned = IsPinned;
             UnPin();
 
-            while (count >= _capacity)
+            if (justSet)
             {
-                _capacity <<= 1;
+                _capacity = count;
+            }
+            else
+            {
+                while (count >= _capacity)
+                {
+                    _capacity <<= 1;
+                }
             }
             _capacityPad = _capacity + Padding;
             Array.Resize(ref _items, _capacityPad);
