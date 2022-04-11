@@ -170,19 +170,15 @@ namespace Joonaxii.Collections
             }
         }
 
-<<<<<<< HEAD
         public void Expand(int length, bool setCount, bool justSet)
         {
             if (setCount && _count < length) { _count = length; }
             if (length < _capacity) { return; }
             ValidateBuffer(length, true, justSet);
-          
+         
         }
 
-        public void Clear() => Clear(false);
-=======
         public virtual void Clear() => Clear(false);
->>>>>>> 0a3c7f61ef0d3137cc321987a1ccbb46680bf8fb
 
         public void Clear(bool keepPinned)
         {
