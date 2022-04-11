@@ -73,7 +73,7 @@ namespace Joonaxii.Image.Codecs.PNG
                             switch (chnk.chunkType)
                             {
                                 case PNGChunkType.IHDR:
-                                    SetHeaderChunk(chnk);
+                                    SetHeaderChunk(chnk, true);
                                     System.Diagnostics.Debug.Print($"{_header}");
 
                                     break;
@@ -297,7 +297,7 @@ namespace Joonaxii.Image.Codecs.PNG
 
                     if (chnk.chunkType == PNGChunkType.IHDR)
                     {
-                        SetHeaderChunk(chnk);
+                        SetHeaderChunk(chnk, false);
                     }
                 }
                 return ImageDecodeResult.Success;
@@ -348,7 +348,7 @@ namespace Joonaxii.Image.Codecs.PNG
             return (int)CRC.ProgEnd(crc);
         }
 
-        private void SetHeaderChunk(PNGChunk chunk)
+        private void SetHeaderChunk(PNGChunk chunk, bool generateTexture)
         {
             _header = chunk as IHDRChunk;
             var bpp = _header.bitDepth;
@@ -376,6 +376,11 @@ namespace Joonaxii.Image.Codecs.PNG
                     break;
             }
 
+            _general.bitsPerPixel = bpp;
+            _general.width = (ushort)_header.width;
+            _general.height = (ushort)_header.height;
+
+            if (!generateTexture) { return; }
             GenerateTexture(_header.width, _header.height, format, _header.bitDepth);
         }
 
