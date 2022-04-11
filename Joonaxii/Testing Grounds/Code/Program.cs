@@ -61,7 +61,26 @@ namespace Testing_Grounds
             Console.InputEncoding = Encoding.UTF8;
             Console.OutputEncoding = Encoding.UTF8;
             Stopwatch sw = new Stopwatch();
+            const int SIZE = 1024 * 1024 * 1024;
 
+            Console.WriteLine($"Press enter to allocate [{SIZE} bytes, {SIZE / 1024.0 / 1024.0 / 1024.0} GB]");
+            while (true)
+            {
+                if (Console.KeyAvailable && Console.ReadKey(true).Key == ConsoleKey.Enter) { break; }
+            }
+            UnmanagedArray<byte> arrUm = new UnmanagedArray<byte>(SIZE);
+
+            arrUm[0] = 255;
+
+            Console.WriteLine("Press enter to release Memory!");
+            while (true)
+            {
+                if(Console.KeyAvailable && Console.ReadKey(true).Key == ConsoleKey.Enter) { break; }
+            }
+            Console.ReadKey();
+            arrUm.Free();
+
+            Console.ReadKey();
             const int ARR_SIZE = 1024 << 4;
             const int TEST_COUNT = 1000;
 
