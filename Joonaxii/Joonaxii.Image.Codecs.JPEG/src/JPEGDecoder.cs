@@ -349,6 +349,7 @@ namespace Joonaxii.Image.Codecs.JPEG
         public static bool IsJPEG(Stream stream, out GeneralTextureInfo header)
         {
             header = new GeneralTextureInfo(0, 0, 0);
+            bool found = false;
             using (BinaryReader br = new BinaryReader(stream, Encoding.UTF8, true))
             {
                 ushort len;
@@ -384,15 +385,16 @@ namespace Joonaxii.Image.Codecs.JPEG
                     if (!TryGetLength(stream, br, out len)) { continue; }
 
                     byte precision = br.ReadByte();
-                    header.height = br.ReadUInt16BigEndian();
-                    header.width = br.ReadUInt16BigEndian();
+                    header.height = Math.Max(br.ReadUInt16BigEndian(), header.height);
+                    header.width = Math.Max(br.ReadUInt16BigEndian(), header.width);
                     byte components = br.ReadByte();
 
                     header.bitsPerPixel = (byte)(components * precision);
-                    return true;
+                    found = true;
+                    break;
                 }
             }
-            return false;
+            return found;
         }
 
         private FastColor ColorConversion(double y, double cR, double cB)
