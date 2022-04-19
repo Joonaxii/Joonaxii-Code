@@ -1,13 +1,10 @@
-﻿
-using System;
-using System.Runtime.InteropServices;
+﻿using System;
 
 namespace Joonaxii.MathJX
 {
     public unsafe class BufferUtils
     {
         #region Memset
-        public static void Memset(byte[] data, long val, byte byteCount) => Memset(data, val, byteCount, 0, data.Length);
         public static void Memset(byte[] data, long val, byte byteCount, int start, int size)
         {
             fixed (byte* buf = data) { Memset(buf, val, byteCount, start, size); }

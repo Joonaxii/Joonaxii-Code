@@ -107,24 +107,58 @@ namespace Joonaxii.Types
             }
         }
 
+        public void Set(char v, int start, int count)
+        {
+            fixed (char* cPtr = _chars)
+            {
+                char* oPtr = cPtr + start;
+                while(start++ < 255 & count-- > 0)
+                {
+                    *oPtr++ = v;
+                }
+            }
+        }
+
+        public String256 Append(char c)
+        {
+            int l = Length;
+            if(l >= 255) { return this; }
+            _chars[l] = c;
+            return this;
+        }
+
+        public String256 Append(char c, int count)
+        {
+            int l = Length;
+            fixed (char* mPtr = _chars)
+            {
+                char* ptrM = mPtr + l;
+                int pos = l;
+                while (pos < 255 & count-- > 0)
+                {
+                    *ptrM++ = c;
+                    pos++;
+                }
+            }
+            return this;
+        }
+
         public String256 Append(string str)
         {
+            int l = Length;
             fixed (char* mPtr = _chars)
             fixed (char* sPtr = str)
             {
-                char* ptrM = mPtr;
                 char* ptrS = sPtr;
+                char* ptrM = mPtr + l;
 
-                int pos = 0;
+                int pos = l;
                 int strP = 0;
                 while (pos < 255)
                 {
-                    if (*ptrM == '\0')
-                    {
-                        *ptrM++ = *ptrS++;
-                        if (++strP >= str.Length) { break; }
-                    }
+                    *ptrM++ = *ptrS++;
                     pos++;
+                    if (++strP >= str.Length) { break; }
                 }
             }
             return this;

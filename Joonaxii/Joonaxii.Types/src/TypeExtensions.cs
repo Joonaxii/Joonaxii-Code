@@ -23,7 +23,7 @@ namespace Joonaxii.Types
             }
         }
 
-        public static void Write(this TextWriter tw, String256 str)
+        public static void Write(this TextWriter tw, ref String256 str)
         {
             unsafe
             {
@@ -35,6 +35,23 @@ namespace Joonaxii.Types
                     tw.Write(c);
                 }
             }
+        }
+
+
+        public static unsafe void Write(this TextWriter tw, String256* str, bool flush = true)
+        {
+            unsafe
+            {
+                char* ptr = (char*)str;
+                while (true)
+                {
+                    char c = *ptr++;
+                    if (c == '\0') { break; }
+                    tw.Write(c);
+                }
+            }
+            if (!flush) { return; }
+            tw.Flush();
         }
 
         public static void Write(this BinaryWriter bw, String256 str)
@@ -108,10 +125,17 @@ namespace Joonaxii.Types
             }
         }
 
-        public static void WriteLine(this TextWriter tw, String256 str)
+        public static void WriteLine(this TextWriter tw, ref String256 str)
         {
-            Write(tw, str);
+            Write(tw, ref str);
             tw.Write(tw.NewLine);
+        }
+
+        public static unsafe void WriteLine(this TextWriter tw, String256* str)
+        {
+            Write(tw, str, false);
+            tw.Write(tw.NewLine);
+            tw.Flush();
         }
     }
 }

@@ -86,6 +86,8 @@
     <Compile Include="src\Heap\Heap.cs" />
     <Compile Include="src\Heap\HeapRegion.cs" />
     <Compile Include="src\Heap\HeapTrimFlags.cs" />
+    <Compile Include="src\Unmanaged\FixedHeapPointer.cs" />
+    <Compile Include="src\Unmanaged\FixedUnmanagedHeap.cs" />
     <Compile Include="src\Unmanaged\UnmanagedHeap.cs" />
     <Compile Include="src\Unmanaged\UnmanagedHeapRegion.cs" />
     <Compile Include="src\Unmanaged\IUnmanagedCollection.cs" />

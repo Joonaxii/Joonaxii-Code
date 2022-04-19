@@ -129,6 +129,10 @@
       <Project>{68986e7f-1281-485b-941e-fb1d69cc8427}</Project>
       <Name>Joonaxii.Collections</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.Cryptography\Joonaxii.Cryptography.csproj">
+      <Project>{69BD78AC-0108-44F5-B774-77124B461722}</Project>
+      <Name>Joonaxii.Cryptography</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Joonaxii.Data.Coding\Joonaxii.Data.Coding.csproj">
       <Project>{9518E812-F5CE-4A8A-BFDC-1E850FEB6845}</Project>
       <Name>Joonaxii.Data.Coding</Name>
@@ -208,6 +212,10 @@
     <ProjectReference Include="..\Joonaxii.Text.Compression\Joonaxii.Text.Compression.csproj">
       <Project>{afe98590-27f0-4467-80cb-f00c87dc239a}</Project>
       <Name>Joonaxii.Text.Compression</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.Types\Joonaxii.Types.csproj">
+      <Project>{972C29E6-8D3D-4777-BF45-16B19177ECB3}</Project>
+      <Name>Joonaxii.Types</Name>
     </ProjectReference>
     <ProjectReference Include="..\New.JPEG\New.JPEG.csproj">
       <Project>{819032E2-7186-46D4-8EAF-9CE987F5AE7F}</Project>

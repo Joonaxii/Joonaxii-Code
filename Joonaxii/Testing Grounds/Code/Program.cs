@@ -22,6 +22,9 @@ using Joonaxii.Image.Texturing;
 using Joonaxii.Data.Coding;
 using Joonaxii.Audio.Codecs.WAV;
 using Joonaxii.Audio.Codecs.MP3;
+using Joonaxii.Cryptography;
+using System.Security.Cryptography;
+using Joonaxii.Types;
 
 namespace Testing_Grounds
 {
@@ -56,6 +59,59 @@ namespace Testing_Grounds
         };
         private static int _selectedItem;
 
+        private static unsafe int[] GetArray(Random rng, int* stack, int maxLen, IComparer<int> comparer)
+        {
+            BufferUtils.Memset(stack, -1, maxLen);
+            int len = rng.Next(1, maxLen);
+
+            int* stackIn = stackalloc int[len];
+
+            int pos = 0;
+            for (int i = 0; i < len; i++)
+            {
+                int val = rng.Next() % 800_000;
+                while (true)
+                {
+                    bool breakOut = true;
+                    for (int j = 0; j < pos; j++)
+                    {
+                        if (stack[j] == val) { breakOut = false; break; }
+                    }
+                    if (breakOut) { break; }
+                    val = rng.Next() % 800_000;
+                }
+
+                *(stack + pos++) = val;
+                *(stackIn + i) = val;
+            }
+            UnmanagedArray.Sort(stackIn, len, 0, len, comparer);
+
+            int[] arrOut = new int[len];
+            fixed (int* ptr = arrOut)
+            {
+                BufferUtils.Memcpy(stackIn, ptr, len);
+            }
+            return arrOut;
+        }
+
+        private static unsafe bool IsIdentical(int* aP, int[] b)
+        {
+            //unsafe
+            {
+                fixed (int* bPtr = b)
+                {
+                    int len = b.Length;
+                    int* bP = bPtr;
+
+                    while (len-- > 0)
+                    {
+                        if (*aP++ != *bP++) { return false; }
+                    }
+                }
+            }
+            return true;
+        }
+
         public static void Main(string[] args)
         {
             Console.InputEncoding = Encoding.UTF8;
@@ -63,6 +119,266 @@ namespace Testing_Grounds
             Stopwatch sw = new Stopwatch();
             const int SIZE = 1024 * 1024 * 1024;
 
+            Dictionary<FAH16, int> all = new Dictionary<FAH16, int>();
+            unsafe
+            {
+                Guid* guid = stackalloc Guid[1];
+                FAH16* fah = stackalloc FAH16[1];
+                List<(string name, FAH16 hash)> files = new List<(string name, FAH16 hash)>();
+
+                startTESTING:
+                Console.Clear();
+                Console.WriteLine($"Enter path to check through");
+
+                string fPath = Console.ReadLine().Replace("\"", "");
+                if (!Directory.Exists(fPath)) { goto startTESTING; }
+
+                Console.WriteLine($"Do you want to just show hashes? (0: NO, 1: YES, 2: JUST HASHES, 3: VS MD5, 4: ID TEST)");
+
+                int displayHashes = 0;
+                while (true)
+                {
+                    ConsoleKey key = Console.ReadKey(true).Key;
+
+                    if (key == ConsoleKey.D0) { break; }
+                    if (key == ConsoleKey.D1) { displayHashes = 1; break; }
+                    if (key == ConsoleKey.D2) { displayHashes = 2; break; }
+                    if (key == ConsoleKey.D3) { displayHashes = 3; break; }
+                    if (key == ConsoleKey.D4) { displayHashes = 4; break; }
+                }
+
+                int collisionC = 0;
+
+                FileInfo[] filesS = new DirectoryInfo(fPath).GetFiles("*", SearchOption.AllDirectories);
+                byte[] data = null;
+                byte[] hash;
+
+                switch (displayHashes)
+                {
+                    case 4:
+                        int toTest = 8192 << 8;
+                        (int[] arr, FAH16 hash)[] tests = new (int[] arr, FAH16 hash)[toTest];
+
+                        int tot = 0;
+                        Random rnd = new Random();
+                        int* stack = stackalloc int[256];
+                        IntComparer comp = new IntComparer();
+
+                        int progressCount = 62;
+                        String256* debug = stackalloc String256[1];
+                        debug->Clear();
+
+                        debug->Append('[');
+                        debug->Append('-', progressCount);
+                        debug->Append(']');
+
+                        char* dbgPtr = (char*)debug + 1;
+
+                        Console.WriteLine($"Generating '{toTest}' random arrays...");
+                        int y = Console.CursorTop;
+
+                        Console.SetCursorPosition(0, y);
+                        TypeExtensions.Write(Console.Out, debug);
+                        int cC = -1;
+                        for (int i = 0; i < tests.Length; i++)
+                        {
+                            if (i % 64 == 0)
+                            {
+                                float n = i / (tests.Length - 1.0f);
+                                int ii = (int)(n * progressCount);
+                                if (cC != ii)
+                                {
+                                    cC = ii;
+                                    debug->Set('#', 1, cC);
+                                    Console.SetCursorPosition(0, y);
+                                    TypeExtensions.Write(Console.Out, debug);
+                                }
+                            }
+
+                            *fah = FAH16.Empty;
+                            var array = GetArray(rnd, stack, 256, comp);
+                            fixed (int* ptr = array)
+                            {
+                                FAH16.Compute((byte*)ptr, array.Length * 4, fah);
+                            }
+                            tests[i] = (array, *fah);
+                        }
+
+                        debug->Set('#', 1, progressCount);
+                        Console.SetCursorPosition(0, y);
+                        TypeExtensions.Write(Console.Out, debug);
+
+                        Console.SetCursorPosition(0, y + 2);
+                        Console.WriteLine($"Testing for collisions...");
+                        y = Console.CursorTop;
+
+                        debug->Set('-', 1, progressCount);
+                        Console.SetCursorPosition(0, y);
+                        TypeExtensions.Write(Console.Out, debug);
+
+                        int totalAll = 0;
+                        int totalDiffLen = 0;
+                        int totalSameLen = 0;
+                        int identicalTot = 0;
+                        List<(int iA, int jA, byte mode)> collisions = new List<(int iA, int jA, byte mode)>();
+                        cC = -1;
+                        for (int i = 0; i < tests.Length; i++)
+                        {
+                            if ((i % 64) == 0)
+                            {
+                                float n = i / (tests.Length - 1.0f);
+                                int ii = (int)(n * progressCount);
+                                if (cC != ii)
+                                {
+                                    cC = ii;
+                                    debug->Set('#', 1, cC);
+                                    Console.SetCursorPosition(0, y);
+                                    TypeExtensions.Write(Console.Out, debug);
+                                }
+                            }
+
+                            var aP = tests[i];
+                            fixed (int* ptr = aP.arr)
+                            {
+                                for (int j = i + 1; j < tests.Length; j++)
+                                {
+                                    var bP = tests[j];
+                                    if (aP.hash.Equals(bP.hash))
+                                    {
+                                        totalAll++;
+                                        if (aP.arr.Length == bP.arr.Length)
+                                        {
+                                            totalSameLen++;
+                                            if (IsIdentical(ptr, bP.arr))
+                                            {
+                                                identicalTot++;
+                                            }
+                                            continue;
+                                        }
+                                        totalDiffLen++;
+                                    }
+                                }
+                            }
+                        }
+
+                        debug->Set('#', 1, progressCount);
+                        Console.SetCursorPosition(0, y);
+                        TypeExtensions.Write(Console.Out, debug);
+
+                        Console.SetCursorPosition(0, y + 2);
+
+                        Console.WriteLine($"DONE!");
+                        Console.WriteLine($"    -Total    : {totalAll}");
+                        Console.WriteLine($"    -Identical: {identicalTot}");
+                        Console.WriteLine($"    -Same Len : {totalSameLen}");
+                        Console.WriteLine($"    -Diff Len : {totalDiffLen}");
+                        Console.ReadKey();
+                        Console.ReadKey();
+                        break;
+
+                    case 3:
+                        long totalTime = 0;
+                        Stopwatch sww = new Stopwatch();
+                        TimeSpan sp;
+
+                        for (int i = 0; i < filesS.Length; i++)
+                        {
+                            sww.Restart();
+                            using (var strm = filesS[i].OpenRead())
+                            {
+                                *fah = FAH16.Empty;
+                                FAH16.Compute(strm, fah);
+                            }
+                            sww.Stop();
+                            totalTime += sww.ElapsedTicks;
+                        }
+
+                        sp = TimeSpan.FromTicks(totalTime);
+                        Console.WriteLine($"FAH16 (Stream): {sp.TotalMilliseconds}ms, {sp.Ticks} ticks");
+
+                        MD5 md;
+                        totalTime = 0;
+                        for (int i = 0; i < filesS.Length; i++)
+                        {
+                            sww.Restart();
+                            using (md = MD5.Create())
+                            using (var strm = filesS[i].OpenRead())
+                            {
+                                hash = md.ComputeHash(strm);
+                            }
+                            sww.Stop();
+                            md = null;
+                            totalTime += sww.ElapsedTicks;
+                        }
+
+                        sp = TimeSpan.FromTicks(totalTime);
+                        Console.WriteLine($"MD5 (Stream): {sp.TotalMilliseconds}ms, {sp.Ticks} ticks");
+                        break;
+                    default:
+                        List<List<string>> collisionsS = new List<List<string>>();
+                        for (int i = 0; i < filesS.Length; i++)
+                        {
+                            string nameE = filesS[i].Name;
+                            data = File.ReadAllBytes(filesS[i].FullName);
+
+                            *fah = FAH16.Empty;
+                            fixed (byte* ptr = data)
+                            {
+                                FAH16.Compute(ptr, data.Length, fah);
+                                if (displayHashes > 0)
+                                {
+                                    fah->ToGuid(guid);
+
+                                    switch (displayHashes)
+                                    {
+                                        case 1:
+                                            Console.WriteLine($"|File: {nameE}\n|  -[{*guid}]\n|=============================================");
+                                            break;
+                                        case 2:
+                                            Console.WriteLine($"[{*guid}]");
+                                            break;
+                                    }
+                                    continue;
+                                }
+
+                                var hsh = *fah;
+                                if (all.TryGetValue(hsh, out int id))
+                                {
+                                    collisionC++;
+                                    collisionsS[id].Add(nameE);
+                                    continue;
+                                }
+
+                                id = collisionsS.Count;
+                                all.Add(hsh, id);
+                                files.Add((nameE, hsh));
+                                collisionsS.Add(new List<string>());
+                            }
+                        }
+
+                        if (displayHashes == 0)
+                        {
+                            Console.WriteLine($"Done! found '{collisionC}' collisions in {filesS.Length} files");
+                            for (int i = 0; i < collisionsS.Count; i++)
+                            {
+                                var c = collisionsS[i];
+                                if (c.Count < 1) { continue; }
+
+                                var f = files[i];
+                                f.hash.ToGuid(guid);
+                                Console.WriteLine($"    {f.name} [{*guid}] || {c.Count} collisions");
+                                foreach (var item in c)
+                                {
+                                    Console.WriteLine($"        -{item}");
+                                }
+                            }
+                        }
+                        break;
+                }
+            }
+
+            Console.WriteLine($"DONE!");
+            Console.ReadKey();
             Console.WriteLine($"Press enter to allocate [{SIZE} bytes, {SIZE / 1024.0 / 1024.0 / 1024.0} GB]");
             while (true)
             {
@@ -75,7 +391,7 @@ namespace Testing_Grounds
             Console.WriteLine("Press enter to release Memory!");
             while (true)
             {
-                if(Console.KeyAvailable && Console.ReadKey(true).Key == ConsoleKey.Enter) { break; }
+                if (Console.KeyAvailable && Console.ReadKey(true).Key == ConsoleKey.Enter) { break; }
             }
             Console.ReadKey();
             arrUm.Free();
@@ -289,8 +605,8 @@ namespace Testing_Grounds
 
             if (!File.Exists(path)) { goto startOgg; }
 
-            using(FileStream stream = new FileStream(path, FileMode.Open))
-            using(OggDecoder oggDec = new OggDecoder(stream))
+            using (FileStream stream = new FileStream(path, FileMode.Open))
+            using (OggDecoder oggDec = new OggDecoder(stream))
             {
                 var res = oggDec.Decode();
                 switch (res)
@@ -333,8 +649,8 @@ namespace Testing_Grounds
 
                 if (res == ImageDecodeResult.Success)
                 {
-                    using(FileStream testOut = new FileStream($"{Path.GetDirectoryName(path)}/{Path.GetFileNameWithoutExtension(path)}_OUT.png", FileMode.Create))
-                    using(PNGEncoder enc = new PNGEncoder(png.GetTexture(), TextureFormat.Indexed))
+                    using (FileStream testOut = new FileStream($"{Path.GetDirectoryName(path)}/{Path.GetFileNameWithoutExtension(path)}_OUT.png", FileMode.Create))
+                    using (PNGEncoder enc = new PNGEncoder(png.GetTexture(), TextureFormat.Indexed))
                     {
                         enc.Flags = ImageDecoderFlags.ForcePalette | ImageDecoderFlags.AllowBigIndices;
 
@@ -569,14 +885,14 @@ namespace Testing_Grounds
                     default: Console.WriteLine($"PNG Decode Failed: [{res}]"); break;
                     case ImageDecodeResult.Success:
                         Console.WriteLine($"PNG Decode {res}!");
-                        using (FileStream fsEnc    = new FileStream($"{dirP}/{namP}_PAL.png", FileMode.Create))
+                        using (FileStream fsEnc = new FileStream($"{dirP}/{namP}_PAL.png", FileMode.Create))
                         using (FileStream fsEncFilt = new FileStream($"{dirP}/{namP}_PAL_Filter.png", FileMode.Create))
                         using (FileStream fsEncFiltF = new FileStream($"{dirP}/{namP}_PAL_Forced_Filter.png", FileMode.Create))
                         using (FileStream fsEncBroken = new FileStream($"{dirP}/{namP}_PAL_Broken.png", FileMode.Create))
                         using (PNGEncoder encPNG = new PNGEncoder(decPNG.ColorMode))
                         {
                             //var pix = decPNG.GetPixelsRef();
-                           // encPNG.SetPixelsRef(ref pix);
+                            // encPNG.SetPixelsRef(ref pix);
 
                             encPNG.Flags = ImageDecoderFlags.AllowBigIndices | ImageDecoderFlags.ForceRGB;
                             encPNG.PNGFlags = PNGFlags.UseBrokenSubFilter | PNGFlags.OverrideFilter;
