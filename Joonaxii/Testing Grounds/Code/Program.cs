@@ -25,6 +25,7 @@ using Joonaxii.Audio.Codecs.MP3;
 using Joonaxii.Cryptography;
 using System.Security.Cryptography;
 using Joonaxii.Types;
+using Joonaxii.IO.CFG;
 
 namespace Testing_Grounds
 {
@@ -118,6 +119,42 @@ namespace Testing_Grounds
             Console.OutputEncoding = Encoding.UTF8;
             Stopwatch sw = new Stopwatch();
             const int SIZE = 1024 * 1024 * 1024;
+            Console.WriteLine($"Testing Config Stream: ");
+
+            string path = "Test.cfg";
+
+            using (FileStream stream = new FileStream(path, FileMode.OpenOrCreate))
+            using (ConfigStream cfgStream = new ConfigStream(stream))
+            {
+                var val = cfgStream.GetValue<string>("", "Test String");
+                var arr = cfgStream.GetArrayValue<int>("Test #1", "Test Array");
+
+                stream.Seek(0, SeekOrigin.Begin);
+                stream.SetLength(0);
+
+                //Add/Update fields
+                cfgStream.AddOrUpdateField("", "Test String", "Testing #2!");
+                cfgStream.AddOrUpdateField("Test #1", "Test Float", 1.69f);
+                cfgStream.AddOrUpdateField("Test #1", "Test Int", 4321);
+                cfgStream.AddOrUpdateField("Test #1", "Test Enum", PNGFlags.ForceFilter | PNGFlags.OverrideFilter);
+
+                //Comments
+                cfgStream.InsertComment("This is a comment that's at the top!", 0, 0);
+                cfgStream.InsertComment("This is a comment that's above the first header!", 0, 1);
+                cfgStream.InsertComment("This is a comment that's above the second header\nWith a line break!! :O", 0, 2);
+                cfgStream.InsertComment("This is a comment that's at the bottom!", 1, -1, LineBreakFlags.OnlyUpIfNotAtTop, 0, 0);
+
+            }
+
+            using (FileStream stream = new FileStream(path, FileMode.Open))
+            using (ConfigStream cfgStream = new ConfigStream(stream))
+            {
+                PNGFlags flag = cfgStream.GetValue<PNGFlags>("Test #1", "Test Enum");
+                Console.WriteLine($"Got: {flag}");
+            }
+
+
+            Console.ReadKey();
 
             Dictionary<FAH16, int> all = new Dictionary<FAH16, int>();
             unsafe
@@ -361,13 +398,13 @@ namespace Testing_Grounds
                             Console.WriteLine($"Done! found '{collisionC}' collisions in {filesS.Length} files");
                             for (int i = 0; i < collisionsS.Count; i++)
                             {
-                                var c = collisionsS[i];
-                                if (c.Count < 1) { continue; }
+                                var col = collisionsS[i];
+                                if (col.Count < 1) { continue; }
 
                                 var f = files[i];
                                 f.hash.ToGuid(guid);
-                                Console.WriteLine($"    {f.name} [{*guid}] || {c.Count} collisions");
-                                foreach (var item in c)
+                                Console.WriteLine($"    {f.name} [{*guid}] || {col.Count} collisions");
+                                foreach (var item in col)
                                 {
                                     Console.WriteLine($"        -{item}");
                                 }
@@ -573,7 +610,7 @@ namespace Testing_Grounds
 
             Console.ReadKey();
 
-            string path = "";
+            path = "";
             startMp3:
             Console.Clear();
             Console.WriteLine("Enter the full path of the MP3 file");

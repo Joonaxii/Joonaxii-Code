@@ -427,7 +427,7 @@ namespace Joonaxii.MathJX
             float u2 = u * u;
             float u3 = u2 * u;
             float t3 = t2 * t;
-            Ne
+
             return u3 * p0 +
                 (3.0f * u2 * t) * p1 +
                 (3.0f * u * t2) * p2 +

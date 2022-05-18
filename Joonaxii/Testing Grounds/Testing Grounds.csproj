@@ -189,6 +189,10 @@
       <Project>{EAA2508A-593C-4FB6-8397-062DA33EE217}</Project>
       <Name>Joonaxii.IO.BitStream</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Joonaxii.IO.CFG\Joonaxii.IO.CFG.csproj">
+      <Project>{0AC7CF31-ACDA-4700-A9A0-A3F0AF13F3F4}</Project>
+      <Name>Joonaxii.IO.CFG</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Joonaxii.IO\Joonaxii.IO.csproj">
       <Project>{5bcc1979-54d1-4c35-b402-9520c1734766}</Project>
       <Name>Joonaxii.IO</Name>
